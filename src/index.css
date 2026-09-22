@@ -264,3 +264,56 @@ body {
   color: #A1A1AA; font-size: 14px; pointer-events: none;
 }
 .login-input-wrap input { padding-left: 36px; }
+
+/* ── Gerente dashboard ── */
+.gerente-dashboard > div,
+.gerente-dashboard > div > div {
+  min-width: 0;
+}
+
+.dashboard-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+@media (max-width: 1180px) {
+  .dashboard-kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .dashboard-primary-grid {
+    grid-template-columns: minmax(0, 1fr) 340px !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .dashboard-primary-grid,
+  .dashboard-secondary-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .dashboard-status-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .gerente-dashboard {
+    padding: 14px !important;
+  }
+
+  .dashboard-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .dashboard-status-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .dashboard-kpi-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
