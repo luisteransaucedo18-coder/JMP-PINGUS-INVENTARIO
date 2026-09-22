@@ -99,7 +99,7 @@ export default function MisSolicitudesView({ usuario, onToast, onNav }: Props) {
             </div>
             <div style={{ padding: '0 22px 16px' }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: '#52525B', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Materiales ({selected.materiales.length})</div>
-              <table className="data-table">
+              <table className="data-table request-materials-table">
                 <thead><tr><th>SKU</th><th>Material</th><th>Cantidad</th></tr></thead>
                 <tbody>
                   {selected.materiales.map((m, i) => (
