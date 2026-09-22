@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAppStore } from '../../store/AppContext';
 import { Requerimiento, SEDES, Material } from '../../data/mockData';
 import MaterialPreviewModal, { PreviewBtn } from '../../components/MaterialPreviewModal';
+import RequirementStatusTimeline from '../../components/RequirementStatusTimeline';
 
 const BADGE: Record<string, string> = { BORRADOR: 'gray', ENVIADO: 'amber', CONFIRMADO: 'green', RECHAZADO: 'red' };
 
@@ -130,6 +131,8 @@ export default function RequerimientosView({ onToast, usuario }: Props) {
               </div>
               <span className={`badge status-badge badge-${BADGE[selected.estado]}`}>{selected.estado}</span>
             </div>
+
+            <RequirementStatusTimeline requirement={selected} />
 
             <div style={{ padding: '18px 22px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               {[['Sede', selected.sede], ['Ubicación', selected.ubicacion], ['Analista', selected.analista], ['Técnico responsable', selected.tecnico], ['Fecha solicitud', selected.fecha]].map(([k, v]) => (

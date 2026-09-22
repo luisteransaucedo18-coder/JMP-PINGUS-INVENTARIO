@@ -298,6 +298,98 @@ body {
   display: flex; align-items: center; justify-content: space-between;
 }
 
+/* ── Requirement status timeline ── */
+.requirement-timeline-wrap {
+  padding: 18px 28px 16px;
+  border-bottom: 1px solid #F0F2FF;
+  background: #FCFCFF;
+}
+
+.requirement-timeline {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.requirement-timeline__step {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  min-width: 0;
+  color: #A1A1AA;
+}
+
+.requirement-timeline__connector {
+  position: absolute;
+  top: 12px;
+  right: 50%;
+  width: 100%;
+  height: 2px;
+  background: #E4E7F5;
+}
+
+.requirement-timeline__connector.is-complete {
+  background: #2563EB;
+}
+
+.requirement-timeline__connector.is-rejected {
+  background: #DC2626;
+}
+
+.requirement-timeline__marker {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #E8EAFF;
+  box-shadow: 0 0 0 2px #E4E7F5;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.requirement-timeline__step.is-complete {
+  color: #2563EB;
+}
+
+.requirement-timeline__step.is-complete .requirement-timeline__marker {
+  background: #2563EB;
+  box-shadow: 0 0 0 2px #BFDBFE;
+}
+
+.requirement-timeline__step.is-rejected {
+  color: #DC2626;
+}
+
+.requirement-timeline__step.is-rejected .requirement-timeline__marker {
+  background: #DC2626;
+  box-shadow: 0 0 0 2px #FECACA;
+}
+
+.requirement-timeline__label {
+  margin-top: 8px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.requirement-timeline__date {
+  margin-top: 3px;
+  color: #9CA3AF;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+  line-height: 1.25;
+  text-align: center;
+}
+
 /* ── Toast ── */
 .toast {
   position: fixed; bottom: 24px; right: 24px;
@@ -584,6 +676,18 @@ body {
 
   .modal-header h2 {
     overflow-wrap: anywhere;
+  }
+
+  .requirement-timeline-wrap {
+    padding: 16px 14px 14px;
+  }
+
+  .requirement-timeline__label {
+    font-size: 10.5px;
+  }
+
+  .requirement-timeline__date {
+    font-size: 9px;
   }
 
   .modal div[style*="grid-template-columns"] {
