@@ -321,6 +321,7 @@ export default function NotificationsPanel({ open, onClose, role, userName, read
       {/* Slide-in panel */}
       <div
         ref={panelRef}
+        className="notifications-panel"
         style={{
           position: 'fixed',
           top: 0,

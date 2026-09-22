@@ -100,9 +100,9 @@ function LoginScreen({ onLogin }: { onLogin: (role: Role, name: string, email: s
   };
 
   return (
-    <div style={{ display: 'flex', height: '100vh', fontFamily: 'Inter, sans-serif' }}>
+    <div className="login-screen" style={{ display: 'flex', minHeight: '100dvh', fontFamily: 'Inter, sans-serif' }}>
       {/* Left — form */}
-      <div style={{ width: '45%', minWidth: 380, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 56px', background: '#fff' }}>
+      <div className="login-panel" style={{ width: '45%', minWidth: 380, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 56px', background: '#fff' }}>
         <div style={{ marginBottom: 32, textAlign: 'center' }}>
           <img src="/logo.png" alt="JIP" style={{ height: 52, objectFit: 'contain' }} />
         </div>
@@ -174,7 +174,7 @@ function LoginScreen({ onLogin }: { onLogin: (role: Role, name: string, email: s
       </div>
 
       {/* Right — hero */}
-      <div style={{
+      <div className="login-hero" style={{
         flex: 1,
         background: 'linear-gradient(160deg, #3B82F6 0%, #2563EB 40%, #1D4ED8 100%)',
         display: 'flex',
@@ -248,9 +248,9 @@ function AppShell({ session, onLogout }: { session: { role: Role; name: string; 
     : (VIEW_TITLES as any)[session.role]?.[view];
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#EEF0FF', position: 'relative' }}>
+    <div className="app-shell" style={{ display: 'flex', height: '100dvh', overflow: 'hidden', background: '#EEF0FF', position: 'relative' }}>
       <Sidebar role={session.role} activeView={view} onNav={setView} onLogout={onLogout} userName={session.name} userEmail={session.email} />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div className="app-main" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Header
           title={titles?.title || 'Sistema de Gestión'}
           subtitle={titles?.subtitle}
@@ -259,7 +259,7 @@ function AppShell({ session, onLogout }: { session: { role: Role; name: string; 
           unreadCount={unread}
           onBellClick={() => setNotifOpen(o => !o)}
         />
-        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+        <div className="app-scroll" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
           {renderView(session.role, view, msg => setToast(msg), setView, session.name, session.email)}
         </div>
       </div>

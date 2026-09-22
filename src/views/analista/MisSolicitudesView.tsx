@@ -60,7 +60,7 @@ export default function MisSolicitudesView({ usuario, onToast, onNav }: Props) {
                 <td style={{ fontSize: 12, color: '#71717A', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.tecnico}</td>
                 <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#71717A' }}>{r.fecha}</td>
                 <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{r.materiales.length} SKU</td>
-                <td><span className={`badge badge-${BADGE[r.estado]}`}>{r.estado}</span></td>
+                <td><span className={`badge status-badge badge-${BADGE[r.estado]}`}>{r.estado}</span></td>
                 <td onClick={e => e.stopPropagation()}>
                   {r.estado === 'BORRADOR' && (
                     <button className="btn btn-primary" style={{ padding: '3px 10px', fontSize: 11 }} onClick={() => handleSubmit(r.id)}>
@@ -83,7 +83,7 @@ export default function MisSolicitudesView({ usuario, onToast, onNav }: Props) {
                 <div style={{ fontSize: 11, color: '#71717A', fontFamily: 'monospace', marginBottom: 3 }}>{selected.id}</div>
                 <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#18181B' }}>{selected.proyecto}</h2>
               </div>
-              <span className={`badge badge-${BADGE[selected.estado]}`}>{selected.estado}</span>
+              <span className={`badge status-badge badge-${BADGE[selected.estado]}`}>{selected.estado}</span>
             </div>
             <div style={{ padding: '20px 22px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               {[['Sede', selected.sede], ['Ubicación', selected.ubicacion], ['Técnico', selected.tecnico], ['Fecha', selected.fecha]].map(([k, v]) => (
@@ -99,7 +99,7 @@ export default function MisSolicitudesView({ usuario, onToast, onNav }: Props) {
             </div>
             <div style={{ padding: '0 22px 16px' }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: '#52525B', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Materiales ({selected.materiales.length})</div>
-              <table className="data-table">
+              <table className="data-table request-materials-table">
                 <thead><tr><th>SKU</th><th>Material</th><th>Cantidad</th></tr></thead>
                 <tbody>
                   {selected.materiales.map((m, i) => (

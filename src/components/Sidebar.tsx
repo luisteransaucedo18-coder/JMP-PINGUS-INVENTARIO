@@ -12,6 +12,7 @@ const navByRole: Record<Role, NavItem[]> = {
     { id: 'inventario', label: 'Inventario',  icon: <BoxIcon /> },
   ],
   analista: [
+    { id: 'dashboard',        label: 'Dashboard',         icon: <GridIcon /> },
     { id: 'nueva-solicitud',  label: 'Nueva Solicitud',  icon: <PlusIcon /> },
     { id: 'mis-solicitudes',  label: 'Mis Solicitudes',  icon: <ClipboardIcon /> },
     { id: 'proyectos',        label: 'Proyectos',        icon: <MapIcon /> },
@@ -60,6 +61,7 @@ export default function Sidebar({ role, activeView, onNav, onLogout, userName, u
 
   return (
     <aside
+      className="app-sidebar"
       onMouseEnter={() => setExpanded(true)}
       onMouseLeave={() => setExpanded(false)}
       style={{
@@ -77,7 +79,7 @@ export default function Sidebar({ role, activeView, onNav, onLogout, userName, u
       }}
     >
       {/* Logo */}
-      <div style={{ padding: expanded ? '20px 20px 16px' : '18px 14px 16px', borderBottom: '1px solid #F0F2FF', transition: 'padding 0.22s', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+      <div className="sidebar-logo" style={{ padding: expanded ? '20px 20px 16px' : '18px 14px 16px', borderBottom: '1px solid #F0F2FF', transition: 'padding 0.22s', overflow: 'hidden', whiteSpace: 'nowrap' }}>
         {expanded
           ? <img src="/logo.png" alt="JIP" style={{ height: 38, objectFit: 'contain', display: 'block' }} />
           : <div style={{ width: 36, height: 36, borderRadius: 10, background: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
@@ -87,7 +89,7 @@ export default function Sidebar({ role, activeView, onNav, onLogout, userName, u
       </div>
 
       {/* Role badge */}
-      <div style={{ padding: expanded ? '12px 18px' : '10px 0', borderBottom: '1px solid #F0F2FF', display: 'flex', justifyContent: expanded ? 'flex-start' : 'center', transition: 'padding 0.22s', overflow: 'hidden' }}>
+      <div className="sidebar-role" style={{ padding: expanded ? '12px 18px' : '10px 0', borderBottom: '1px solid #F0F2FF', display: 'flex', justifyContent: expanded ? 'flex-start' : 'center', transition: 'padding 0.22s', overflow: 'hidden' }}>
         {expanded ? (
           <>
             <div style={{ fontSize: 10, color: '#A1A1AA', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Rol activo</div>
@@ -102,7 +104,7 @@ export default function Sidebar({ role, activeView, onNav, onLogout, userName, u
       </div>
 
       {/* Navigation */}
-      <nav style={{ flex: 1, padding: expanded ? '10px 0 10px 8px' : '10px 0', overflowY: 'auto', overflowX: 'hidden' }}>
+      <nav className="sidebar-nav" style={{ flex: 1, padding: expanded ? '10px 0 10px 8px' : '10px 0', overflowY: 'auto', overflowX: 'hidden' }}>
         {expanded && (
           <div style={{ fontSize: 10, color: '#C4C6D8', letterSpacing: '0.10em', textTransform: 'uppercase', padding: '6px 14px', marginBottom: 2, fontWeight: 600 }}>Menú</div>
         )}
@@ -148,7 +150,7 @@ export default function Sidebar({ role, activeView, onNav, onLogout, userName, u
       </nav>
 
       {/* Footer user */}
-      <div style={{ padding: expanded ? '14px 16px' : '14px 0', borderTop: '1px solid #F0F2FF', display: 'flex', flexDirection: 'column', alignItems: expanded ? 'stretch' : 'center', overflow: 'hidden' }}>
+      <div className="sidebar-footer" style={{ padding: expanded ? '14px 16px' : '14px 0', borderTop: '1px solid #F0F2FF', display: 'flex', flexDirection: 'column', alignItems: expanded ? 'stretch' : 'center', overflow: 'hidden' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: expanded ? 10 : 0, justifyContent: expanded ? 'flex-start' : 'center' }}>
           <div title={expanded ? undefined : userName} onClick={() => onNav('perfil')} style={{ width: 32, height: 32, borderRadius: '50%', background: badge.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: badge.text, flexShrink: 0, cursor: 'pointer', outline: activeView === 'perfil' ? `2px solid ${badge.text}` : 'none', outlineOffset: 2 }}>
             {initials}

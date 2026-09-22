@@ -324,7 +324,7 @@ export default function ReportesView() {
                   <td style={{ padding: '13px 16px', fontFamily: 'monospace', fontSize: 11, color: '#8B8FA8' }}>{r.fecha}</td>
                   <td style={{ padding: '13px 16px', fontFamily: 'monospace', fontSize: 12, fontWeight: 600 }}>{r.materiales.length}</td>
                   <td style={{ padding: '13px 16px' }}>
-                    <span style={{ background: ESTADO_BG[r.estado], color: ESTADO_COLOR[r.estado], borderRadius: 7, padding: '3px 10px', fontSize: 11, fontWeight: 700 }}>{r.estado}</span>
+                    <span className="status-badge" style={{ background: ESTADO_BG[r.estado], color: ESTADO_COLOR[r.estado] }}>{r.estado}</span>
                   </td>
                 </tr>
               ))}
