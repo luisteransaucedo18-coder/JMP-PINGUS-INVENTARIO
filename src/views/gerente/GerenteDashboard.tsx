@@ -16,45 +16,54 @@ function BarChart({ data, colors, labels, height = 140 }: {
   const groups = data.length;
   const series = colors.length;
   const maxVal = Math.max(...data.flat(), 1);
-  const W = 420; const H = height;
-  const barW = 12; const gap = 4; const groupGap = 14;
-  const groupW = series * (barW + gap) - gap + groupGap;
-  const totalW = groups * groupW;
-  const startX = (W - totalW) / 2;
+  const tickStep = Math.max(1, Math.ceil(maxVal / 4));
+  const chartMax = Math.ceil(maxVal / tickStep) * tickStep;
+  const ticks = Array.from({ length: chartMax / tickStep + 1 }, (_, index) => index * tickStep);
+  const W = 900; const H = height;
+  const margin = { top: 10, right: 18, bottom: 34, left: 34 };
+  const plotW = W - margin.left - margin.right;
+  const plotH = H - margin.top - margin.bottom;
+  const barW = Math.min(34, plotW / Math.max(groups * (series + 2), 1));
+  const gap = Math.max(6, barW * 0.3);
 
   return (
-    <svg viewBox={`0 0 ${W} ${H + 28}`} style={{ width: '100%', maxWidth: W, overflow: 'visible' }}>
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Solicitudes confirmadas y pendientes por sede" style={{ width: '100%', height: '100%', minHeight: 220, display: 'block' }}>
       {/* Gridlines */}
-      {[0, 0.25, 0.5, 0.75, 1].map(t => {
-        const y = H - t * H;
+      {ticks.map(value => {
+        const y = margin.top + plotH - (value / chartMax) * plotH;
         return (
-          <g key={t}>
-            <line x1={0} y1={y} x2={W} y2={y} stroke="#E4E4F0" strokeWidth={1} strokeDasharray={t === 0 ? '0' : '4 4'} />
-            <text x={-4} y={y + 4} fontSize={9} fill="#A1A1AA" textAnchor="end">
-              {Math.round(t * maxVal)}
+          <g key={value}>
+            <line x1={margin.left} y1={y} x2={W - margin.right} y2={y} stroke="#E4E4F0" strokeWidth={1} strokeDasharray={value === 0 ? undefined : '4 4'} />
+            <text x={margin.left - 9} y={y + 4} fontSize={11} fill="#8B8FA8" textAnchor="end">
+              {value}
             </text>
           </g>
         );
       })}
       {/* Bars */}
       {data.map((group, gi) => {
-        const gx = startX + gi * groupW;
+        const centerX = margin.left + ((gi + 0.5) / groups) * plotW;
+        const groupBarsW = series * barW + (series - 1) * gap;
+        const gx = centerX - groupBarsW / 2;
         return group.map((val, si) => {
-          const barH = (val / maxVal) * H;
+          const barH = (val / chartMax) * plotH;
           const x = gx + si * (barW + gap);
-          const y = H - barH;
+          const y = margin.top + plotH - barH;
           return (
             <g key={`${gi}-${si}`}>
-              <rect x={x} y={y} width={barW} height={barH} rx={4} fill={colors[si]} opacity={0.9} />
+              <rect x={x} y={y} width={barW} height={barH} rx={6} fill={colors[si]} opacity={0.92} />
+              {val > 0 && (
+                <text x={x + barW / 2} y={Math.max(y - 7, 10)} fontSize={11} fontWeight={700} fill={colors[si]} textAnchor="middle">{val}</text>
+              )}
             </g>
           );
         });
       })}
       {/* Labels */}
       {data.map((_, gi) => {
-        const gx = startX + gi * groupW + (series * (barW + gap) - gap) / 2;
+        const gx = margin.left + ((gi + 0.5) / groups) * plotW;
         return (
-          <text key={gi} x={gx} y={H + 16} fontSize={9.5} fill="#71717A" textAnchor="middle">{labels[gi]}</text>
+          <text key={gi} x={gx} y={H - 8} fontSize={11.5} fontWeight={600} fill="#71717A" textAnchor="middle">{labels[gi]}</text>
         );
       })}
     </svg>
@@ -143,10 +152,10 @@ export default function GerenteDashboard() {
   const alerts = materials.filter(m => m.estado !== 'OK');
 
   return (
-    <div style={{ padding: 24, overflowY: 'auto', flex: 1, background: '#EEF0FF', minHeight: '100%' }}>
+    <div className="gerente-dashboard" style={{ padding: 24, overflowY: 'auto', flex: 1, background: '#EEF0FF', minHeight: '100%' }}>
 
       {/* ── Row 1: KPI strip ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 22 }}>
+      <div className="dashboard-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 14, marginBottom: 22 }}>
         {[
           { label: 'Total solicitudes', value: requerimientos.length, color: '#2563EB', bg: '#DBEAFE', icon: <svg width="16" height="16" viewBox="0 0 15 15" fill="none"><rect x="2" y="3" width="11" height="11" rx="1.5" stroke="#2563EB" strokeWidth="1.3"/><path d="M5 3V2.5A1.5 1.5 0 016.5 1h2A1.5 1.5 0 0110 2.5V3" stroke="#2563EB" strokeWidth="1.3"/><path d="M4.5 8h6M4.5 10.5h4" stroke="#2563EB" strokeWidth="1.3" strokeLinecap="round"/></svg> },
           { label: 'Pendientes',        value: enviados,              color: '#D97706', bg: '#FEF3C7', icon: <svg width="16" height="16" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6" stroke="#D97706" strokeWidth="1.3"/><path d="M7.5 4v4l2.5 2" stroke="#D97706" strokeWidth="1.3" strokeLinecap="round"/></svg> },
@@ -170,9 +179,9 @@ export default function GerenteDashboard() {
       </div>
 
       {/* ── Row 2: Bar chart + Recent activity ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 18, marginBottom: 22 }}>
+      <div className="dashboard-primary-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(340px, 380px)', gap: 18, marginBottom: 22 }}>
         {/* Bar chart */}
-        <Card style={{ padding: '22px 24px' }}>
+        <Card style={{ padding: '22px 24px', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           <SectionHead title="Actividad por sede" />
           {/* Legend */}
           <div style={{ display: 'flex', gap: 16, marginBottom: 18 }}>
@@ -183,12 +192,14 @@ export default function GerenteDashboard() {
               </div>
             ))}
           </div>
-          <BarChart
-            data={barData}
-            colors={['#059669', '#D97706']}
-            labels={SEDES}
-            height={130}
-          />
+          <div style={{ flex: 1, minHeight: 260 }}>
+            <BarChart
+              data={barData}
+              colors={['#059669', '#D97706']}
+              labels={SEDES}
+              height={280}
+            />
+          </div>
         </Card>
 
         {/* Recent activity */}
@@ -218,7 +229,7 @@ export default function GerenteDashboard() {
       </div>
 
       {/* ── Row 3: Sede cards + Stock line chart ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 22 }}>
+      <div className="dashboard-secondary-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 18, marginBottom: 22 }}>
         {/* Sede breakdown cards */}
         <Card style={{ padding: '22px 24px' }}>
           <SectionHead title="Resumen por sede" />
@@ -299,7 +310,7 @@ export default function GerenteDashboard() {
       {/* ── Row 4: Solicitudes distribution ── */}
       <Card style={{ padding: '22px 24px' }}>
         <SectionHead title="Distribución de solicitudes por estado" />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+        <div className="dashboard-status-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 16 }}>
           {[
             { label: 'Borrador',    count: borradores,  color: '#A1A1AA', bg: '#F4F4F5' },
             { label: 'Enviado',     count: enviados,     color: '#D97706', bg: '#FEF3C7' },
@@ -325,7 +336,8 @@ export default function GerenteDashboard() {
         {/* Recent reqs table */}
         <div style={{ marginTop: 22, borderTop: '1px solid #F0F2FF', paddingTop: 18 }}>
           <SectionHead title="Últimas solicitudes" />
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div className="dashboard-table-scroll">
+          <table style={{ width: '100%', minWidth: 760, borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #F0F2FF' }}>
                 {['ID', 'Proyecto', 'Sede', 'Analista', 'Fecha', 'Estado'].map(h => (
@@ -350,6 +362,7 @@ export default function GerenteDashboard() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       </Card>
     </div>
