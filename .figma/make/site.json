@@ -1,0 +1,10 @@
+{
+  "description": "Streamline inventory and materials management with a role-based system designed for efficient tracking, organization, and user collaboration.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
