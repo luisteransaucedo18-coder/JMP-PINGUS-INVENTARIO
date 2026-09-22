@@ -141,7 +141,7 @@ export default function ComprasView({ onToast, usuario }: Props) {
                   </td>
                   <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#8B8FA8' }}>{c.fecha}</td>
                   <td>
-                    <span style={{ background: E_BG[c.estado], color: E_COLOR[c.estado], borderRadius: 7, padding: '3px 10px', fontSize: 11, fontWeight: 700 }}>{c.estado}</span>
+                    <span className="status-badge" style={{ background: E_BG[c.estado], color: E_COLOR[c.estado] }}>{c.estado}</span>
                   </td>
                   <td onClick={e => e.stopPropagation()}>
                     <div style={{ display: 'flex', gap: 5 }}>
@@ -174,7 +174,7 @@ export default function ComprasView({ onToast, usuario }: Props) {
                 <div style={{ fontSize: 12, color: '#8B8FA8', marginTop: 2 }}>{selected.analista} · {selected.sede}</div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ background: E_BG[selected.estado], color: E_COLOR[selected.estado], borderRadius: 8, padding: '4px 12px', fontSize: 12, fontWeight: 700 }}>{selected.estado}</span>
+                <span className="status-badge" style={{ background: E_BG[selected.estado], color: E_COLOR[selected.estado] }}>{selected.estado}</span>
                 <button onClick={closeModal} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8B8FA8', fontSize: 20, lineHeight: 1 }}>×</button>
               </div>
             </div>

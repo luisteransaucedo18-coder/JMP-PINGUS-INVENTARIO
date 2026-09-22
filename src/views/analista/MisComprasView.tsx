@@ -70,7 +70,7 @@ export default function MisComprasView({ usuario, onNav }: Props) {
                     <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{c.items.length}</td>
                     <td style={{ fontFamily: 'monospace', fontWeight: 700 }}>{totalEst(c.items) > 0 ? `S/. ${totalEst(c.items).toFixed(2)}` : <span style={{ color: '#C4C6D8' }}>—</span>}</td>
                     <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#8B8FA8' }}>{c.fecha}</td>
-                    <td><span style={{ background: E_BG[c.estado], color: E_COLOR[c.estado], borderRadius: 7, padding: '3px 10px', fontSize: 11, fontWeight: 700 }}>{E_LABEL[c.estado]}</span></td>
+                    <td><span className="status-badge" style={{ background: E_BG[c.estado], color: E_COLOR[c.estado] }}>{E_LABEL[c.estado]}</span></td>
                     <td style={{ fontSize: 12, color: '#2563EB', fontWeight: 600 }}>{selected === c.id ? '▲' : '▼'}</td>
                   </tr>
                 ))}

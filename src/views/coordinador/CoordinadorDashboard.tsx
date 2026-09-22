@@ -85,7 +85,7 @@ export default function CoordinadorDashboard({ onNav }: Props) {
                     Total: {Object.values(m.stockSedes).reduce((s, v) => s + v, 0)} UND
                   </div>
                 </div>
-                <span className={`badge badge-${m.estado === 'AGOTADO' || m.estado === 'CRÍTICO' ? 'red' : 'amber'}`} style={{ fontSize: 10 }}>{m.estado}</span>
+                <span className={`badge status-badge badge-${m.estado === 'AGOTADO' || m.estado === 'CRÍTICO' ? 'red' : 'amber'}`} style={{ fontSize: 10 }}>{m.estado}</span>
               </div>
             ))}
             {alertas.length === 0 && (

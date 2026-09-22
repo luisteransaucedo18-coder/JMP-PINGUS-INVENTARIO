@@ -46,7 +46,7 @@ export default function AnalistaDashboard({ usuario, onNav }: Props) {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
                   <div>
                     <span style={{ fontSize: 11, color: '#2563EB', fontFamily: 'monospace', marginRight: 8 }}>{r.id}</span>
-                    <span className={`badge badge-${ESTADO_BADGE[r.estado]}`}>{r.estado}</span>
+                    <span className={`badge status-badge badge-${ESTADO_BADGE[r.estado]}`}>{r.estado}</span>
                   </div>
                   <span style={{ fontSize: 11, color: '#71717A', fontFamily: 'monospace' }}>{r.fecha}</span>
                 </div>

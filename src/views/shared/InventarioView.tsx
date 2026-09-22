@@ -195,7 +195,7 @@ export default function InventarioView({ role, onToast }: Props) {
                       <td style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 700 }}>{total}</td>
                     )}
                     <td style={{ fontFamily: 'monospace', fontSize: 12, color: '#71717A' }}>{m.minimo}</td>
-                    <td><span className={`badge badge-${ESTADO_BADGE[m.estado] || 'gray'}`}>{m.estado}</span></td>
+                    <td><span className={`badge status-badge badge-${ESTADO_BADGE[m.estado] || 'gray'}`}>{m.estado}</span></td>
                     {canEdit && (
                       <td onClick={e => e.stopPropagation()}>
                         <button className="btn btn-ghost" style={{ padding: '3px 10px', fontSize: 11 }} onClick={() => openEditStock(m)}>
@@ -220,7 +220,7 @@ export default function InventarioView({ role, onToast }: Props) {
                 <div style={{ fontSize: 11, color: '#2563EB', fontFamily: 'monospace', marginBottom: 3 }}>{selected.id}</div>
                 <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#18181B' }}>{selected.nombre}</h2>
               </div>
-              <span className={`badge badge-${ESTADO_BADGE[selected.estado]}`}>{selected.estado}</span>
+              <span className={`badge status-badge badge-${ESTADO_BADGE[selected.estado]}`}>{selected.estado}</span>
             </div>
             <div style={{ padding: '18px 22px' }}>
               <div style={{ fontSize: 12, color: '#52525B', lineHeight: 1.6, marginBottom: 18 }}>{selected.descripcion}</div>

@@ -102,7 +102,7 @@ export default function RequerimientosView({ onToast, usuario }: Props) {
                     <td style={{ fontSize: 12, color: '#71717A', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.tecnico}</td>
                     <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#71717A' }}>{r.fecha}</td>
                     <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{r.materiales.length}</td>
-                    <td><span className={`badge badge-${BADGE[r.estado]}`}>{r.estado}</span></td>
+                    <td><span className={`badge status-badge badge-${BADGE[r.estado]}`}>{r.estado}</span></td>
                     <td onClick={e => e.stopPropagation()}>
                       {r.estado === 'ENVIADO' && (
                         <div style={{ display: 'flex', gap: 5 }}>
@@ -128,7 +128,7 @@ export default function RequerimientosView({ onToast, usuario }: Props) {
                 <div style={{ fontSize: 11, color: '#71717A', fontFamily: 'monospace', marginBottom: 3 }}>{selected.id}</div>
                 <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#18181B' }}>{selected.proyecto}</h2>
               </div>
-              <span className={`badge badge-${BADGE[selected.estado]}`}>{selected.estado}</span>
+              <span className={`badge status-badge badge-${BADGE[selected.estado]}`}>{selected.estado}</span>
             </div>
 
             <div style={{ padding: '18px 22px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>

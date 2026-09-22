@@ -14,7 +14,7 @@ export default function Header({ title, subtitle, actions, userName, userInitial
   const [search, setSearch] = useState('');
 
   return (
-    <div style={{
+    <div className="app-header" style={{
       padding: '0 28px',
       height: 68,
       background: '#fff',
@@ -25,13 +25,13 @@ export default function Header({ title, subtitle, actions, userName, userInitial
       flexShrink: 0,
     }}>
       {/* Title */}
-      <div style={{ minWidth: 0, flexShrink: 0 }}>
+      <div className="header-title" style={{ minWidth: 0, flexShrink: 0 }}>
         <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#1A1D23', letterSpacing: '-0.02em', lineHeight: 1.2 }}>{title}</h1>
         {subtitle && <div style={{ fontSize: 11.5, color: '#8B8FA8', marginTop: 2, fontWeight: 400 }}>{subtitle}</div>}
       </div>
 
       {/* Search */}
-      <div style={{ flex: 1, maxWidth: 340, position: 'relative', marginLeft: 12 }}>
+      <div className="header-search" style={{ flex: 1, maxWidth: 340, position: 'relative', marginLeft: 12 }}>
         <svg style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} width="14" height="14" viewBox="0 0 15 15" fill="none">
           <circle cx="6.5" cy="6.5" r="4.5" stroke="#A1A1AA" strokeWidth="1.4"/>
           <path d="M10.5 10.5L13 13" stroke="#A1A1AA" strokeWidth="1.4" strokeLinecap="round"/>
@@ -65,7 +65,7 @@ export default function Header({ title, subtitle, actions, userName, userInitial
       {actions && <div style={{ display: 'flex', alignItems: 'center' }}>{actions}</div>}
 
       {/* Settings */}
-      <button style={{ width: 38, height: 38, borderRadius: 12, border: '1.5px solid #E8EAFF', background: '#F8F9FF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, transition: 'background 0.1s' }}
+      <button className="header-settings" style={{ width: 38, height: 38, borderRadius: 12, border: '1.5px solid #E8EAFF', background: '#F8F9FF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, transition: 'background 0.1s' }}
         onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#EEF0FF'}
         onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#F8F9FF'}>
         <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="2" stroke="#8B8FA8" strokeWidth="1.3"/><path d="M7.5 1v1.5M7.5 12.5V14M1 7.5h1.5M12.5 7.5H14M2.6 2.6l1.1 1.1M11.3 11.3l1.1 1.1M2.6 12.4l1.1-1.1M11.3 3.7l1.1-1.1" stroke="#8B8FA8" strokeWidth="1.3" strokeLinecap="round"/></svg>
@@ -86,7 +86,7 @@ export default function Header({ title, subtitle, actions, userName, userInitial
       </div>
 
       {/* Avatar */}
-      <div title={userName} style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg, #2563EB 0%, #7C3AED 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', flexShrink: 0, boxShadow: '0 2px 8px rgba(37,99,235,0.35)' }}>
+      <div className="header-avatar" title={userName} style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg, #2563EB 0%, #7C3AED 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', flexShrink: 0, boxShadow: '0 2px 8px rgba(37,99,235,0.35)' }}>
         {userInitials ?? 'U'}
       </div>
     </div>

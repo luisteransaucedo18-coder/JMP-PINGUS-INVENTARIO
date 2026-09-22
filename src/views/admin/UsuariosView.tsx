@@ -92,7 +92,7 @@ export default function UsuariosView({ onToast }: Props) {
                 <td><span className={`badge badge-${ROL_BADGE[u.rol] || 'gray'}`}>{ROL_LABEL[u.rol]}</span></td>
                 <td style={{ fontSize: 12, color: '#71717A' }}>{u.sede}</td>
                 <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#71717A' }}>{u.ultimoAcceso}</td>
-                <td><span className={`badge badge-${u.estado === 'ACTIVO' ? 'green' : 'gray'}`}>{u.estado}</span></td>
+                <td><span className={`badge status-badge badge-${u.estado === 'ACTIVO' ? 'green' : 'gray'}`}>{u.estado}</span></td>
                 <td>
                   <button className={`btn ${u.estado === 'ACTIVO' ? 'btn-danger' : 'btn-ghost'}`} style={{ padding: '3px 9px', fontSize: 11 }} onClick={() => handleToggle(u)}>
                     {u.estado === 'ACTIVO' ? 'Desactivar' : 'Activar'}

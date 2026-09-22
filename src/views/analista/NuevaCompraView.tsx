@@ -169,7 +169,7 @@ export default function NuevaCompraView({ onToast, usuario, onNav }: Props) {
                           <span style={{ fontSize: 14, fontWeight: 800, color: '#DC2626' }}>+{deficit} UND</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ background: ESTADO_BG[mat.estado], color: ESTADO_COLOR[mat.estado], borderRadius: 6, padding: '2px 8px', fontSize: 10.5, fontWeight: 700 }}>{mat.estado}</span>
+                          <span className="status-badge" style={{ background: ESTADO_BG[mat.estado], color: ESTADO_COLOR[mat.estado], fontSize: 10.5 }}>{mat.estado}</span>
                           <PreviewBtn onClick={e => { e.stopPropagation(); setPreviewMat(mat); }} />
                           <button className="btn btn-primary" style={{ fontSize: 11.5, padding: '6px 14px', opacity: alreadyAdded ? 0.5 : 1 }}
                             disabled={alreadyAdded}
@@ -265,7 +265,7 @@ export default function NuevaCompraView({ onToast, usuario, onNav }: Props) {
                                     <div style={{ fontSize: 12.5, fontWeight: 600, color: '#1A1D23' }}>{m.nombre}</div>
                                     <div style={{ fontSize: 10.5, color: '#8B8FA8', fontFamily: 'monospace' }}>{m.id} · {m.categoria}</div>
                                   </div>
-                                  <span style={{ fontSize: 11, fontWeight: 700, color: ESTADO_COLOR[m.estado], background: ESTADO_BG[m.estado], borderRadius: 5, padding: '2px 7px', flexShrink: 0 }}>{m.estado}</span>
+                                  <span className="status-badge" style={{ color: ESTADO_COLOR[m.estado], background: ESTADO_BG[m.estado], flexShrink: 0 }}>{m.estado}</span>
                                 </div>
                               ))}
                               {matches.length === 0 && (
