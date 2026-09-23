@@ -1,5 +1,24 @@
 import { supabase } from './supabase'
 
+export interface Perfil {
+  id: string
+  codigo?: string | null
+  nombre: string
+  email: string
+  rol: 'gerente' | 'analista' | 'coordinador'
+  sede: 'Chiclayo' | 'Chimbote' | 'Trujillo'
+  estado: 'ACTIVO' | 'INACTIVO'
+  telefono?: string | null
+  cargo?: string | null
+  bio?: string | null
+  ultimo_acceso?: string | null
+  created_at?: string
+  updated_at?: string
+}
+
+export type NuevoPerfil = Omit<Perfil, 'id' | 'codigo' | 'created_at' | 'updated_at'>
+export type CambiosPerfil = Partial<Omit<Perfil, 'id' | 'codigo' | 'created_at' | 'updated_at'>>
+
 // Obtener todos los perfiles
 export async function obtenerPerfiles() {
   const { data, error } = await supabase
@@ -17,7 +36,7 @@ export async function obtenerPerfiles() {
 
 
 // Obtener un perfil por ID
-export async function obtenerPerfilPorId(id) {
+export async function obtenerPerfilPorId(id: string) {
   const { data, error } = await supabase
     .from('perfiles')
     .select('*')
@@ -34,7 +53,7 @@ export async function obtenerPerfilPorId(id) {
 
 
 // Crear perfil
-export async function crearPerfil(perfil) {
+export async function crearPerfil(perfil: NuevoPerfil) {
   const { data, error } = await supabase
     .from('perfiles')
     .insert([perfil])
@@ -51,7 +70,7 @@ export async function crearPerfil(perfil) {
 
 
 // Actualizar perfil
-export async function actualizarPerfil(id, cambios) {
+export async function actualizarPerfil(id: string, cambios: CambiosPerfil) {
   const { data, error } = await supabase
     .from('perfiles')
     .update({
@@ -72,7 +91,7 @@ export async function actualizarPerfil(id, cambios) {
 
 
 // Eliminar perfil
-export async function eliminarPerfil(id) {
+export async function eliminarPerfil(id: string) {
   const { error } = await supabase
     .from('perfiles')
     .delete()
