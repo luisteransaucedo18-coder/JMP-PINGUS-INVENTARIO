@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAppStore } from '../../store/AppContext';
 import { Requerimiento } from '../../data/mockData';
+import RequirementStatusTimeline from '../../components/RequirementStatusTimeline';
 
 const BADGE: Record<string, string> = { BORRADOR: 'gray', ENVIADO: 'amber', CONFIRMADO: 'green', RECHAZADO: 'red' };
 
@@ -85,6 +86,7 @@ export default function MisSolicitudesView({ usuario, onToast, onNav }: Props) {
               </div>
               <span className={`badge status-badge badge-${BADGE[selected.estado]}`}>{selected.estado}</span>
             </div>
+            <RequirementStatusTimeline requirement={selected} />
             <div style={{ padding: '20px 22px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               {[['Sede', selected.sede], ['Ubicación', selected.ubicacion], ['Técnico', selected.tecnico], ['Fecha', selected.fecha]].map(([k, v]) => (
                 <div key={String(k)}>

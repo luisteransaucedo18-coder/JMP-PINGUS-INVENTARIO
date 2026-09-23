@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAppStore } from '../../store/AppContext';
-import { Proyecto, SEDES, Sede } from '../../data/mockData';
-import { Role } from '../../data/mockData';
+import { Proyecto, Requerimiento, Role, SEDES, Sede } from '../../data/mockData';
+import RequirementStatusTimeline from '../../components/RequirementStatusTimeline';
 
 interface Props { role: Role; onToast: (msg: string) => void; }
 
@@ -91,6 +91,7 @@ function ProjectDetail({ proyecto, onBack }: { proyecto: Proyecto; onBack: () =>
   const { state } = useAppStore();
   const [search, setSearch] = useState('');
   const [estadoFilter, setEstadoFilter] = useState('');
+  const [selectedRequirement, setSelectedRequirement] = useState<Requerimiento | null>(null);
 
   const reqs = state.requerimientos.filter(r => r.proyectoId === proyecto.id || r.proyecto === proyecto.nombre);
   const filtered = reqs.filter(r =>
@@ -163,7 +164,7 @@ function ProjectDetail({ proyecto, onBack }: { proyecto: Proyecto; onBack: () =>
           <div style={{ overflowX: 'auto' }}>
             <table className="data-table">
               <thead>
-                <tr><th>ID</th><th>Fecha</th><th>Técnico</th><th>Materiales</th><th>Analista</th><th>Estado</th></tr>
+                <tr><th>ID</th><th>Fecha</th><th>Técnico</th><th>Materiales</th><th>Analista</th><th>Estado</th><th>Seguimiento</th></tr>
               </thead>
               <tbody>
                 {filtered.map(r => (
@@ -187,6 +188,11 @@ function ProjectDetail({ proyecto, onBack }: { proyecto: Proyecto; onBack: () =>
                         {r.estado}
                       </span>
                     </td>
+                    <td>
+                      <button className="btn btn-ghost" style={{ padding: '6px 10px', fontSize: 11 }} onClick={() => setSelectedRequirement(r)}>
+                        Ver estado
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -194,6 +200,70 @@ function ProjectDetail({ proyecto, onBack }: { proyecto: Proyecto; onBack: () =>
           </div>
         )}
       </div>
+
+      {selectedRequirement && (
+        <div className="modal-overlay" onClick={() => setSelectedRequirement(null)}>
+          <div className="modal" style={{ width: 640 }} onClick={event => event.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <div style={{ fontSize: 11, color: '#71717A', fontFamily: 'monospace', marginBottom: 3 }}>{selectedRequirement.id}</div>
+                <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#18181B' }}>{selectedRequirement.proyecto}</h2>
+              </div>
+              <span className="status-badge" style={{ background: ESTADO_BG[selectedRequirement.estado], color: ESTADO_COLOR[selectedRequirement.estado] }}>
+                {selectedRequirement.estado}
+              </span>
+            </div>
+
+            <RequirementStatusTimeline requirement={selectedRequirement} />
+
+            <div style={{ padding: '18px 22px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              {[
+                ['Sede', selectedRequirement.sede],
+                ['Ubicación', selectedRequirement.ubicacion],
+                ['Analista', selectedRequirement.analista],
+                ['Técnico responsable', selectedRequirement.tecnico],
+              ].map(([label, value]) => (
+                <div key={label}>
+                  <div style={{ fontSize: 10, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>{label}</div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: '#18181B' }}>{value}</div>
+                </div>
+              ))}
+              <div style={{ gridColumn: '1/-1' }}>
+                <div style={{ fontSize: 10, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Descripción</div>
+                <div style={{ fontSize: 12.5, color: '#52525B', lineHeight: 1.6 }}>{selectedRequirement.descripcion}</div>
+              </div>
+            </div>
+
+            <div style={{ padding: '0 22px 16px' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: '#52525B', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+                Materiales ({selectedRequirement.materiales.length})
+              </div>
+              <table className="data-table request-materials-table">
+                <thead><tr><th>SKU</th><th>Material</th><th>Cantidad</th></tr></thead>
+                <tbody>
+                  {selectedRequirement.materiales.map(material => (
+                    <tr key={material.skuId}>
+                      <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#2563EB' }}>{material.skuId}</td>
+                      <td style={{ fontSize: 12 }}>{material.nombre}</td>
+                      <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{material.cantidad} UND</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {selectedRequirement.observaciones && (
+              <div style={{ margin: '0 22px 16px', borderRadius: 6, padding: '10px 12px', background: selectedRequirement.estado === 'RECHAZADO' ? '#FFF5F5' : '#F0FDF4', color: selectedRequirement.estado === 'RECHAZADO' ? '#DC2626' : '#15803D', fontSize: 12.5 }}>
+                <strong>Observación:</strong> {selectedRequirement.observaciones}
+              </div>
+            )}
+
+            <div style={{ padding: '14px 22px', borderTop: '1px solid #E4E4E7', display: 'flex', justifyContent: 'flex-end' }}>
+              <button className="btn btn-ghost" onClick={() => setSelectedRequirement(null)}>Cerrar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
