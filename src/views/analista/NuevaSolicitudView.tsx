@@ -308,106 +308,529 @@ export default function NuevaSolicitudView({ onToast, usuario, onNav }: Props) {
         </div>
 
         {/* Sección 4: Materiales */}
-        <div className="panel">
-          <div className="section-header">
-            <span className="section-title">4 · Materiales Requeridos</span>
-            <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={addLinea}>+ Agregar material</button>
-          </div>
-          {errors.materiales && (
-            <div style={{ margin: '0 16px 8px', background: '#FEE2E2', borderRadius: 5, padding: '6px 12px', fontSize: 12, color: '#DC2626' }}>{errors.materiales}</div>
-          )}
-          <div style={{ padding: '8px 16px 16px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 130px 32px 36px', gap: 8, marginBottom: 8, padding: '0 2px' }}>
-              {['Material (nombre o código)', 'Cant.', 'Stock en sede', '', ''].map((h, i) => (
-                <div key={i} style={{ fontSize: 11, fontWeight: 600, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</div>
-              ))}
-            </div>
-            {lineas.map((linea, i) => {
-              const mat = state.materials.find(m => m.id === linea.skuId);
-              const stockSede = mat ? mat.stockSedes[form.sede] : null;
-              const cantNum = parseFloat(linea.cantidad) || 0;
-              const overStock = stockSede !== null && cantNum > stockSede;
-              const matches = getMatchingMats(linea.query);
-              return (
-                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 130px 32px 36px', gap: 8, marginBottom: 10, alignItems: 'start' }}>
-                  {/* Name autocomplete */}
-                  <div style={{ position: 'relative' }}>
-                    {linea.skuId ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 8, padding: '8px 12px' }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 12.5, fontWeight: 600, color: '#18181B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{linea.nombre}</div>
-                          <div style={{ fontSize: 10.5, color: '#71717A', fontFamily: 'monospace' }}>{linea.skuId}</div>
-                        </div>
-                        <button onClick={() => updateMatQuery(i, '')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#71717A', fontSize: 15, padding: '0 2px', flexShrink: 0 }}>✕</button>
-                      </div>
-                    ) : (
-                      <input className="input-field"
-                        placeholder="Escribe el nombre del material…"
-                        value={linea.query}
-                        onChange={e => updateMatQuery(i, e.target.value)}
-                        onFocus={() => setLineas(p => p.map((l, j) => j !== i ? l : { ...l, showDrop: true }))}
-                        onBlur={() => setTimeout(() => closeDrop(i), 150)}
-                      />
-                    )}
-                    {!linea.skuId && linea.showDrop && linea.query.length >= 2 && (
-                      <div style={{ position: 'absolute', zIndex: 50, top: '100%', left: 0, right: 0, marginTop: 3, background: '#fff', border: '1px solid #E4E4E7', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden' }}>
-                        {matches.length > 0 ? matches.map(m => (
-                          <div key={m.id} onMouseDown={() => selectMaterial(i, m)}
-                            style={{ padding: '9px 14px', cursor: 'pointer', borderBottom: '1px solid #F4F4F5', display: 'flex', alignItems: 'center', gap: 10 }}
-                            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F8F9FF'}
-                            onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: 12.5, fontWeight: 600, color: '#18181B' }}>{m.nombre}</div>
-                              <div style={{ fontSize: 10.5, color: '#8B8FA8', fontFamily: 'monospace' }}>{m.id} · {m.categoria}</div>
-                            </div>
-                            <span style={{ fontSize: 11, color: m.stockSedes[form.sede] > 0 ? '#059669' : '#DC2626', fontWeight: 700, flexShrink: 0 }}>
-                              {m.stockSedes[form.sede]} UND
-                            </span>
-                          </div>
-                        )) : (
-                          <div style={{ padding: '9px 14px', fontSize: 12.5, color: '#71717A' }}>
-                            Sin coincidencias — se registrará como nuevo material
-                          </div>
-                        )}
-                        {matches.length > 0 && (
-                          <div onMouseDown={() => selectMaterial(i, { id: `NEW-${Date.now()}`, nombre: linea.query })}
-                            style={{ padding: '9px 14px', background: '#F8F9FF', borderTop: '1px solid #E4E4E7', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
-                            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#EFF6FF'}
-                            onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#F8F9FF'}>
-                            <span style={{ color: '#2563EB', fontWeight: 700 }}>+</span>
-                            <span style={{ fontSize: 12, color: '#2563EB', fontWeight: 600 }}>Usar "{linea.query}" como nuevo material</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
+<div className="panel">
+  <div className="section-header">
+    <span className="section-title">4 · Materiales Requeridos</span>
+
+    <button
+      className="btn btn-ghost"
+      style={{ fontSize: 12 }}
+      onClick={addLinea}
+    >
+      + Agregar material
+    </button>
+  </div>
+
+  {errors.materiales && (
+    <div
+      style={{
+        margin: '0 16px 8px',
+        background: '#FEE2E2',
+        borderRadius: 5,
+        padding: '6px 12px',
+        fontSize: 12,
+        color: '#DC2626',
+      }}
+    >
+      {errors.materiales}
+    </div>
+  )}
+
+  <div style={{ padding: '8px 16px 16px' }}>
+
+    {/* Encabezados */}
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'minmax(280px, 1fr) 110px 120px 36px 36px',
+        gap: 10,
+        alignItems: 'center',
+        marginBottom: 7,
+        padding: '0 2px',
+      }}
+    >
+      <div
+        style={{
+          fontSize: 11,
+          fontWeight: 600,
+          color: '#71717A',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+        }}
+      >
+        Material (nombre o código)
+      </div>
+
+      <div
+        style={{
+          fontSize: 11,
+          fontWeight: 600,
+          color: '#71717A',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+        }}
+      >
+        Cant.
+      </div>
+
+      <div
+        style={{
+          fontSize: 11,
+          fontWeight: 600,
+          color: '#71717A',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+          textAlign: 'center',
+        }}
+      >
+        Stock en sede
+      </div>
+
+      <div />
+      <div />
+    </div>
+
+    {/* Líneas de materiales */}
+    {lineas.map((linea, i) => {
+      const mat = state.materials.find(m => m.id === linea.skuId);
+
+      const stockSede = mat
+        ? mat.stockSedes[form.sede]
+        : null;
+
+      const cantNum = parseFloat(linea.cantidad) || 0;
+
+      const overStock =
+        stockSede !== null &&
+        cantNum > stockSede;
+
+      const matches = getMatchingMats(linea.query);
+
+      return (
+        <div
+          key={i}
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'minmax(280px, 1fr) 110px 120px 36px 36px',
+            gap: 10,
+            alignItems: 'center',
+            marginBottom: 10,
+          }}
+        >
+
+          {/* Material */}
+          <div
+            style={{
+              position: 'relative',
+              width: '100%',
+              minWidth: 0,
+            }}
+          >
+            {linea.skuId ? (
+              <div
+                style={{
+                  width: '100%',
+                  height: 42,
+                  boxSizing: 'border-box',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  background: '#F0FDF4',
+                  border: '1px solid #BBF7D0',
+                  borderRadius: 8,
+                  padding: '0 12px',
+                }}
+              >
+                <div
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 12.5,
+                      fontWeight: 600,
+                      color: '#18181B',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {linea.nombre}
                   </div>
 
-                  <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                    <input className="input-field" type="number" min="1" placeholder="0"
-                      style={{ textAlign: 'right', padding: '8px 8px', borderColor: overStock ? '#DC2626' : undefined }}
-                      value={linea.cantidad}
-                      onChange={e => updateCantidad(i, e.target.value)} />
-                    <span style={{ fontSize: 10, color: '#71717A', whiteSpace: 'nowrap' }}>UND</span>
+                  <div
+                    style={{
+                      fontSize: 10.5,
+                      color: '#71717A',
+                      fontFamily: 'monospace',
+                    }}
+                  >
+                    {linea.skuId}
                   </div>
-
-                  <div style={{ fontSize: 12, fontFamily: 'monospace', textAlign: 'center', paddingTop: 10, color: overStock ? '#DC2626' : stockSede === null ? '#A1A1AA' : stockSede === 0 ? '#DC2626' : '#059669', fontWeight: 600 }}>
-                    {stockSede === null ? '—' : `${stockSede} UND`}
-                    {overStock && <div style={{ fontSize: 10, color: '#DC2626' }}>insuficiente</div>}
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 6 }}>
-                    {mat && <PreviewBtn onClick={e => { e.stopPropagation(); setPreviewMat(mat); }} />}
-                  </div>
-
-                  <button onClick={() => removeLinea(i)} style={{ marginTop: 4, width: 30, height: 30, borderRadius: 6, border: '1px solid #E4E4E7', background: '#F4F4F5', cursor: 'pointer', color: '#A1A1AA', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    ×
-                  </button>
                 </div>
-              );
-            })}
-            <button className="btn btn-ghost" style={{ marginTop: 8, fontSize: 12 }} onClick={addLinea}>+ Agregar línea</button>
+
+                <button
+                  type="button"
+                  onClick={() => updateMatQuery(i, '')}
+                  style={{
+                    width: 24,
+                    height: 24,
+                    flexShrink: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: '#71717A',
+                    fontSize: 15,
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <input
+                className="input-field"
+                placeholder="Escribe el nombre del material…"
+                value={linea.query}
+                style={{
+                  width: '100%',
+                  height: 42,
+                  boxSizing: 'border-box',
+                }}
+                onChange={e =>
+                  updateMatQuery(i, e.target.value)
+                }
+                onFocus={() =>
+                  setLineas(p =>
+                    p.map((l, j) =>
+                      j !== i
+                        ? l
+                        : {
+                            ...l,
+                            showDrop: true,
+                          }
+                    )
+                  )
+                }
+                onBlur={() =>
+                  setTimeout(() => closeDrop(i), 150)
+                }
+              />
+            )}
+
+            {/* Autocomplete */}
+            {!linea.skuId &&
+              linea.showDrop &&
+              linea.query.length >= 2 && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    zIndex: 50,
+                    top: 'calc(100% + 3px)',
+                    left: 0,
+                    right: 0,
+                    background: '#fff',
+                    border: '1px solid #E4E4E7',
+                    borderRadius: 10,
+                    boxShadow:
+                      '0 8px 24px rgba(0,0,0,0.12)',
+                    overflow: 'hidden',
+                  }}
+                >
+                  {matches.length > 0 ? (
+                    matches.map(m => (
+                      <div
+                        key={m.id}
+                        onMouseDown={() =>
+                          selectMaterial(i, m)
+                        }
+                        style={{
+                          padding: '9px 14px',
+                          cursor: 'pointer',
+                          borderBottom:
+                            '1px solid #F4F4F5',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 10,
+                        }}
+                        onMouseEnter={e =>
+                          (
+                            e.currentTarget as HTMLElement
+                          ).style.background = '#F8F9FF'
+                        }
+                        onMouseLeave={e =>
+                          (
+                            e.currentTarget as HTMLElement
+                          ).style.background = ''
+                        }
+                      >
+                        <div
+                          style={{
+                            flex: 1,
+                            minWidth: 0,
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: 12.5,
+                              fontWeight: 600,
+                              color: '#18181B',
+                            }}
+                          >
+                            {m.nombre}
+                          </div>
+
+                          <div
+                            style={{
+                              fontSize: 10.5,
+                              color: '#8B8FA8',
+                              fontFamily: 'monospace',
+                            }}
+                          >
+                            {m.id} · {m.categoria}
+                          </div>
+                        </div>
+
+                        <span
+                          style={{
+                            fontSize: 11,
+                            color:
+                              m.stockSedes[
+                                form.sede
+                              ] > 0
+                                ? '#059669'
+                                : '#DC2626',
+                            fontWeight: 700,
+                            flexShrink: 0,
+                          }}
+                        >
+                          {m.stockSedes[form.sede]} UND
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div
+                      style={{
+                        padding: '9px 14px',
+                        fontSize: 12.5,
+                        color: '#71717A',
+                      }}
+                    >
+                      Sin coincidencias — se registrará
+                      como nuevo material
+                    </div>
+                  )}
+
+                  {matches.length > 0 && (
+                    <div
+                      onMouseDown={() =>
+                        selectMaterial(i, {
+                          id: `NEW-${Date.now()}`,
+                          nombre: linea.query,
+                        })
+                      }
+                      style={{
+                        padding: '9px 14px',
+                        background: '#F8F9FF',
+                        borderTop:
+                          '1px solid #E4E4E7',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                      }}
+                      onMouseEnter={e =>
+                        (
+                          e.currentTarget as HTMLElement
+                        ).style.background = '#EFF6FF'
+                      }
+                      onMouseLeave={e =>
+                        (
+                          e.currentTarget as HTMLElement
+                        ).style.background = '#F8F9FF'
+                      }
+                    >
+                      <span
+                        style={{
+                          color: '#2563EB',
+                          fontWeight: 700,
+                        }}
+                      >
+                        +
+                      </span>
+
+                      <span
+                        style={{
+                          fontSize: 12,
+                          color: '#2563EB',
+                          fontWeight: 600,
+                        }}
+                      >
+                        Usar "{linea.query}" como nuevo
+                        material
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+          </div>
+
+          {/* Cantidad */}
+          <div
+            style={{
+              width: '100%',
+              height: 42,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+            }}
+          >
+            <input
+              className="input-field"
+              type="number"
+              min="1"
+              placeholder="0"
+              value={linea.cantidad}
+              onChange={e =>
+                updateCantidad(i, e.target.value)
+              }
+              style={{
+                width: '100%',
+                minWidth: 0,
+                height: 42,
+                boxSizing: 'border-box',
+                textAlign: 'right',
+                padding: '0 8px',
+                borderColor: overStock
+                  ? '#DC2626'
+                  : undefined,
+              }}
+            />
+
+            <span
+              style={{
+                fontSize: 16,
+                color: '#71717A',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              UND
+            </span>
+          </div>
+
+          {/* Stock */}
+          <div
+            style={{
+              height: 42,
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 20,
+              fontFamily: 'monospace',
+              textAlign: 'center',
+              color: overStock
+                ? '#DC2626'
+                : stockSede === null
+                  ? '#A1A1AA'
+                  : stockSede === 0
+                    ? '#DC2626'
+                    : '#059669',
+              fontWeight: 600,
+            }}
+          >
+            <span>
+              {stockSede === null
+                ? '—'
+                : `${stockSede} UND`}
+            </span>
+
+            {overStock && (
+              <span
+                style={{
+                  fontSize: 9.5,
+                  lineHeight: 1,
+                  marginTop: 2,
+                  color: '#DC2626',
+                }}
+              >
+                insuficiente
+              </span>
+            )}
+          </div>
+
+          {/* Vista previa */}
+          <div
+            style={{
+              width: 36,
+              height: 42,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {mat && (
+              <PreviewBtn
+                onClick={e => {
+                  e.stopPropagation();
+                  setPreviewMat(mat);
+                }}
+              />
+            )}
+          </div>
+
+          {/* Eliminar */}
+          <div
+            style={{
+              width: 36,
+              height: 42,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => removeLinea(i)}
+              style={{
+                width: 36,
+                height: 42,
+                borderRadius: 8,
+                border: '1px solid #ffffff',
+                background: '#DC2626',
+                cursor: 'pointer',
+                color: '#ffffff',
+                fontSize: 24,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 0,
+              }}
+            >
+              ×
+            </button>
           </div>
         </div>
+      );
+    })}
+
+    <button
+      className="btn btn-ghost"
+      style={{
+        marginTop: 8,
+        fontSize: 12,
+      }}
+      onClick={addLinea}
+    >
+      + Agregar línea
+    </button>
+  </div>
+</div>
 
         {/* Footer */}
         <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', paddingBottom: 24 }}>

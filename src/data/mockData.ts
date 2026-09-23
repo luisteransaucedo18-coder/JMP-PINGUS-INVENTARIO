@@ -5,6 +5,7 @@ export type EstadoReq = 'BORRADOR' | 'ENVIADO' | 'CONFIRMADO' | 'RECHAZADO';
 export type EstadoUsuario = 'ACTIVO' | 'INACTIVO';
 export type EstadoEntrega = 'PENDIENTE' | 'PARCIAL' | 'COMPLETA' | 'CANCELADA';
 export type EstadoCompra = 'BORRADOR' | 'ENVIADO' | 'APROBADO' | 'COMPRADO' | 'RECHAZADO';
+import tuberia15958 from '../productos/tuberiapealpe1216.webp';
 
 export interface CompraItem {
   skuId: string;
@@ -55,6 +56,7 @@ export interface Material {
   stockSedes: Record<Sede, number>;
   minimo: number;
   estado: EstadoMaterial;
+  imagen?: string;
 }
 
 export interface ReqMaterial {
@@ -188,15 +190,16 @@ export const proyectos: Proyecto[] = [
 
 export const materials: Material[] = [
   {
-    id: 'GAS-0001',
-    nombre: 'Regulador de presión media 1/2"',
-    descripcion: 'Regulador de media presión para instalaciones domiciliarias de gas natural, caudal 4 m³/h. Cuerpo de aluminio con membrana reforzada.',
+    id: '15958',
+    nombre: 'TUBERIA PEALPE TCL 1216 X 200 (AMARILLA) S/C',
+    descripcion: 'Un rollo de 200 metros de tubería multicapa (polietileno - aluminio - polietileno) de 1/2" nominal (12 mm interior / 16 mm exterior), diseñada para instalaciones interiores de gas natural o GLP',
     categoria: 'Gas Natural',
-    marca: 'Itron / Elster',
+    marca: 'TCL',
     unidad: 'UND',
     stockSedes: { Chiclayo: 48, Chimbote: 15, Trujillo: 32 },
     minimo: 30,
     estado: 'OK',
+    imagen: tuberia15958,
   },
   {
     id: 'GAS-0002',

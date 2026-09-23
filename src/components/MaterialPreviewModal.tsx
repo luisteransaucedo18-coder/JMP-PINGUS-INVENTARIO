@@ -16,7 +16,7 @@ const ESTADO_STYLE: Record<string, { bg: string; color: string }> = {
 
 const SEDE_COLOR: Record<Sede, string> = { Chiclayo: '#2563EB', Chimbote: '#059669', Trujillo: '#7C3AED' };
 
-function CatIllustration({ categoria }: { categoria: string }) {
+function CatIllustration({categoria }: { categoria: string }) {
   const cfg = CATEGORIA_COLORS[categoria] || CATEGORIA_COLORS['Gas Natural'];
 
   // SVG illustration varies per category
@@ -101,7 +101,33 @@ export default function MaterialPreviewModal({ material, onClose }: Props) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" style={{ width: 520, maxHeight: '90vh', overflowY: 'auto', padding: 0 }} onClick={e => e.stopPropagation()}>
         {/* Hero image / illustration */}
+              {material.imagen ? (
+        <div
+          style={{
+            width: '100%',
+            height: 250,
+            background: '#F9FAFB',
+            borderRadius: '12px 12px 0 0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+          }}
+        >
+          <img
+            src={material.imagen}
+            alt={material.nombre}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              padding: 16,
+            }}
+          />
+        </div>
+      ) : (
         <CatIllustration categoria={material.categoria} />
+      )}
 
         {/* Header */}
         <div style={{ padding: '18px 22px 0' }}>
@@ -183,8 +209,8 @@ export function PreviewBtn({ onClick }: { onClick: (e: React.MouseEvent) => void
       title="Vista previa del material"
       onClick={onClick}
       style={{
-        width: 26, height: 26, borderRadius: 6,
-        border: '1px solid #E4E4E7',
+        width: 36, height: 42, borderRadius: 8,
+        border: '1.5px solid #E4E4E7',
         background: '#F9FAFB',
         cursor: 'pointer',
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
@@ -194,7 +220,7 @@ export function PreviewBtn({ onClick }: { onClick: (e: React.MouseEvent) => void
       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#DBEAFE'; (e.currentTarget as HTMLElement).style.borderColor = '#93C5FD'; }}
       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#F9FAFB'; (e.currentTarget as HTMLElement).style.borderColor = '#E4E4E7'; }}
     >
-      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <svg width="18" height="18" viewBox="0 0 12 12" fill="none">
         <path d="M1 6s2-3.5 5-3.5S11 6 11 6s-2 3.5-5 3.5S1 6 1 6z" stroke="#2563EB" strokeWidth="1.2" strokeLinecap="round"/>
         <circle cx="6" cy="6" r="1.5" stroke="#2563EB" strokeWidth="1.2"/>
       </svg>
