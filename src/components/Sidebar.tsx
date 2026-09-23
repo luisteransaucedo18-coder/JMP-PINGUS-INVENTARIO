@@ -81,9 +81,9 @@ export default function Sidebar({ role, activeView, onNav, onLogout, userName, u
       {/* Logo */}
       <div className="sidebar-logo" style={{ padding: expanded ? '20px 20px 16px' : '18px 14px 16px', borderBottom: '1px solid #F0F2FF', transition: 'padding 0.22s', overflow: 'hidden', whiteSpace: 'nowrap' }}>
         {expanded
-          ? <img src="/logo.png" alt="JIP" style={{ height: 38, objectFit: 'contain', display: 'block' }} />
+          ? <img src="/public/logo.png" alt="JIP" style={{ height: 38, objectFit: 'contain', display: 'block' }} />
           : <div style={{ width: 36, height: 36, borderRadius: 10, background: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-              <img src="/logo-icon.png" alt="JIP" style={{ width: 28, height: 28, objectFit: 'contain', filter: 'brightness(10)' }} />
+              <img src="/public/logo-icon.png" alt="JIP" style={{ width: 28, height: 28, objectFit: 'contain', filter: 'brightness(10)' }} />
             </div>
         }
       </div>

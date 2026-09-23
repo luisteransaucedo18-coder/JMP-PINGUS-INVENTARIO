@@ -178,7 +178,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       {/* Left — form */}
       <div className="login-panel" style={{ width: '45%', minWidth: 380, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 56px', background: '#fff' }}>
         <div style={{ marginBottom: 32, textAlign: 'center' }}>
-          <img src="/logo.png" alt="JIP" style={{ height: 52, objectFit: 'contain' }} />
+          <img src="/public/logo.png" alt="JIP" style={{ height: 52, objectFit: 'contain' }} />
         </div>
 
         <div style={{ width: '100%', maxWidth: 360 }}>
@@ -246,7 +246,7 @@ const handleSubmit = async (e: React.FormEvent) => {
             Optimiza tus procesos logísticos y controla el stock en tiempo real desde cualquier sede.
           </p>
         </div>
-        <img src="/mascot.png" alt="JIP mascota"
+        <img src="/public/mascot.png" alt="JIP mascota"
           style={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '90%', maxWidth: 560, height: 'auto', objectFit: 'contain', objectPosition: 'bottom', filter: 'drop-shadow(0 -8px 32px rgba(0,0,0,0.18))' }}
         />
       </div>
