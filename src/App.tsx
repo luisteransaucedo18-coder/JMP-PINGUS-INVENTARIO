@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Role } from './data/mockData';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
-import { supabase } from './service/supabase';
+import { supabase, supabaseConfigError } from './service/supabase';
 
 import GerenteDashboard from './views/gerente/GerenteDashboard';
 import ReportesView from './views/gerente/ReportesView';
@@ -330,8 +330,24 @@ function AppShell({ session, onLogout }: { session: { role: Role; name: string; 
 }
 
 /* ─── App root ─── */
+function ConfigurationErrorScreen() {
+  return (
+    <div style={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', padding: 24, background: '#EEF0FF', fontFamily: 'Inter, sans-serif' }}>
+      <div style={{ maxWidth: 560, background: '#fff', borderRadius: 16, padding: 32, boxShadow: '0 8px 30px rgba(30, 41, 59, 0.12)' }}>
+        <h1 style={{ margin: '0 0 12px', color: '#18181B', fontSize: 22 }}>Configuración incompleta</h1>
+        <p style={{ margin: '0 0 18px', color: '#52525B', lineHeight: 1.6 }}>
+          Este despliegue no tiene configuradas las variables de Supabase. Agrégalas en Vercel y vuelve a desplegar el proyecto.
+        </p>
+        <pre style={{ margin: 0, padding: 16, overflowX: 'auto', borderRadius: 8, background: '#F4F4F5', color: '#18181B' }}>{'VITE_SUPABASE_URL\nVITE_SUPABASE_PUBLISHABLE_KEY'}</pre>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [session, setSession] = useState<{ role: Role; name: string; email: string } | null>(null);
+
+  if (supabaseConfigError) return <ConfigurationErrorScreen />;
 
   const handleLogin = (role: Role, name: string, email: string) => setSession({ role, name, email });
 
