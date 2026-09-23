@@ -224,6 +224,13 @@ body {
 }
 .data-table tr:last-child td { border-bottom: none; }
 .data-table tbody tr:hover td { background: #F8F9FF; }
+.data-table tbody tr.purchase-row:hover td {
+  background: #F8F9FF;
+  border-top: 1px solid #BFDBFE;
+  border-bottom: 1px solid #BFDBFE;
+}
+.data-table tbody tr.purchase-row:hover td:first-child { border-left: 1px solid #BFDBFE; }
+.data-table tbody tr.purchase-row:hover td:last-child { border-right: 1px solid #BFDBFE; }
 
 /* ── Section header ── */
 .section-header {
