@@ -64,12 +64,6 @@ export default function Header({ title, subtitle, actions, userName, userInitial
       {/* Action slot */}
       {actions && <div style={{ display: 'flex', alignItems: 'center' }}>{actions}</div>}
 
-      {/* Settings */}
-      <button className="header-settings" style={{ width: 38, height: 38, borderRadius: 12, border: '1.5px solid #E8EAFF', background: '#F8F9FF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, transition: 'background 0.1s' }}
-        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#EEF0FF'}
-        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#F8F9FF'}>
-        <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="2" stroke="#8B8FA8" strokeWidth="1.3"/><path d="M7.5 1v1.5M7.5 12.5V14M1 7.5h1.5M12.5 7.5H14M2.6 2.6l1.1 1.1M11.3 11.3l1.1 1.1M2.6 12.4l1.1-1.1M11.3 3.7l1.1-1.1" stroke="#8B8FA8" strokeWidth="1.3" strokeLinecap="round"/></svg>
-      </button>
 
       {/* Notification bell */}
       <div style={{ position: 'relative', flexShrink: 0 }}>

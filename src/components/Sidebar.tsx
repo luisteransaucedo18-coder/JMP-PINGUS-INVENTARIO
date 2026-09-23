@@ -89,11 +89,11 @@ export default function Sidebar({ role, activeView, onNav, onLogout, userName, u
       </div>
 
       {/* Role badge */}
-      <div className="sidebar-role" style={{ padding: expanded ? '12px 18px' : '10px 0', borderBottom: '1px solid #F0F2FF', display: 'flex', justifyContent: expanded ? 'flex-start' : 'center', transition: 'padding 0.22s', overflow: 'hidden' }}>
+      <div className="sidebar-role" style={{ padding: expanded ? '12px 18px' : '10px 0', borderBottom: '1px solid #F0F2FF', display: 'flex', flexDirection: 'column', alignItems: expanded ? 'flex-start' : 'center', justifyContent: 'center', transition: 'padding 0.22s', overflow: 'hidden' }}>
         {expanded ? (
           <>
             <div style={{ fontSize: 10, color: '#A1A1AA', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Rol activo</div>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: badge.bg, color: badge.text, borderRadius: 4, padding: '3px 8px', fontSize: 12, fontWeight: 600 }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, maxWidth: '100%', background: badge.bg, color: badge.text, borderRadius: 4, padding: '3px 8px', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' }}>
               <span style={{ width: 6, height: 6, borderRadius: '50%', background: badge.text }} />
               {roleLabels[role]}
             </span>
