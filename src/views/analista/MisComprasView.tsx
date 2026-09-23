@@ -60,7 +60,7 @@ export default function MisComprasView({ usuario, onNav }: Props) {
               <thead><tr><th>ID</th><th>Sede</th><th>Items</th><th>Total est.</th><th>Fecha</th><th>Estado</th><th></th></tr></thead>
               <tbody>
                 {mis.length === 0 ? (
-                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40, color: '#8B8FA8' }}>
+                  <tr className="empty-state-row"><td colSpan={7} style={{ textAlign: 'center', padding: 40, color: '#8B8FA8' }}>
                     Sin órdenes. <button onClick={() => onNav('nueva-compra')} style={{ background: 'none', border: 'none', color: '#2563EB', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>Crear una →</button>
                   </td></tr>
                 ) : mis.map(c => (

@@ -224,6 +224,8 @@ body {
 }
 .data-table tr:last-child td { border-bottom: none; }
 .data-table tbody tr:hover td { background: #F8F9FF; }
+.data-table tbody .empty-state-row:hover td { background: transparent; }
+.data-table .empty-state-row td { cursor: default; }
 
 /* ── Section header ── */
 .section-header {
