@@ -40,6 +40,7 @@ export default function NuevaCompraView({ onToast, usuario, onNav }: Props) {
       skuId: mat.id,
       nombre: mat.nombre,
       cantidadSolicitada: deficit > 0 ? deficit : 1,
+      precioUnitario: mat.precioUnitario,
       query: mat.nombre,
       showDrop: false,
     }));
@@ -51,7 +52,7 @@ export default function NuevaCompraView({ onToast, usuario, onNav }: Props) {
     if (exists) { onToast('⚠ El material ya está en la lista'); return; }
     setItems(p => [...p.filter(it => it.skuId || it.nombre), {
       skuId: mat.id, nombre: mat.nombre, cantidadSolicitada: deficit,
-      precioUnitario: undefined, query: mat.nombre, showDrop: false,
+      precioUnitario: mat.precioUnitario, query: mat.nombre, showDrop: false,
     }]);
   };
 

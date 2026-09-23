@@ -129,6 +129,7 @@ export default function MaterialPreviewModal({ material, onClose }: Props) {
             ['Categoría', material.categoria],
             ['Unidad de medida', material.unidad],
             ['Marca / Especificación', material.marca || '—'],
+            ['Precio unitario', material.precioUnitario.toLocaleString('es-PE', { style: 'currency', currency: 'PEN' })],
             ['Stock mínimo', `${material.minimo} UND`],
           ].map(([label, value]) => (
             <div key={label} style={{ background: '#F9FAFB', borderRadius: 8, padding: '10px 12px' }}>

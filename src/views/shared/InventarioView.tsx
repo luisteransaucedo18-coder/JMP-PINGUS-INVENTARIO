@@ -5,10 +5,11 @@ import MaterialPreviewModal, { PreviewBtn } from '../../components/MaterialPrevi
 
 interface Props { role: Role; onToast: (msg: string) => void; }
 
-const BLANK_FORM = { nombre: '', descripcion: '', categoria: '', stockChiclayo: '', stockChimbote: '', stockTrujillo: '', minimo: '' };
+const BLANK_FORM = { nombre: '', descripcion: '', categoria: '', precioUnitario: '', stockChiclayo: '', stockChimbote: '', stockTrujillo: '', minimo: '' };
 const BLANK_STOCK = { Chiclayo: '', Chimbote: '', Trujillo: '' };
 const ESTADO_BADGE: Record<string, string> = { OK: 'green', BAJO: 'amber', CRÍTICO: 'red', AGOTADO: 'red' };
 const SEDE_COLOR: Record<string, string> = { Chiclayo: '#2563EB', Chimbote: '#059669', Trujillo: '#7C3AED' };
+const formatCurrency = (value: number) => value.toLocaleString('es-PE', { style: 'currency', currency: 'PEN' });
 
 export default function InventarioView({ role, onToast }: Props) {
   const { state, dispatch } = useAppStore();
@@ -23,6 +24,7 @@ export default function InventarioView({ role, onToast }: Props) {
   const [form, setForm] = useState({ ...BLANK_FORM });
   const [editStock, setEditStock] = useState<Record<string, string>>({ ...BLANK_STOCK });
   const [editMinimo, setEditMinimo] = useState('');
+  const [editPrecioUnitario, setEditPrecioUnitario] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [previewMat, setPreviewMat] = useState<Material | null>(null);
 
@@ -48,6 +50,7 @@ export default function InventarioView({ role, onToast }: Props) {
     if (!form.descripcion.trim()) e.descripcion = 'Requerido';
     if (!form.categoria.trim()) e.categoria = 'Requerido';
     if (form.minimo === '' || isNaN(parseFloat(form.minimo))) e.minimo = 'Inválido';
+    if (form.precioUnitario === '' || isNaN(parseFloat(form.precioUnitario)) || parseFloat(form.precioUnitario) < 0) e.precioUnitario = 'Ingresa un precio válido';
     return e;
   };
 
@@ -67,6 +70,7 @@ export default function InventarioView({ role, onToast }: Props) {
           Trujillo: parseFloat(form.stockTrujillo) || 0,
         },
         minimo: parseFloat(form.minimo),
+        precioUnitario: parseFloat(form.precioUnitario),
       },
     });
     onToast(`✓ Material agregado al catálogo: ${form.nombre}`);
@@ -80,10 +84,17 @@ export default function InventarioView({ role, onToast }: Props) {
     setSelected(m);
     setEditStock({ Chiclayo: String(m.stockSedes.Chiclayo), Chimbote: String(m.stockSedes.Chimbote), Trujillo: String(m.stockSedes.Trujillo) });
     setEditMinimo(String(m.minimo));
+    setEditPrecioUnitario(String(m.precioUnitario));
   };
 
   const handleSaveStock = () => {
     if (!selected) return;
+    const minimo = editMinimo === '' ? selected.minimo : parseFloat(editMinimo);
+    const precioUnitario = editPrecioUnitario === '' ? selected.precioUnitario : parseFloat(editPrecioUnitario);
+    if (!Number.isFinite(minimo) || minimo < 0 || !Number.isFinite(precioUnitario) || precioUnitario < 0) {
+      onToast('Revisa el stock mínimo y el precio unitario');
+      return;
+    }
     dispatch({
       type: 'UPDATE_MATERIAL_STOCK',
       payload: {
@@ -93,10 +104,11 @@ export default function InventarioView({ role, onToast }: Props) {
           Chimbote: parseFloat(editStock.Chimbote) || 0,
           Trujillo: parseFloat(editStock.Trujillo) || 0,
         },
-        minimo: parseFloat(editMinimo) || selected.minimo,
+        minimo,
+        precioUnitario,
       },
     });
-    onToast(`✓ Stock actualizado: ${selected.nombre}`);
+    onToast(`✓ Inventario actualizado: ${selected.nombre}`);
     setSelected(null);
     setEditMode(false);
   };
@@ -159,10 +171,10 @@ export default function InventarioView({ role, onToast }: Props) {
               <tr>
                 <th>SKU</th><th></th><th>Material</th><th>Categoría</th><th>Unidad</th>
                 {sedeView === 'todas'
-                  ? <><th>Chiclayo</th><th>Chimbote</th><th>Trujillo</th><th>Total</th></>
+                  ? <><th>Chiclayo</th><th>Chimbote</th><th>Trujillo</th></>
                   : <th>Stock ({sedeView})</th>
                 }
-                <th>Mínimo</th><th>Estado</th>
+                <th>Precio unit.</th>{sedeView === 'todas' && <th>Stock total</th>}<th>Mínimo</th><th>Estado</th>
                 {canEdit && <th>Acciones</th>}
               </tr>
             </thead>
@@ -191,6 +203,7 @@ export default function InventarioView({ role, onToast }: Props) {
                         {m.stockSedes[sedeView]}
                       </td>
                     )}
+                    <td style={{ fontFamily: 'monospace', fontSize: 12, color: '#2563EB', whiteSpace: 'nowrap' }}>{formatCurrency(m.precioUnitario)}</td>
                     {sedeView === 'todas' && (
                       <td style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 700 }}>{total}</td>
                     )}
@@ -199,7 +212,7 @@ export default function InventarioView({ role, onToast }: Props) {
                     {canEdit && (
                       <td onClick={e => e.stopPropagation()}>
                         <button className="btn btn-ghost" style={{ padding: '3px 10px', fontSize: 11 }} onClick={() => openEditStock(m)}>
-                          Editar stock
+                          Editar inventario
                         </button>
                       </td>
                     )}
@@ -227,6 +240,7 @@ export default function InventarioView({ role, onToast }: Props) {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 18 }}>
                 <div><div style={{ fontSize: 10, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Categoría</div><div style={{ fontSize: 13, fontWeight: 500 }}>{selected.categoria}</div></div>
                 <div><div style={{ fontSize: 10, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Unidad</div><div style={{ fontSize: 13, fontWeight: 500 }}>UND</div></div>
+                <div><div style={{ fontSize: 10, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Precio unitario</div><div style={{ fontSize: 13, fontWeight: 700, color: '#2563EB' }}>{formatCurrency(selected.precioUnitario)}</div></div>
                 <div><div style={{ fontSize: 10, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Stock mínimo</div><div style={{ fontSize: 13, fontWeight: 700, color: '#DC2626' }}>{selected.minimo} UND</div></div>
                 <div><div style={{ fontSize: 10, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Stock total</div><div style={{ fontSize: 13, fontWeight: 700, color: '#059669' }}>{Object.values(selected.stockSedes).reduce((s, v) => s + v, 0)} UND</div></div>
               </div>
@@ -244,21 +258,21 @@ export default function InventarioView({ role, onToast }: Props) {
               </div>
             </div>
             <div style={{ padding: '14px 22px', borderTop: '1px solid #E4E4E7', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-              {canEdit && <button className="btn btn-primary" onClick={() => openEditStock(selected)}>Editar stock</button>}
+              {canEdit && <button className="btn btn-primary" onClick={() => openEditStock(selected)}>Editar inventario</button>}
               <button className="btn btn-ghost" onClick={() => setSelected(null)}>Cerrar</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Edit stock modal */}
+      {/* Edit inventory modal */}
       {selected && editMode && (
         <div className="modal-overlay" onClick={() => { setEditMode(false); setSelected(null); }}>
           <div className="modal" style={{ width: 480 }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div>
                 <div style={{ fontSize: 11, color: '#2563EB', fontFamily: 'monospace', marginBottom: 3 }}>{selected.id}</div>
-                <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#18181B' }}>Editar stock — {selected.nombre}</h2>
+                <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#18181B' }}>Editar inventario — {selected.nombre}</h2>
               </div>
             </div>
             <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -276,6 +290,10 @@ export default function InventarioView({ role, onToast }: Props) {
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#52525B', marginBottom: 6 }}>Stock mínimo (total)</label>
                 <input className="input-field" type="number" min="0" value={editMinimo} onChange={e => setEditMinimo(e.target.value)} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#52525B', marginBottom: 6 }}>Precio unitario (S/)</label>
+                <input className="input-field" type="number" min="0" step="0.01" value={editPrecioUnitario} onChange={e => setEditPrecioUnitario(e.target.value)} />
               </div>
             </div>
             <div style={{ padding: '14px 22px', borderTop: '1px solid #E4E4E7', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
@@ -324,6 +342,13 @@ export default function InventarioView({ role, onToast }: Props) {
                   style={{ borderColor: errors.minimo ? '#DC2626' : undefined }}
                   value={form.minimo} onChange={e => { setForm(p => ({ ...p, minimo: e.target.value })); setErrors(p => ({ ...p, minimo: '' })); }} />
                 {errors.minimo && <div style={{ fontSize: 11, color: '#DC2626', marginTop: 3 }}>{errors.minimo}</div>}
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#52525B', marginBottom: 6 }}>Precio unitario (S/) <span style={{ color: '#DC2626' }}>*</span></label>
+                <input className="input-field" type="number" min="0" step="0.01" placeholder="0.00"
+                  style={{ borderColor: errors.precioUnitario ? '#DC2626' : undefined }}
+                  value={form.precioUnitario} onChange={e => { setForm(p => ({ ...p, precioUnitario: e.target.value })); setErrors(p => ({ ...p, precioUnitario: '' })); }} />
+                {errors.precioUnitario && <div style={{ fontSize: 11, color: '#DC2626', marginTop: 3 }}>{errors.precioUnitario}</div>}
               </div>
               <div style={{ gridColumn: '1/-1', background: '#F9FAFB', borderRadius: 8, border: '1px solid #E4E4E7', padding: '14px 16px' }}>
                 <div style={{ fontSize: 11, fontWeight: 600, color: '#52525B', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>Stock inicial por sede (UND)</div>

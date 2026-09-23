@@ -22,7 +22,7 @@ interface AppState {
 
 type Action =
   | { type: 'ADD_MATERIAL'; payload: Omit<Material, 'id' | 'estado'> }
-  | { type: 'UPDATE_MATERIAL_STOCK'; payload: { id: string; stockSedes: Record<Sede, number>; minimo?: number } }
+  | { type: 'UPDATE_MATERIAL_STOCK'; payload: { id: string; stockSedes: Record<Sede, number>; minimo?: number; precioUnitario?: number } }
   | { type: 'CREATE_REQUERIMIENTO'; payload: { proyectoId: string; proyecto: string; sede: Sede; ubicacion: string; descripcion: string; tecnico: string; analista: string; materiales: ReqMaterial[]; draft: boolean } }
   | { type: 'SUBMIT_REQUERIMIENTO'; payload: string }
   | { type: 'CONFIRM_REQUERIMIENTO'; payload: { id: string; coordinador: string; observaciones?: string } }
@@ -77,7 +77,8 @@ function reducer(state: AppState, action: Action): AppState {
           if (m.id !== action.payload.id) return m;
           const stockSedes = action.payload.stockSedes;
           const minimo = action.payload.minimo ?? m.minimo;
-          return { ...m, stockSedes, minimo, estado: calcEstado(stockSedes, minimo) };
+          const precioUnitario = action.payload.precioUnitario ?? m.precioUnitario;
+          return { ...m, stockSedes, minimo, precioUnitario, estado: calcEstado(stockSedes, minimo) };
         }),
       };
     }
@@ -269,7 +270,12 @@ function reducer(state: AppState, action: Action): AppState {
         if (!item) return mat;
         const newStock = { ...mat.stockSedes };
         newStock[compra.sede] = (newStock[compra.sede] ?? 0) + item.cantidadSolicitada;
-        return { ...mat, stockSedes: newStock, estado: calcEstado(newStock, mat.minimo) };
+        return {
+          ...mat,
+          stockSedes: newStock,
+          precioUnitario: item.precioUnitario ?? mat.precioUnitario,
+          estado: calcEstado(newStock, mat.minimo),
+        };
       });
       return {
         ...state,

@@ -54,6 +54,7 @@ export interface Material {
   marca?: string;
   stockSedes: Record<Sede, number>;
   minimo: number;
+  precioUnitario: number;
   estado: EstadoMaterial;
 }
 
@@ -196,6 +197,7 @@ export const materials: Material[] = [
     unidad: 'UND',
     stockSedes: { Chiclayo: 48, Chimbote: 15, Trujillo: 32 },
     minimo: 30,
+    precioUnitario: 85,
     estado: 'OK',
   },
   {
@@ -207,6 +209,7 @@ export const materials: Material[] = [
     unidad: 'UND',
     stockSedes: { Chiclayo: 120, Chimbote: 45, Trujillo: 80 },
     minimo: 60,
+    precioUnitario: 42.5,
     estado: 'OK',
   },
   {
@@ -218,6 +221,7 @@ export const materials: Material[] = [
     unidad: 'UND',
     stockSedes: { Chiclayo: 8, Chimbote: 3, Trujillo: 5 },
     minimo: 15,
+    precioUnitario: 210,
     estado: 'CRÍTICO',
   },
   {
@@ -229,6 +233,7 @@ export const materials: Material[] = [
     unidad: 'UND',
     stockSedes: { Chiclayo: 22, Chimbote: 8, Trujillo: 14 },
     minimo: 20,
+    precioUnitario: 320,
     estado: 'BAJO',
   },
   {
@@ -240,6 +245,7 @@ export const materials: Material[] = [
     unidad: 'UND',
     stockSedes: { Chiclayo: 85, Chimbote: 30, Trujillo: 60 },
     minimo: 50,
+    precioUnitario: 38.5,
     estado: 'OK',
   },
   {
@@ -251,6 +257,7 @@ export const materials: Material[] = [
     unidad: 'UND',
     stockSedes: { Chiclayo: 200, Chimbote: 75, Trujillo: 110 },
     minimo: 80,
+    precioUnitario: 24,
     estado: 'OK',
   },
   {
@@ -262,6 +269,7 @@ export const materials: Material[] = [
     unidad: 'UND',
     stockSedes: { Chiclayo: 95, Chimbote: 20, Trujillo: 55 },
     minimo: 60,
+    precioUnitario: 29.5,
     estado: 'BAJO',
   },
   {
@@ -273,6 +281,7 @@ export const materials: Material[] = [
     unidad: 'UND',
     stockSedes: { Chiclayo: 0, Chimbote: 0, Trujillo: 2 },
     minimo: 10,
+    precioUnitario: 115,
     estado: 'AGOTADO',
   },
   {
@@ -284,6 +293,7 @@ export const materials: Material[] = [
     unidad: 'UND',
     stockSedes: { Chiclayo: 30, Chimbote: 12, Trujillo: 18 },
     minimo: 20,
+    precioUnitario: 55,
     estado: 'OK',
   },
   {
@@ -295,6 +305,7 @@ export const materials: Material[] = [
     unidad: 'UND',
     stockSedes: { Chiclayo: 15, Chimbote: 8, Trujillo: 12 },
     minimo: 10,
+    precioUnitario: 68,
     estado: 'OK',
   },
   {
@@ -306,6 +317,7 @@ export const materials: Material[] = [
     unidad: 'UND',
     stockSedes: { Chiclayo: 40, Chimbote: 15, Trujillo: 22 },
     minimo: 30,
+    precioUnitario: 22.5,
     estado: 'OK',
   },
   {
@@ -317,6 +329,7 @@ export const materials: Material[] = [
     unidad: 'UND',
     stockSedes: { Chiclayo: 4, Chimbote: 1, Trujillo: 2 },
     minimo: 5,
+    precioUnitario: 1250,
     estado: 'CRÍTICO',
   },
   {
@@ -328,6 +341,7 @@ export const materials: Material[] = [
     unidad: 'UND',
     stockSedes: { Chiclayo: 8, Chimbote: 3, Trujillo: 5 },
     minimo: 6,
+    precioUnitario: 45,
     estado: 'OK',
   },
   {
@@ -339,6 +353,7 @@ export const materials: Material[] = [
     unidad: 'UND',
     stockSedes: { Chiclayo: 3, Chimbote: 1, Trujillo: 2 },
     minimo: 2,
+    precioUnitario: 980,
     estado: 'OK',
   },
   {
@@ -350,6 +365,7 @@ export const materials: Material[] = [
     unidad: 'UND',
     stockSedes: { Chiclayo: 10, Chimbote: 4, Trujillo: 6 },
     minimo: 8,
+    precioUnitario: 35,
     estado: 'OK',
   },
 ];
