@@ -309,7 +309,7 @@ export default function ReportesView() {
             </thead>
             <tbody>
               {tabReqs.length === 0 ? (
-                <tr><td colSpan={8} style={{ padding: 32, textAlign: 'center', color: '#A1A1AA', fontSize: 13 }}>Sin registros en este período</td></tr>
+                <tr className="empty-state-row"><td colSpan={8} style={{ padding: 32, textAlign: 'center', color: '#A1A1AA', fontSize: 13 }}>Sin registros en este período</td></tr>
               ) : [...tabReqs].sort((a, b) => b.fecha.localeCompare(a.fecha)).map(r => (
                 <tr key={r.id} style={{ borderBottom: '1px solid #F8F9FF', transition: 'background 0.1s' }}
                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F8F9FF'}
