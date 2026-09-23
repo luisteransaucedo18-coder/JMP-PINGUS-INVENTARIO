@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Role } from './data/mockData';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
+import { supabase } from './service/supabase';
 
 import GerenteDashboard from './views/gerente/GerenteDashboard';
 import ReportesView from './views/gerente/ReportesView';
@@ -72,32 +73,105 @@ function Toast({ msg, onDismiss }: { msg: string; onDismiss: () => void }) {
 
 /* ─── Login Screen ─── */
 function LoginScreen({ onLogin }: { onLogin: (role: Role, name: string, email: string) => void }) {
-  const [email, setEmail] = useState('coordinador@jip.pe');
-  const [password, setPassword] = useState('123456');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    setTimeout(() => {
-      const cred = DEMO_CREDENTIALS[email.toLowerCase()];
-      if (cred && cred.password === password) {
-        onLogin(cred.role, cred.name, cred.email);
-      } else {
-        setError('Correo o contraseña incorrectos.');
-        setLoading(false);
-      }
-    }, 700);
-  };
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-  const ROLE_INFO: Record<string, { label: string; color: string; desc: string }> = {
-    'gerente@jip.pe':     { label: 'Gerente',      color: '#7C3AED', desc: 'Dashboard, reportes e indicadores ejecutivos' },
-    'analista@jip.pe':    { label: 'Analista',      color: '#2563EB', desc: 'Crear y enviar solicitudes de materiales' },
-    'coordinador@jip.pe': { label: 'Coordinador',   color: '#059669', desc: 'Inventario, requerimientos y usuarios' },
-  };
+  setError('');
+  setLoading(true);
+
+  try {
+    // 1. Login con Supabase Auth
+    const { data: authData, error: authError } =
+      await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+    if (authError) {
+      console.error('Error Auth:', authError);
+
+      setError('Correo o contraseña incorrectos.');
+      setLoading(false);
+
+      return;
+    }
+
+    const user = authData.user;
+
+    if (!user) {
+      setError('No se encontró el usuario.');
+      setLoading(false);
+
+      return;
+    }
+
+    console.log('USUARIO AUTH:', user);
+
+    // 2. Obtener perfil
+    const { data: perfil, error: perfilError } =
+      await supabase
+        .from('perfiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+    if (perfilError) {
+      console.error('Error obteniendo perfil:', perfilError);
+
+      setError('El usuario existe, pero no tiene un perfil válido.');
+      setLoading(false);
+
+      return;
+    }
+
+    console.log('PERFIL:', perfil);
+
+    // 3. Comprobar que esté activo
+    if (perfil.estado !== 'ACTIVO') {
+      setError('Tu usuario se encuentra inactivo.');
+
+      await supabase.auth.signOut();
+
+      setLoading(false);
+
+      return;
+    }
+
+    // 4. Validar rol
+    if (
+      perfil.rol !== 'gerente' &&
+      perfil.rol !== 'analista' &&
+      perfil.rol !== 'coordinador'
+    ) {
+      setError('El usuario tiene un rol no válido.');
+      setLoading(false);
+
+      return;
+    }
+
+    // 5. Entrar al sistema
+    onLogin(
+      perfil.rol as Role,
+      perfil.nombre,
+      perfil.email
+    );
+
+  } catch (error) {
+    console.error('Error inesperado:', error);
+
+    setError('Ocurrió un error al iniciar sesión.');
+  } finally {
+    setLoading(false);
+  }
+};
+
+
 
   return (
     <div className="login-screen" style={{ display: 'flex', minHeight: '100dvh', fontFamily: 'Inter, sans-serif' }}>
@@ -149,27 +223,6 @@ function LoginScreen({ onLogin }: { onLogin: (role: Role, name: string, email: s
 
           <p style={{ textAlign: 'center', fontSize: 12, color: '#A1A1AA', marginTop: 20, marginBottom: 16 }}>Acceso restringido para personal autorizado.</p>
 
-          {/* Demo accounts */}
-          <div style={{ background: '#F9FAFB', border: '1px solid #E4E4E7', borderRadius: 8, padding: '14px 16px' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#52525B', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cuentas de demostración</div>
-            {Object.entries(DEMO_CREDENTIALS).map(([em, { role }]) => {
-              const info = ROLE_INFO[em];
-              return (
-                <div key={em} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, padding: '6px 8px', borderRadius: 6, cursor: 'pointer', background: email === em ? `${info.color}10` : 'transparent', border: `1px solid ${email === em ? info.color + '30' : 'transparent'}`, transition: 'all 0.15s' }}
-                  onClick={() => { setEmail(em); setPassword('123456'); setError(''); }}>
-                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: `${info.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: info.color }}>{info.label[0]}</span>
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: info.color }}>{info.label}</div>
-                    <div style={{ fontSize: 10.5, color: '#71717A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{em}</div>
-                  </div>
-                  {email === em && <div style={{ width: 6, height: 6, borderRadius: '50%', background: info.color, flexShrink: 0 }} />}
-                </div>
-              );
-            })}
-            <div style={{ fontSize: 10.5, color: '#A1A1AA', marginTop: 8, textAlign: 'center' }}>Contraseña para todas: 123456</div>
-          </div>
         </div>
       </div>
 

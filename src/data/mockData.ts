@@ -116,12 +116,21 @@ export interface Entrega {
 
 export interface Usuario {
   id: string;
+  codigo?: string;
   nombre: string;
   email: string;
   rol: Role;
-  sede: Sede;
+  sede: Sede | null;
   estado: EstadoUsuario;
-  ultimoAcceso: string;
+
+  telefono?: string | null;
+  cargo?: string | null;
+  bio?: string | null;
+
+  ultimo_acceso?: string | null;
+
+  created_at?: string;
+  updated_at?: string;
 }
 
 export const SEDES: Sede[] = ['Chiclayo', 'Chimbote', 'Trujillo'];
@@ -494,12 +503,74 @@ export const entregas: Entrega[] = [
 ];
 
 export const usuarios: Usuario[] = [
-  { id: 'USR-001', nombre: 'Carlos Mendoza Vargas', email: 'gerente@jip.pe', rol: 'gerente', sede: 'Chiclayo', estado: 'ACTIVO', ultimoAcceso: '22/09/2026 08:30' },
-  { id: 'USR-002', nombre: 'María García Soto', email: 'analista@jip.pe', rol: 'analista', sede: 'Chiclayo', estado: 'ACTIVO', ultimoAcceso: '22/09/2026 09:15' },
-  { id: 'USR-003', nombre: 'Roberto Torres Díaz', email: 'coordinador@jip.pe', rol: 'coordinador', sede: 'Chiclayo', estado: 'ACTIVO', ultimoAcceso: '22/09/2026 08:50' },
-  { id: 'USR-004', nombre: 'Patricia Chávez Llanos', email: 'coord3@jip.pe', rol: 'coordinador', sede: 'Chimbote', estado: 'ACTIVO', ultimoAcceso: '20/09/2026 17:00' },
-  { id: 'USR-005', nombre: 'Ana Sofía Paredes Luna', email: 'analista2@jip.pe', rol: 'analista', sede: 'Chimbote', estado: 'ACTIVO', ultimoAcceso: '21/09/2026 14:20' },
-  { id: 'USR-006', nombre: 'Juan Carlos Rojas Peña', email: 'coord2@jip.pe', rol: 'coordinador', sede: 'Trujillo', estado: 'ACTIVO', ultimoAcceso: '22/09/2026 07:45' },
-  { id: 'USR-007', nombre: 'Lucía Fernández Castro', email: 'gerente2@jip.pe', rol: 'gerente', sede: 'Trujillo', estado: 'INACTIVO', ultimoAcceso: '10/09/2026 16:00' },
-  { id: 'USR-008', nombre: 'Diego Alvarado Ríos', email: 'analista3@jip.pe', rol: 'analista', sede: 'Trujillo', estado: 'ACTIVO', ultimoAcceso: '19/09/2026 11:30' },
+  {
+    id: 'USR-001',
+    nombre: 'Carlos Mendoza Vargas',
+    email: 'gerente@jip.pe',
+    rol: 'gerente',
+    sede: 'Chiclayo',
+    estado: 'ACTIVO',
+    ultimo_acceso: '22/09/2026 08:30',
+    codigo: ''
+  },
+  {
+    id: 'USR-002',
+    nombre: 'María García Soto',
+    email: 'analista@jip.pe',
+    rol: 'analista',
+    sede: 'Chiclayo',
+    estado: 'ACTIVO',
+    ultimo_acceso: '22/09/2026 09:15',
+    codigo: ''
+  },
+  {
+    id: 'USR-003',
+    nombre: 'Roberto Torres Díaz',
+    email: 'coordinador@jip.pe',
+    rol: 'coordinador',
+    sede: 'Chiclayo',
+    estado: 'ACTIVO',
+    ultimo_acceso: '22/09/2026 08:50',
+    codigo: ''
+  },
+  {
+    id: 'USR-004',
+    nombre: 'Patricia Chávez Llanos',
+    email: 'coord3@jip.pe',
+    rol: 'coordinador',
+    sede: 'Chimbote',
+    estado: 'ACTIVO',
+    ultimo_acceso: '20/09/2026 17:00',
+    codigo: ''
+  },
+  {
+    id: 'USR-005',
+    nombre: 'Ana Sofía Paredes Luna',
+    email: 'analista2@jip.pe',
+    rol: 'analista',
+    sede: 'Chimbote',
+    estado: 'ACTIVO',
+    ultimo_acceso: '21/09/2026 14:20',
+    codigo: ''
+  },
+  {
+    id: 'USR-006',
+    nombre: 'Juan Carlos Rojas Peña',
+    email: 'coord2@jip.pe',
+    rol: 'coordinador',
+    sede: 'Trujillo',
+    estado: 'ACTIVO',
+    ultimo_acceso: '22/09/2026 07:45',
+    codigo: ''
+  },
+  {
+    id: 'USR-007',
+    nombre: 'Lucía Fernández Castro',
+    email: 'gerente2@jip.pe',
+    rol: 'gerente',
+    sede: 'Trujillo',
+    estado: 'INACTIVO',
+    ultimo_acceso: '10/09/2026 16:00',
+    codigo: ''
+  }
 ];

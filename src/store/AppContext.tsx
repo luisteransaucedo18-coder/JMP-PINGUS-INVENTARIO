@@ -162,7 +162,8 @@ function reducer(state: AppState, action: Action): AppState {
           rol: action.payload.rol as any,
           sede: action.payload.sede,
           estado: 'ACTIVO',
-          ultimoAcceso: '—',
+          ultimo_acceso: '—',
+          codigo: ''
         }],
       };
     }
