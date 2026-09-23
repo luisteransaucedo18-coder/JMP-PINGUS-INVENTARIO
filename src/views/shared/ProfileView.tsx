@@ -46,6 +46,12 @@ export default function ProfileView({ role, userName, userEmail, onToast }: Prop
     onToast('✓ Perfil actualizado correctamente');
   };
 
+  const handleEditToggle = () => {
+    const nextEditing = !editing;
+    setEditing(nextEditing);
+    if (nextEditing) setActiveTab('info');
+  };
+
   const handlePwSave = () => {
     setPwError('');
     if (!pwForm.actual) { setPwError('Ingresa tu contraseña actual'); return; }
@@ -78,20 +84,20 @@ export default function ProfileView({ role, userName, userEmail, onToast }: Prop
             </div>
           </div>
 
-          <div style={{ padding: '0 32px 28px', position: 'relative' }}>
+          <div className="profile-hero-content" style={{ padding: '0 32px 28px', position: 'relative' }}>
             {/* Avatar */}
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 20, marginTop: -40 }}>
-              <div style={{ width: 88, height: 88, borderRadius: '50%', background: rc.grad, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, fontWeight: 900, color: '#fff', border: '4px solid #fff', boxShadow: '0 4px 16px rgba(0,0,0,0.15)', flexShrink: 0 }}>
+            <div className="profile-identity-row" style={{ display: 'flex', alignItems: 'flex-end', gap: 20, marginTop: -40 }}>
+              <div className="profile-avatar" style={{ width: 88, height: 88, borderRadius: '50%', background: rc.grad, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, fontWeight: 900, color: '#fff', border: '4px solid #fff', boxShadow: '0 4px 16px rgba(0,0,0,0.15)', flexShrink: 0 }}>
                 {initials}
               </div>
-              <div style={{ paddingBottom: 4, flex: 1, minWidth: 0 }}>
+              <div className="profile-identity-copy" style={{ paddingBottom: 4, flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 22, fontWeight: 800, color: '#1A1D23', letterSpacing: '-0.02em', lineHeight: 1.2 }}>{form.nombre}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 5 }}>
+                <div className="profile-identity-meta" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 5 }}>
                   <span style={{ background: rc.bg, color: rc.text, borderRadius: 6, padding: '3px 10px', fontSize: 12, fontWeight: 700 }}>{ROLE_LABEL[role]}</span>
                   <span style={{ fontSize: 12.5, color: '#8B8FA8' }}>{userEmail}</span>
                 </div>
               </div>
-              <button className="btn btn-ghost" style={{ fontSize: 12.5, flexShrink: 0, marginBottom: 4 }} onClick={() => setEditing(!editing)}>
+              <button className="btn btn-ghost profile-edit-button" style={{ fontSize: 12.5, flexShrink: 0, marginBottom: 4 }} onClick={handleEditToggle}>
                 {editing ? 'Cancelar' : 'Editar perfil'}
               </button>
             </div>
@@ -109,7 +115,7 @@ export default function ProfileView({ role, userName, userEmail, onToast }: Prop
         {/* ── Tab panel ── */}
         <div style={{ background: '#fff', borderRadius: 20, boxShadow: '0 4px 24px rgba(99,102,241,0.07)', overflow: 'hidden' }}>
           {/* Tabs */}
-          <div style={{ display: 'flex', borderBottom: '1px solid #F0F2FF', padding: '0 24px' }}>
+          <div className="profile-tabs" style={{ display: 'flex', borderBottom: '1px solid #F0F2FF', padding: '0 24px' }}>
             {([['info', 'Información personal'], ['seguridad', 'Seguridad'], ['actividad', 'Actividad reciente']] as const).map(([id, label]) => (
               <button key={id} onClick={() => setActiveTab(id)} style={{
                 padding: '16px 18px', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, background: 'none',

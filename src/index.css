@@ -678,6 +678,62 @@ body {
     overflow-wrap: anywhere;
   }
 
+  .profile-hero-content {
+    padding: 0 18px 22px !important;
+  }
+
+  .profile-identity-row {
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+    margin-top: -36px !important;
+  }
+
+  .profile-avatar {
+    width: 72px !important;
+    height: 72px !important;
+    font-size: 24px !important;
+  }
+
+  .profile-identity-copy {
+    flex: 1 1 calc(100% - 84px) !important;
+    padding-bottom: 0 !important;
+  }
+
+  .profile-identity-meta {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+  }
+
+  .profile-identity-meta > span:last-child {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .profile-edit-button {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .profile-tabs {
+    padding: 0 8px !important;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .profile-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .profile-tabs > button {
+    flex: 0 0 auto;
+    padding: 14px 12px !important;
+    white-space: nowrap;
+  }
+
   .requirement-timeline-wrap {
     padding: 16px 14px 14px;
   }
