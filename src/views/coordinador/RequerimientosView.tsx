@@ -93,7 +93,7 @@ export default function RequerimientosView({ onToast, usuario }: Props) {
             </thead>
             <tbody>
               {filtered.length === 0
-                ? <tr><td colSpan={9} style={{ textAlign: 'center', color: '#71717A', padding: 32 }}>Sin solicitudes para este filtro</td></tr>
+                ? <tr className="empty-state-row"><td colSpan={9} style={{ textAlign: 'center', color: '#71717A', padding: 32 }}>Sin solicitudes para este filtro</td></tr>
                 : filtered.map(r => (
                   <tr key={r.id} style={{ cursor: 'pointer' }} onClick={() => { setSelected(r); setAction(null); }}>
                     <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#2563EB' }}>{r.id}</td>

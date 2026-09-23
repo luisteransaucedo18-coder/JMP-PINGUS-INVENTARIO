@@ -127,7 +127,7 @@ export default function ComprasView({ onToast, usuario }: Props) {
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={8} style={{ textAlign: 'center', color: '#8B8FA8', padding: 40 }}>Sin órdenes para este filtro</td></tr>
+                <tr className="empty-state-row"><td colSpan={8} style={{ textAlign: 'center', color: '#8B8FA8', padding: 40 }}>Sin órdenes para este filtro</td></tr>
               ) : filtered.map(c => (
                 <tr key={c.id} style={{ cursor: 'pointer' }} onClick={() => openModal(c, 'detail')}>
                   <td style={{ fontFamily: 'monospace', fontSize: 11.5, color: '#2563EB', fontWeight: 700 }}>{c.id}</td>

@@ -52,7 +52,7 @@ export default function MisSolicitudesView({ usuario, onToast, onNav }: Props) {
           </thead>
           <tbody>
             {misReqs.length === 0 ? (
-              <tr><td colSpan={8} style={{ textAlign: 'center', color: '#71717A', padding: 32 }}>Sin solicitudes{filter ? ` con estado ${filter}` : ''}</td></tr>
+              <tr className="empty-state-row"><td colSpan={8} style={{ textAlign: 'center', color: '#71717A', padding: 32 }}>Sin solicitudes{filter ? ` con estado ${filter}` : ''}</td></tr>
             ) : misReqs.map(r => (
               <tr key={r.id} style={{ cursor: 'pointer' }} onClick={() => setSelected(r)}>
                 <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#2563EB' }}>{r.id}</td>
