@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+
 import {
   obtenerMateriales,
   crearMaterial,
@@ -10,6 +11,8 @@ import {
   Role,
   SEDES,
   Sede,
+  Material,
+  EstadoMaterial,
 } from '../../data/mockData';
 
 import MaterialPreviewModal, {
@@ -23,37 +26,6 @@ import MaterialPreviewModal, {
 interface Props {
   role: Role;
   onToast: (msg: string) => void;
-}
-
-type EstadoMaterial =
-  | 'OK'
-  | 'BAJO'
-  | 'CRÍTICO'
-  | 'AGOTADO';
-
-interface Material {
-  id: string;
-
-  nombre: string;
-  descripcion: string;
-  categoria: string;
-
-  unidad: string;
-
-  marca?: string | null;
-
-  stock_chiclayo: number;
-  stock_chimbote: number;
-  stock_trujillo: number;
-
-  minimo: number;
-
-  estado: EstadoMaterial;
-
-  imagen?: string | null;
-
-  created_at?: string;
-  updated_at?: string;
 }
 
 // ======================================================
@@ -193,7 +165,7 @@ export default function InventarioView({
       );
 
       setMateriales(
-        (data ?? []) as Material[]
+        data ?? []
       );
     } catch (error) {
       console.error(
@@ -277,14 +249,14 @@ export default function InventarioView({
   ) => {
 
     if (sede === 'Chiclayo') {
-      return material.stock_chiclayo ?? 0;
+      return material.stockSedes.Chiclayo ?? 0;
     }
 
     if (sede === 'Chimbote') {
-      return material.stock_chimbote ?? 0;
+      return material.stockSedes.Chimbote ?? 0;
     }
 
-    return material.stock_trujillo ?? 0;
+    return material.stockSedes.Trujillo ?? 0;
   };
 
   // ====================================================
@@ -296,15 +268,15 @@ export default function InventarioView({
   ) => {
     return (
       Number(
-        material.stock_chiclayo ?? 0
+        material.stockSedes.Chiclayo ?? 0
       ) +
 
       Number(
-        material.stock_chimbote ?? 0
+        material.stockSedes.Chimbote ?? 0
       ) +
 
       Number(
-        material.stock_trujillo ?? 0
+        material.stockSedes.Trujillo ?? 0
       )
     );
   };
@@ -434,14 +406,11 @@ export default function InventarioView({
 
           unidad: 'UND',
 
-          stock_chiclayo:
-            chiclayo,
-
-          stock_chimbote:
-            chimbote,
-
-          stock_trujillo:
-            trujillo,
+          stockSedes: {
+            Chiclayo: chiclayo,
+            Chimbote: chimbote,
+            Trujillo: trujillo,
+          },
 
           minimo,
 
@@ -490,17 +459,17 @@ export default function InventarioView({
     setEditStock({
       Chiclayo:
         String(
-          m.stock_chiclayo ?? 0
+          m.stockSedes.Chiclayo ?? 0
         ),
 
       Chimbote:
         String(
-          m.stock_chimbote ?? 0
+          m.stockSedes.Chimbote ?? 0
         ),
 
       Trujillo:
         String(
-          m.stock_trujillo ?? 0
+          m.stockSedes.Trujillo ?? 0
         ),
     });
 
@@ -558,14 +527,11 @@ export default function InventarioView({
         await actualizarMaterial(
           selected.id,
           {
-            stock_chiclayo:
-              chiclayo,
-
-            stock_chimbote:
-              chimbote,
-
-            stock_trujillo:
-              trujillo,
+            stockSedes: {
+              Chiclayo: chiclayo,
+              Chimbote: chimbote,
+              Trujillo: trujillo,
+            },
 
             minimo,
 

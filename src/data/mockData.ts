@@ -5,7 +5,6 @@ export type EstadoReq = 'BORRADOR' | 'ENVIADO' | 'CONFIRMADO' | 'RECHAZADO';
 export type EstadoUsuario = 'ACTIVO' | 'INACTIVO';
 export type EstadoEntrega = 'PENDIENTE' | 'PARCIAL' | 'COMPLETA' | 'CANCELADA';
 export type EstadoCompra = 'BORRADOR' | 'ENVIADO' | 'APROBADO' | 'COMPRADO' | 'RECHAZADO';
-import tuberia15958 from '../productos/tuberiapealpe1216.webp';
 
 export interface CompraItem {
   skuId: string;
@@ -128,6 +127,10 @@ export const proyectos: Proyecto[] = [
 
 export const materials: Material[] = [
 
+];
+
+export const usuarios: Usuario[] = [
+  
 ];
 
 export const requerimientos: Requerimiento[] = [
