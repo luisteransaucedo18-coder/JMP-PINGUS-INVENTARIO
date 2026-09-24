@@ -2,21 +2,21 @@ import { supabase } from './supabase';
 import type { Material } from '../data/mockData';
 
 type MaterialDB = {
-  sku: string;
+  id: string;
   nombre: string;
   descripcion: string;
-  categoria_id: number;
-  unidad: string;
-  marca: string | null;
+  categoria: string;
+  unidad: string | null;
+  marca?: string | null;
 
-  stock_minimo: number;
-  precio_unitario: number | null;
+  stock_chiclayo: number | null;
+  stock_chimbote: number | null;
+  stock_trujillo: number | null;
 
+  minimo: number | null;
   estado: 'OK' | 'BAJO' | 'CRÍTICO' | 'AGOTADO';
-  activo: boolean;
 
-  imagen_url?: string | null;
-
+  imagen?: string | null;
   created_at?: string;
   updated_at?: string;
 };

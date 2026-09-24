@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Role } from '../data/mockData';
 import { useAppStore } from '../store/AppContext';
+import { ASSETS } from '../config/assets';
 
 interface NavItem { id: string; label: string; icon: React.ReactNode; badge?: number | (() => number); }
 
@@ -79,14 +80,53 @@ export default function Sidebar({ role, activeView, onNav, onLogout, userName, u
       }}
     >
       {/* Logo */}
-      <div className="sidebar-logo" style={{ padding: expanded ? '20px 20px 16px' : '18px 14px 16px', borderBottom: '1px solid #F0F2FF', transition: 'padding 0.22s', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-        {expanded
-          ? <img src="/public/logo.png" alt="JIP" style={{ height: 38, objectFit: 'contain', display: 'block' }} />
-          : <div style={{ width: 36, height: 36, borderRadius: 10, background: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-              <img src="/public/logo-icon.png" alt="JIP" style={{ width: 28, height: 28, objectFit: 'contain', filter: 'brightness(10)' }} />
-            </div>
-        }
-      </div>
+          <div
+            className="sidebar-logo"
+            style={{
+              padding: expanded ? '20px 20px 16px' : '18px 14px 16px',
+              borderBottom: '1px solid #F0F2FF',
+              transition: 'padding 0.22s',
+              overflow: 'hidden',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {expanded ? (
+              <img
+                src={ASSETS.logo}
+                alt="JIP"
+                style={{
+                  height: 38,
+                  objectFit: 'contain',
+                  display: 'block'
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  background: '#2563EB',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden'
+                }}
+              >
+                <img
+                  src={ASSETS.logoIcon
+                  }
+                  alt="JIP"
+                  style={{
+                    width: 28,
+                    height: 28,
+                    objectFit: 'contain',
+                    filter: 'brightness(10)'
+                  }}
+                />
+              </div>
+            )}
+          </div>
 
       {/* Role badge */}
       <div className="sidebar-role" style={{ padding: expanded ? '12px 18px' : '10px 0', borderBottom: '1px solid #F0F2FF', display: 'flex', flexDirection: 'column', alignItems: expanded ? 'flex-start' : 'center', justifyContent: 'center', transition: 'padding 0.22s', overflow: 'hidden' }}>
