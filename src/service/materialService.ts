@@ -2,21 +2,21 @@ import { supabase } from './supabase';
 import type { Material } from '../data/mockData';
 
 type MaterialDB = {
-  id: string;
+  sku: string;
   nombre: string;
   descripcion: string;
-  categoria: string;
-  unidad: string | null;
-  marca?: string | null;
+  categoria_id: number;
+  unidad: string;
+  marca: string | null;
 
-  stock_chiclayo: number | null;
-  stock_chimbote: number | null;
-  stock_trujillo: number | null;
+  stock_minimo: number;
+  precio_unitario: number | null;
 
-  minimo: number | null;
   estado: 'OK' | 'BAJO' | 'CRÍTICO' | 'AGOTADO';
+  activo: boolean;
 
-  imagen?: string | null;
+  imagen_url?: string | null;
+
   created_at?: string;
   updated_at?: string;
 };
@@ -27,27 +27,26 @@ type MaterialDB = {
 
 function mapMaterialDBToMaterial(m: MaterialDB): Material {
   return {
-    id: m.id,
+    id: m.sku,
     nombre: m.nombre,
     descripcion: m.descripcion,
-    categoria: m.categoria,
+    categoria: String(m.categoria_id),
     unidad: 'UND',
-
     marca: m.marca ?? undefined,
 
     stockSedes: {
-      Chiclayo: m.stock_chiclayo ?? 0,
-      Chimbote: m.stock_chimbote ?? 0,
-      Trujillo: m.stock_trujillo ?? 0,
+      Chiclayo: 0,
+      Chimbote: 0,
+      Trujillo: 0,
     },
 
-    minimo: m.minimo ?? 0,
+    minimo: Number(m.stock_minimo ?? 0),
     estado: m.estado,
 
-    imagen: m.imagen ?? undefined,
+    // URL que guardaste en Supabase
+    imagen: m.imagen_url ?? undefined,
   };
 }
-
 // ======================================================
 // OBTENER TODOS LOS MATERIALES
 // ======================================================
@@ -76,7 +75,7 @@ export async function obtenerMaterialPorId(
   const { data, error } = await supabase
     .from('materiales')
     .select('*')
-    .eq('id', id)
+    .eq('sku', id)
     .single();
 
   if (error) {
@@ -100,10 +99,10 @@ export async function crearMaterial(material: Material) {
     .from('materiales')
     .insert([
       {
-        id: material.id,
+        sku: material.id,
         nombre: material.nombre,
         descripcion: material.descripcion,
-        categoria: material.categoria,
+        categoria: material.categoria,  
         unidad: material.unidad,
         marca: material.marca ?? null,
 
@@ -181,7 +180,7 @@ export async function actualizarMaterial(
   const { data, error } = await supabase
     .from('materiales')
     .update(payload)
-    .eq('id', id)
+    .eq('sku', id)
     .select()
     .single();
 
@@ -201,7 +200,7 @@ export async function eliminarMaterial(id: string) {
   const { error } = await supabase
     .from('materiales')
     .delete()
-    .eq('id', id);
+    .eq('sku', id);
 
   if (error) {
     console.error('Error eliminando material:', error);

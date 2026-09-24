@@ -1,10 +1,36 @@
 export type Role = 'gerente' | 'analista' | 'coordinador';
+
 export type Sede = 'Chiclayo' | 'Chimbote' | 'Trujillo';
+
 export type EstadoMaterial = 'OK' | 'BAJO' | 'CRÍTICO' | 'AGOTADO';
-export type EstadoReq = 'BORRADOR' | 'ENVIADO' | 'CONFIRMADO' | 'RECHAZADO';
-export type EstadoUsuario = 'ACTIVO' | 'INACTIVO';
-export type EstadoEntrega = 'PENDIENTE' | 'PARCIAL' | 'COMPLETA' | 'CANCELADA';
-export type EstadoCompra = 'BORRADOR' | 'ENVIADO' | 'APROBADO' | 'COMPRADO' | 'RECHAZADO';
+
+export type EstadoReq =
+  | 'BORRADOR'
+  | 'ENVIADO'
+  | 'CONFIRMADO'
+  | 'RECHAZADO';
+
+export type EstadoUsuario =
+  | 'ACTIVO'
+  | 'INACTIVO';
+
+export type EstadoEntrega =
+  | 'PENDIENTE'
+  | 'PARCIAL'
+  | 'COMPLETA'
+  | 'CANCELADA';
+
+export type EstadoCompra =
+  | 'BORRADOR'
+  | 'ENVIADO'
+  | 'APROBADO'
+  | 'COMPRADO'
+  | 'RECHAZADO';
+
+
+// ======================================================
+// COMPRAS
+// ======================================================
 
 export interface CompraItem {
   skuId: string;
@@ -28,22 +54,42 @@ export interface RequerimientoCompra {
   notaCompra?: string;
 }
 
-export const compras: RequerimientoCompra[] = [
-  
-];
+export const compras: RequerimientoCompra[] = [];
+
+
+// ======================================================
+// MATERIALES
+// ======================================================
 
 export interface Material {
+  // En Supabase este valor corresponde al SKU
   id: string;
+
   nombre: string;
   descripcion: string;
+
   categoria: string;
+
   unidad: 'UND';
+
   marca?: string;
+
+  // Stock por sede.
+  // Más adelante puede venir de otra tabla de Supabase.
   stockSedes: Record<Sede, number>;
+
   minimo: number;
+
   estado: EstadoMaterial;
+
+  // URL de Supabase Storage
   imagen?: string;
 }
+
+
+// ======================================================
+// REQUERIMIENTOS
+// ======================================================
 
 export interface ReqMaterial {
   skuId: string;
@@ -68,6 +114,11 @@ export interface Requerimiento {
   fechaConfirmacion?: string;
 }
 
+
+// ======================================================
+// PROYECTOS
+// ======================================================
+
 export interface Proyecto {
   id: string;
   nombre: string;
@@ -78,6 +129,11 @@ export interface Proyecto {
   observaciones?: string;
   creadoEn: string;
 }
+
+
+// ======================================================
+// ENTREGAS
+// ======================================================
 
 export interface EntregaItem {
   skuId: string;
@@ -100,6 +156,11 @@ export interface Entrega {
   observaciones?: string;
 }
 
+
+// ======================================================
+// USUARIOS
+// ======================================================
+
 export interface Usuario {
   id: string;
   codigo?: string;
@@ -108,35 +169,36 @@ export interface Usuario {
   rol: Role;
   sede: Sede | null;
   estado: EstadoUsuario;
-
   telefono?: string | null;
   cargo?: string | null;
   bio?: string | null;
-
   ultimo_acceso?: string | null;
-
   created_at?: string;
   updated_at?: string;
 }
 
-export const SEDES: Sede[] = ['Chiclayo', 'Chimbote', 'Trujillo'];
 
-export const proyectos: Proyecto[] = [
-  
+// ======================================================
+// CONSTANTES
+// ======================================================
+
+export const SEDES: Sede[] = [
+  'Chiclayo',
+  'Chimbote',
+  'Trujillo',
 ];
 
-export const materials: Material[] = [
 
-];
+// ======================================================
+// DATOS MOCK
+// ======================================================
 
-export const usuarios: Usuario[] = [
-  
-];
+export const proyectos: Proyecto[] = [];
 
-export const requerimientos: Requerimiento[] = [
- 
-];
+export const materials: Material[] = [];
 
-export const entregas: Entrega[] = [
-  
-];
+export const usuarios: Usuario[] = [];
+
+export const requerimientos: Requerimiento[] = [];
+
+export const entregas: Entrega[] = [];

@@ -1019,13 +1019,9 @@ export default function InventarioView({
 
               <tr>
 
-                <th>SKU</th>
-
-                <th></th>
-
-                <th>
-                  Material
-                </th>
+              <th>SKU</th>
+                <th>Imagen</th>
+                  <th>Material</th>
 
                 <th>
                   Categoría
@@ -1157,28 +1153,46 @@ export default function InventarioView({
                           {m.id}
                         </td>
 
-
                         <td
-                          onClick={(e) =>
-                            e.stopPropagation()
-                          }
-
+                          onClick={(e) => e.stopPropagation()}
                           style={{
-                            padding:
-                              '0 4px',
+                            padding: '6px',
+                            textAlign: 'center',
                           }}
                         >
-
-                          <PreviewBtn
-                            onClick={() =>
-                              setPreviewMat(
-                                m
-                              )
-                            }
-                          />
-
+                          {m.imagen ? (
+                            <img
+                              src={m.imagen}
+                              alt={m.nombre}
+                              onClick={() => setPreviewMat(m)}
+                              style={{
+                                width: 48,
+                                height: 48,
+                                objectFit: 'contain',
+                                borderRadius: 6,
+                                cursor: 'pointer',
+                                background: '#F9FAFB',
+                                border: '1px solid #E4E4E7',
+                              }}
+                            />
+                          ) : (
+                            <div
+                              style={{
+                                width: 48,
+                                height: 48,
+                                borderRadius: 6,
+                                background: '#F4F4F5',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: 9,
+                                color: '#A1A1AA',
+                              }}
+                            >
+                              Sin imagen
+                            </div>
+                          )}
                         </td>
-
 
                         <td
                           style={{
