@@ -3,6 +3,7 @@ import { useAppStore } from '../../store/AppContext';
 import { SEDES, Sede, Proyecto } from '../../data/mockData';
 import MaterialPreviewModal, { PreviewBtn } from '../../components/MaterialPreviewModal';
 import { Material } from '../../data/mockData';
+import { obtenerMateriales } from '../../service/materialService';
 
 interface Props { onToast: (msg: string) => void; usuario: string; onNav: (v: string) => void; }
 
@@ -17,6 +18,8 @@ export default function NuevaSolicitudView({ onToast, usuario, onNav }: Props) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [previewMat, setPreviewMat] = useState<Material | null>(null);
+  const [materiales, setMateriales] = useState<Material[]>([]);
+const [loadingMateriales, setLoadingMateriales] = useState(true);
 
   /* ─── Project selector state ─── */
   const [proyectoQuery, setProyectoQuery] = useState('');
@@ -32,6 +35,27 @@ export default function NuevaSolicitudView({ onToast, usuario, onNav }: Props) {
     (p.nombre.toLowerCase().includes(proyectoQuery.toLowerCase()) ||
      p.cliente.toLowerCase().includes(proyectoQuery.toLowerCase()))
   );
+
+  useEffect(() => {
+  const cargarMateriales = async () => {
+    try {
+      setLoadingMateriales(true);
+
+      const data = await obtenerMateriales();
+
+      console.log('Materiales para solicitud:', data);
+
+      setMateriales(data ?? []);
+    } catch (error) {
+      console.error('Error cargando materiales:', error);
+      onToast('Error al cargar materiales');
+    } finally {
+      setLoadingMateriales(false);
+    }
+  };
+
+  cargarMateriales();
+}, []);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -83,9 +107,26 @@ export default function NuevaSolicitudView({ onToast, usuario, onNav }: Props) {
   const addLinea = () => setLineas(p => [...p, { skuId: '', nombre: '', cantidad: '', query: '', showDrop: false }]);
   const removeLinea = (i: number) => setLineas(p => p.filter((_, j) => j !== i));
 
-  const selectMaterial = (i: number, mat: { id: string; nombre: string }) => {
-    setLineas(p => p.map((l, j) => j !== i ? l : { ...l, skuId: mat.id, nombre: mat.nombre, query: mat.nombre, showDrop: false }));
-  };
+    const selectMaterial = (
+      i: number,
+      mat: { id: string; nombre: string }
+    ) => {
+      setLineas((p) =>
+        p.map((l, j) =>
+          j !== i
+            ? l
+            : {
+                ...l,
+                skuId: mat.id,
+                nombre: mat.nombre,
+
+                query: `${mat.id} — ${mat.nombre}`,
+
+                showDrop: false,
+              }
+        )
+      );
+    };
 
   const updateMatQuery = (i: number, q: string) => {
     setLineas(p => p.map((l, j) => j !== i ? l : { ...l, query: q, skuId: '', nombre: '', showDrop: true }));
@@ -99,12 +140,34 @@ export default function NuevaSolicitudView({ onToast, usuario, onNav }: Props) {
     setLineas(p => p.map((l, j) => j !== i ? l : { ...l, showDrop: false }));
   };
 
-  const getMatchingMats = (query: string) =>
-    query.length < 2 ? [] : state.materials.filter(m =>
-      m.nombre.toLowerCase().includes(query.toLowerCase()) ||
-      m.id.toLowerCase().includes(query.toLowerCase()) ||
-      (m.categoria && m.categoria.toLowerCase().includes(query.toLowerCase()))
-    ).slice(0, 8);
+      const getMatchingMats = (query: string) => {
+        const q = query
+          .trim()
+          .toLowerCase();
+
+        if (q.length < 2) {
+          return [];
+        }
+
+        return materiales
+          .filter((m) => {
+            const sku = m.id
+              ?.toLowerCase() ?? '';
+
+            const nombre = m.nombre
+              ?.toLowerCase() ?? '';
+
+            const categoria = m.categoria
+              ?.toLowerCase() ?? '';
+
+            return (
+              sku.includes(q) ||
+              nombre.includes(q) ||
+              categoria.includes(q)
+            );
+          })
+          .slice(0, 8);
+      };
 
   const validate = (draft: boolean) => {
     const e: Record<string, string> = {};
@@ -392,7 +455,7 @@ export default function NuevaSolicitudView({ onToast, usuario, onNav }: Props) {
 
     {/* Líneas de materiales */}
     {lineas.map((linea, i) => {
-      const mat = state.materials.find(m => m.id === linea.skuId);
+      const mat = materiales.find(m => m.id === linea.skuId);
 
       const stockSede = mat
         ? mat.stockSedes[form.sede]
