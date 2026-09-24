@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAppStore } from '../../store/AppContext';
 import { SEDES, Sede } from '../../data/mockData';
 import MaterialPreviewModal, { PreviewBtn } from '../../components/MaterialPreviewModal';
 import { Material, CompraItem } from '../../data/mockData';
+import { obtenerMateriales } from '../../service/materialService';
+
 
 interface Props { onToast: (m: string) => void; usuario: string; onNav: (v: string) => void; }
 
@@ -21,39 +23,101 @@ export default function NuevaCompraView({ onToast, usuario, onNav }: Props) {
   const [previewMat, setPreviewMat] = useState<Material | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [activeTab, setActiveTab] = useState<'form' | 'criticos'>('form');
+  const [materiales, setMateriales] = useState<Material[]>([]);
+  const [loadingMateriales, setLoadingMateriales] = useState(true);
 
   /* Materials by estado for quick add */
-  const criticos = state.materials.filter(m =>
-    (m.estado === 'CRÍTICO' || m.estado === 'AGOTADO') && m.stockSedes[sede] < m.minimo
-  );
-  const bajos = state.materials.filter(m => m.estado === 'BAJO' && m.stockSedes[sede] < m.minimo);
+    const criticos = materiales.filter((m) => {
+      const stock = m.stockSedes[sede] ?? 0;
 
-  const getMatches = (q: string) =>
-    q.length < 2 ? [] : state.materials.filter(m =>
-      m.nombre.toLowerCase().includes(q.toLowerCase()) || m.id.toLowerCase().includes(q.toLowerCase())
-    ).slice(0, 7);
+      return (
+        (m.estado === 'CRÍTICO' || m.estado === 'AGOTADO') &&
+        stock < m.minimo
+      );
+    });
 
-  const selectMat = (idx: number, mat: Material) => {
-    const deficit = Math.max(0, mat.minimo - mat.stockSedes[sede]);
-    setItems(p => p.map((it, i) => i !== idx ? it : {
-      ...it,
-      skuId: mat.id,
-      nombre: mat.nombre,
-      cantidadSolicitada: deficit > 0 ? deficit : 1,
-      query: mat.nombre,
-      showDrop: false,
-    }));
-  };
+    const bajos = materiales.filter((m) => {
+      const stock = m.stockSedes[sede] ?? 0;
 
-  const quickAdd = (mat: Material) => {
-    const deficit = Math.max(1, mat.minimo - mat.stockSedes[sede]);
-    const exists = items.find(it => it.skuId === mat.id);
-    if (exists) { onToast('⚠ El material ya está en la lista'); return; }
-    setItems(p => [...p.filter(it => it.skuId || it.nombre), {
-      skuId: mat.id, nombre: mat.nombre, cantidadSolicitada: deficit,
-      precioUnitario: undefined, query: mat.nombre, showDrop: false,
-    }]);
-  };
+      return (
+        m.estado === 'BAJO' &&
+        stock < m.minimo
+      );
+    });
+
+    const getMatches = (query: string) => {
+      const q = query.trim().toLowerCase();
+
+      if (q.length < 2) {
+        return [];
+      }
+
+      return materiales
+        .filter((m) => {
+          const sku = m.id?.toLowerCase() ?? '';
+          const nombre = m.nombre?.toLowerCase() ?? '';
+          const categoria = m.categoria?.toLowerCase() ?? '';
+
+          return (
+            sku.includes(q) ||
+            nombre.includes(q) ||
+            categoria.includes(q)
+          );
+        })
+        .slice(0, 8);
+    };
+
+    const selectMat = (idx: number, mat: Material) => {
+      const stockActual = mat.stockSedes[sede] ?? 0;
+      const deficit = Math.max(0, mat.minimo - stockActual);
+
+      setItems((prev) =>
+        prev.map((item, i) =>
+          i !== idx
+            ? item
+            : {
+                ...item,
+                skuId: mat.id,
+                nombre: mat.nombre,
+                cantidadSolicitada: deficit > 0 ? deficit : 1,
+                query: `${mat.id} — ${mat.nombre}`,
+                showDrop: false,
+              }
+        )
+      );
+    };
+
+      const quickAdd = (mat: Material) => {
+        const stockActual = mat.stockSedes[sede] ?? 0;
+
+        const deficit = Math.max(
+          1,
+          mat.minimo - stockActual
+        );
+
+        const exists = items.some(
+          (item) => item.skuId === mat.id
+        );
+
+        if (exists) {
+          onToast('⚠ El material ya está en la lista');
+          return;
+        }
+
+        setItems((prev) => [
+          ...prev.filter(
+            (item) => item.skuId || item.nombre
+          ),
+          {
+            skuId: mat.id,
+            nombre: mat.nombre,
+            cantidadSolicitada: deficit,
+            precioUnitario: undefined,
+            query: `${mat.id} — ${mat.nombre}`,
+            showDrop: false,
+          },
+        ]);
+      };
 
   const addItem = () => setItems(p => [...p, { skuId: '', nombre: '', cantidadSolicitada: 0, precioUnitario: undefined, query: '', showDrop: false }]);
   const removeItem = (i: number) => setItems(p => p.filter((_, j) => j !== i));
@@ -89,6 +153,27 @@ export default function NuevaCompraView({ onToast, usuario, onNav }: Props) {
     onToast(draft ? 'Borrador guardado' : 'Solicitud de compra enviada al coordinador');
     setTimeout(() => onNav('mis-compras'), 1200);
   };
+
+  useEffect(() => {
+  const cargarMateriales = async () => {
+    try {
+      setLoadingMateriales(true);
+
+      const data = await obtenerMateriales();
+
+      console.log('Materiales para compra:', data);
+
+      setMateriales(data ?? []);
+    } catch (error) {
+      console.error('Error cargando materiales:', error);
+      onToast('Error al cargar los materiales');
+    } finally {
+      setLoadingMateriales(false);
+    }
+  };
+
+  cargarMateriales();
+}, []);
 
   if (submitted) return (
     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 14 }}>
@@ -209,105 +294,640 @@ export default function NuevaCompraView({ onToast, usuario, onNav }: Props) {
                 </div>
               </div>
 
-              {/* Materiales */}
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: '#8B8FA8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Materiales a comprar</div>
-                  <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={addItem}>+ Agregar material</button>
-                </div>
+{/* Materiales */}
+<div>
+  {/* Cabecera de sección */}
+  <div
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 12,
+    }}
+  >
+    <div
+      style={{
+        fontSize: 12,
+        fontWeight: 700,
+        color: '#8B8FA8',
+        textTransform: 'uppercase',
+        letterSpacing: '0.06em',
+      }}
+    >
+      Materiales a comprar
+    </div>
 
-                {errors.items && (
-                  <div style={{ background: '#FEE2E2', border: '1px solid #FECACA', borderRadius: 10, padding: '8px 14px', fontSize: 12, color: '#DC2626', marginBottom: 10 }}>{errors.items}</div>
-                )}
+    <button
+      className="btn btn-ghost"
+      style={{ fontSize: 12 }}
+      onClick={addItem}
+    >
+      + Agregar material
+    </button>
+  </div>
 
-                {/* Column headers */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 110px 130px 130px 32px', gap: 10, padding: '0 4px', marginBottom: 6 }}>
-                  {['Material', 'Cantidad', 'Precio unit. (S/.)', 'Stock actual', ''].map((h, i) => (
-                    <div key={i} style={{ fontSize: 10.5, fontWeight: 600, color: '#8B8FA8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</div>
-                  ))}
-                </div>
+  {/* Error */}
+  {errors.items && (
+    <div
+      style={{
+        background: '#FEE2E2',
+        border: '1px solid #FECACA',
+        borderRadius: 10,
+        padding: '8px 14px',
+        fontSize: 12,
+        color: '#DC2626',
+        marginBottom: 10,
+      }}
+    >
+      {errors.items}
+    </div>
+  )}
 
-                {items.map((item, i) => {
-                  const mat = state.materials.find(m => m.id === item.skuId);
-                  const stock = mat ? mat.stockSedes[sede] : null;
-                  const matches = getMatches(item.query);
-                  return (
-                    <div key={i} style={{ marginBottom: 10 }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 110px 130px 130px 32px', gap: 10, alignItems: 'start' }}>
-                        {/* Autocomplete */}
-                        <div style={{ position: 'relative' }}>
-                          {item.skuId ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#F0FDF4', border: '1.5px solid #BBF7D0', borderRadius: 10, padding: '9px 12px' }}>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: 12.5, fontWeight: 600, color: '#18181B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.nombre}</div>
-                                <div style={{ fontSize: 10, color: '#8B8FA8', fontFamily: 'monospace' }}>{item.skuId}</div>
-                              </div>
-                              {mat && <PreviewBtn onClick={e => { e.stopPropagation(); setPreviewMat(mat); }} />}
-                              <button onClick={() => updateQuery(i, '')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8B8FA8', fontSize: 14, padding: 0, flexShrink: 0 }}>✕</button>
-                            </div>
-                          ) : (
-                            <input className="input-field"
-                              placeholder="Buscar material por nombre o código…"
-                              value={item.query}
-                              onChange={e => updateQuery(i, e.target.value)}
-                              onFocus={() => setItems(p => p.map((it, j) => j !== i ? it : { ...it, showDrop: true }))}
-                              onBlur={() => setTimeout(() => closeDrop(i), 150)}
-                            />
-                          )}
-                          {!item.skuId && item.showDrop && item.query.length >= 2 && (
-                            <div style={{ position: 'absolute', zIndex: 50, top: '100%', left: 0, right: 0, marginTop: 4, background: '#fff', border: '1px solid #E8EAFF', borderRadius: 12, boxShadow: '0 8px 24px rgba(99,102,241,0.15)', overflow: 'hidden' }}>
-                              {matches.map(m => (
-                                <div key={m.id} onMouseDown={() => selectMat(i, m)}
-                                  style={{ padding: '9px 14px', cursor: 'pointer', borderBottom: '1px solid #F0F2FF', display: 'flex', alignItems: 'center', gap: 10 }}
-                                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F8F9FF'}
-                                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
-                                  <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontSize: 12.5, fontWeight: 600, color: '#1A1D23' }}>{m.nombre}</div>
-                                    <div style={{ fontSize: 10.5, color: '#8B8FA8', fontFamily: 'monospace' }}>{m.id} · {m.categoria}</div>
-                                  </div>
-                                  <span className="status-badge" style={{ color: ESTADO_COLOR[m.estado], background: ESTADO_BG[m.estado], flexShrink: 0 }}>{m.estado}</span>
-                                </div>
-                              ))}
-                              {matches.length === 0 && (
-                                <div style={{ padding: '10px 14px', fontSize: 12.5, color: '#8B8FA8' }}>Sin resultados — se usará como material libre</div>
-                              )}
-                              {matches.length > 0 && (
-                                <div onMouseDown={() => { setItems(p => p.map((it, j) => j !== i ? it : { ...it, nombre: item.query, skuId: `LIBRE-${i}`, query: item.query, showDrop: false })); }}
-                                  style={{ padding: '9px 14px', background: '#F8F9FF', borderTop: '1px solid #E8EAFF', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
-                                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#EEF0FF'}
-                                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#F8F9FF'}>
-                                  <span style={{ color: '#2563EB', fontWeight: 700 }}>+</span>
-                                  <span style={{ fontSize: 12, color: '#2563EB', fontWeight: 600 }}>Agregar "{item.query}" como nuevo</span>
-                                </div>
-                              )}
-                            </div>
-                          )}
+  {/* Encabezados */}
+  <div
+    style={{
+      display: 'grid',
+
+      gridTemplateColumns:
+        'minmax(300px, 1fr) 100px 130px 120px 40px',
+
+      gap: 10,
+      alignItems: 'center',
+
+      padding: '0 4px',
+      marginBottom: 7,
+    }}
+  >
+    {[
+      'Material',
+      'Cantidad',
+      'Precio unit. (S/.)',
+      'Stock actual',
+      '',
+    ].map((h, i) => (
+      <div
+        key={i}
+        style={{
+          fontSize: 10.5,
+          fontWeight: 600,
+          color: '#8B8FA8',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+
+          textAlign:
+            i === 0
+              ? 'left'
+              : 'center',
+        }}
+      >
+        {h}
+      </div>
+    ))}
+  </div>
+
+  {/* Filas */}
+  {items.map((item, i) => {
+    const mat = materiales.find(
+      (m) => m.id === item.skuId
+    );
+
+    const stock = mat
+      ? mat.stockSedes[sede]
+      : null;
+
+    const matches = getMatches(
+      item.query
+    );
+
+    return (
+      <div
+        key={i}
+        style={{
+          display: 'grid',
+
+          // MISMAS COLUMNAS QUE EL HEADER
+          gridTemplateColumns:
+            'minmax(300px, 1fr) 100px 130px 120px 40px',
+
+          gap: 10,
+
+          // IMPORTANTE PARA ALINEAR TODO
+          alignItems: 'center',
+
+          marginBottom: 10,
+        }}
+      >
+                {/* =========================================
+                    MATERIAL
+                ========================================= */}
+                <div
+                  style={{
+                    position: 'relative',
+                    width: '100%',
+                    minWidth: 0,
+                  }}
+                >
+                  {item.skuId ? (
+                    <div
+                      style={{
+                        width: '100%',
+                        height: 42,
+                        boxSizing: 'border-box',
+
+                        display: 'flex',
+                        alignItems: 'center',
+
+                        gap: 8,
+
+                        background: '#F0FDF4',
+                        border: '1.5px solid #BBF7D0',
+                        borderRadius: 10,
+
+                        padding: '0 12px',
+                      }}
+                    >
+                      <div
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: 12.5,
+                            fontWeight: 600,
+                            color: '#18181B',
+
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {item.nombre}
                         </div>
 
-                        <input className="input-field" type="number" min="1" placeholder="0"
-                          style={{ textAlign: 'right' }}
-                          value={item.cantidadSolicitada || ''}
-                          onChange={e => setItems(p => p.map((it, j) => j !== i ? it : { ...it, cantidadSolicitada: parseInt(e.target.value) || 0 }))} />
-
-                        <div style={{ position: 'relative' }}>
-                          <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#8B8FA8' }}>S/.</span>
-                          <input className="input-field" type="number" min="0" step="0.01" placeholder="0.00"
-                            style={{ paddingLeft: 30, textAlign: 'right' }}
-                            value={item.precioUnitario ?? ''}
-                            onChange={e => setItems(p => p.map((it, j) => j !== i ? it : { ...it, precioUnitario: parseFloat(e.target.value) || undefined }))} />
+                        <div
+                          style={{
+                            fontSize: 10,
+                            color: '#8B8FA8',
+                            fontFamily: 'monospace',
+                          }}
+                        >
+                          {item.skuId}
                         </div>
-
-                        <div style={{ paddingTop: 10, textAlign: 'center', fontFamily: 'monospace', fontSize: 12, fontWeight: 700, color: stock === null ? '#C4C6D8' : stock === 0 ? '#DC2626' : stock < (mat?.minimo ?? 0) ? '#D97706' : '#059669' }}>
-                          {stock === null ? '—' : `${stock} UND`}
-                        </div>
-
-                        <button onClick={() => removeItem(i)} style={{ marginTop: 6, width: 30, height: 30, borderRadius: 8, border: '1.5px solid #E8EAFF', background: '#F8F9FF', cursor: 'pointer', color: '#8B8FA8', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          ×
-                        </button>
                       </div>
+
+                      {mat && (
+                        <PreviewBtn
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewMat(mat);
+                          }}
+                        />
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          updateQuery(i, '')
+                        }
+                        style={{
+                          width: 24,
+                          height: 24,
+
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+
+                          background: 'transparent',
+                          border: 'none',
+
+                          cursor: 'pointer',
+                          color: '#8B8FA8',
+                          fontSize: 14,
+
+                          padding: 0,
+                          flexShrink: 0,
+                        }}
+                      >
+                        ✕
+                      </button>
                     </div>
-                  );
-                })}
+                  ) : (
+                    <input
+                      className="input-field"
+                      placeholder="Buscar por nombre o SKU…"
+                      value={item.query}
+
+                      style={{
+                        width: '100%',
+                        height: 42,
+                        boxSizing: 'border-box',
+                      }}
+
+                      onChange={(e) =>
+                        updateQuery(
+                          i,
+                          e.target.value
+                        )
+                      }
+
+                      onFocus={() =>
+                        setItems((p) =>
+                          p.map((it, j) =>
+                            j !== i
+                              ? it
+                              : {
+                                  ...it,
+                                  showDrop: true,
+                                }
+                          )
+                        )
+                      }
+
+                      onBlur={() =>
+                        setTimeout(
+                          () => closeDrop(i),
+                          150
+                        )
+                      }
+                    />
+                  )}
+
+                  {/* AUTOCOMPLETE */}
+                  {!item.skuId &&
+                    item.showDrop &&
+                    item.query.length >= 2 && (
+                      <div
+                        style={{
+                          position: 'absolute',
+
+                          zIndex: 50,
+
+                          top: 'calc(100% + 4px)',
+                          left: 0,
+                          right: 0,
+
+                          background: '#fff',
+
+                          border:
+                            '1px solid #E8EAFF',
+
+                          borderRadius: 12,
+
+                          boxShadow:
+                            '0 8px 24px rgba(99,102,241,0.15)',
+
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {matches.map((m) => (
+                          <div
+                            key={m.id}
+
+                            onMouseDown={() =>
+                              selectMat(i, m)
+                            }
+
+                            style={{
+                              padding:
+                                '9px 14px',
+
+                              cursor:
+                                'pointer',
+
+                              borderBottom:
+                                '1px solid #F0F2FF',
+
+                              display:
+                                'flex',
+
+                              alignItems:
+                                'center',
+
+                              gap: 10,
+                            }}
+
+                            onMouseEnter={(e) =>
+                              (
+                                e.currentTarget as HTMLElement
+                              ).style.background =
+                                '#F8F9FF'
+                            }
+
+                            onMouseLeave={(e) =>
+                              (
+                                e.currentTarget as HTMLElement
+                              ).style.background =
+                                ''
+                            }
+                          >
+                            <div
+                              style={{
+                                flex: 1,
+                                minWidth: 0,
+                              }}
+                            >
+                              <div
+                                style={{
+                                  fontSize: 12.5,
+                                  fontWeight: 600,
+                                  color: '#1A1D23',
+                                }}
+                              >
+                                {m.nombre}
+                              </div>
+
+                              <div
+                                style={{
+                                  fontSize: 10.5,
+                                  color: '#8B8FA8',
+                                  fontFamily:
+                                    'monospace',
+                                }}
+                              >
+                                {m.id} ·{' '}
+                                {m.categoria}
+                              </div>
+                            </div>
+
+                            <span
+                              className="status-badge"
+
+                              style={{
+                                color:
+                                  ESTADO_COLOR[
+                                    m.estado
+                                  ],
+
+                                background:
+                                  ESTADO_BG[
+                                    m.estado
+                                  ],
+
+                                flexShrink: 0,
+                              }}
+                            >
+                              {m.estado}
+                            </span>
+                          </div>
+                        ))}
+
+                        {matches.length ===
+                          0 && (
+                          <div
+                            style={{
+                              padding:
+                                '10px 14px',
+
+                              fontSize:
+                                12.5,
+
+                              color:
+                                '#8B8FA8',
+                            }}
+                          >
+                            No se encontraron
+                            materiales registrados.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                </div>
+
+                {/* =========================================
+                    CANTIDAD
+                ========================================= */}
+                <div
+                  style={{
+                    width: '100%',
+                    height: 42,
+
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  <input
+                    className="input-field"
+                    type="number"
+                    min="1"
+                    placeholder="0"
+
+                    value={
+                      item.cantidadSolicitada ||
+                      ''
+                    }
+
+                    onChange={(e) =>
+                      setItems((p) =>
+                        p.map((it, j) =>
+                          j !== i
+                            ? it
+                            : {
+                                ...it,
+
+                                cantidadSolicitada:
+                                  parseInt(
+                                    e.target.value
+                                  ) || 0,
+                              }
+                        )
+                      )
+                    }
+
+                    style={{
+                      width: '100%',
+                      height: 42,
+
+                      boxSizing:
+                        'border-box',
+
+                      textAlign:
+                        'center',
+                    }}
+                  />
+                </div>
+
+                {/* =========================================
+                    PRECIO
+                ========================================= */}
+                <div
+                  style={{
+                    position: 'relative',
+                    width: '100%',
+                    height: 42,
+                  }}
+                >
+                  <span
+                    style={{
+                      position: 'absolute',
+
+                      left: 10,
+                      top: '50%',
+
+                      transform:
+                        'translateY(-50%)',
+
+                      fontSize: 12,
+                      color: '#8B8FA8',
+
+                      zIndex: 1,
+                    }}
+                  >
+                    S/.
+                  </span>
+
+                  <input
+                    className="input-field"
+                    type="number"
+
+                    min="0"
+                    step="0.01"
+
+                    placeholder="0.00"
+
+                    value={
+                      item.precioUnitario ??
+                      ''
+                    }
+
+                    onChange={(e) =>
+                      setItems((p) =>
+                        p.map((it, j) =>
+                          j !== i
+                            ? it
+                            : {
+                                ...it,
+
+                                precioUnitario:
+                                  parseFloat(
+                                    e.target.value
+                                  ) ||
+                                  undefined,
+                              }
+                        )
+                      )
+                    }
+
+                    style={{
+                      width: '100%',
+                      height: 42,
+
+                      boxSizing:
+                        'border-box',
+
+                      paddingLeft: 34,
+
+                      textAlign:
+                        'right',
+                    }}
+                  />
+                </div>
+
+                {/* =========================================
+                    STOCK
+                ========================================= */}
+                <div
+                  style={{
+                    width: '100%',
+                    height: 42,
+
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+
+                    borderRadius: 8,
+
+                    background:
+                      stock === null
+                        ? '#F9FAFB'
+                        : stock === 0
+                          ? '#FEF2F2'
+                          : '#F0FDF4',
+
+                    fontFamily:
+                      'monospace',
+
+                    fontSize: 12,
+                    fontWeight: 700,
+
+                    color:
+                      stock === null
+                        ? '#C4C6D8'
+                        : stock === 0
+                          ? '#DC2626'
+                          : stock <
+                              (mat?.minimo ??
+                                0)
+                            ? '#D97706'
+                            : '#059669',
+
+                    boxSizing:
+                      'border-box',
+                  }}
+                >
+                  {stock === null
+                    ? '—'
+                    : `${stock} UND`}
+                </div>
+
+                {/* =========================================
+                    ELIMINAR
+                ========================================= */}
+                <div
+                  style={{
+                    width: 40,
+                    height: 42,
+
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <button
+                    type="button"
+
+                    onClick={() =>
+                      removeItem(i)
+                    }
+
+                    style={{
+                      width: 32,
+                      height: 32,
+
+                      borderRadius: 8,
+
+                      border:
+                        '1px solid #FCA5A5',
+
+                      background:
+                        '#DC2626',
+
+                      cursor:
+                        'pointer',
+
+                      color: '#FFFFFF',
+
+                      fontSize: 18,
+
+                      display: 'flex',
+
+                      alignItems:
+                        'center',
+
+                      justifyContent:
+                        'center',
+
+                      padding: 0,
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+                      
 
                 <button className="btn btn-ghost" style={{ marginTop: 6, fontSize: 12 }} onClick={addItem}>+ Agregar línea</button>
 

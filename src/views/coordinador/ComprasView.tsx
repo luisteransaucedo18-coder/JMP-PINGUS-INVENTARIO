@@ -197,7 +197,7 @@ export default function ComprasView({ onToast, usuario }: Props) {
                 </thead>
                 <tbody>
                   {selected.items.map((it, i) => {
-                    const mat = state.materials.find(m => m.id === it.skuId);
+                    const mat = materiales.find(m => m.id === it.skuId);
                     const stock = mat ? mat.stockSedes[selected.sede] : null;
                     const sub = it.cantidadSolicitada * (it.precioUnitario ?? 0);
                     return (
@@ -310,7 +310,7 @@ export default function ComprasView({ onToast, usuario }: Props) {
                         Actualización de stock en {selected.sede}
                       </div>
                       {selected.items.map((it, i) => {
-                        const mat = state.materials.find(m => m.id === it.skuId);
+                        const mat = materiales.find(m => m.id === it.skuId);
                         const stockActual = mat ? mat.stockSedes[selected.sede] : 0;
                         const stockNuevo = stockActual + it.cantidadSolicitada;
                         return (

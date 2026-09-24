@@ -5,6 +5,7 @@ import MaterialPreviewModal, { PreviewBtn } from '../../components/MaterialPrevi
 import { Material } from '../../data/mockData';
 import { obtenerMateriales } from '../../service/materialService';
 
+
 interface Props { onToast: (msg: string) => void; usuario: string; onNav: (v: string) => void; }
 
 interface LineaMat { skuId: string; nombre: string; cantidad: string; query: string; showDrop: boolean; }
