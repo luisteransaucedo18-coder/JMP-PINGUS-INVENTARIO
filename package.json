@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.1",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^6.3.289",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
@@ -26,5 +28,4 @@
     "typescript": "^5.7.0",
     "vite": "^8.0.5"
   }
-  
 }

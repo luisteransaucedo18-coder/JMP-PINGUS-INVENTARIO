@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import { supabase, supabaseConfigError } from './service/supabase';
 import { ASSETS } from './config/assets';
+import { AppProvider } from './store/AppContext';
 
 import GerenteDashboard from './views/gerente/GerenteDashboard';
 import ReportesView from './views/gerente/ReportesView';
@@ -361,11 +362,55 @@ function ConfigurationErrorScreen() {
 
 export default function App() {
   const [session, setSession] = useState<{ role: Role; name: string; email: string } | null>(null);
+  const [restoring, setRestoring] = useState(true);
+  const [sessionError, setSessionError] = useState('');
+
+  useEffect(() => {
+    if (supabaseConfigError) { setRestoring(false); return; }
+    let active = true;
+    let version = 0;
+    const restore = async () => {
+      const current = ++version;
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        if (!data.session) { if (active && version === current) setSession(null); return; }
+        const { data: perfil, error: profileError } = await supabase.from('perfiles')
+          .select('nombre,email,rol,estado').eq('id', data.session.user.id).single();
+        if (profileError) throw profileError;
+        if (!active || version !== current) return;
+        if (perfil.estado !== 'ACTIVO' || !['analista', 'coordinador', 'gerente'].includes(perfil.rol)) {
+          setSession(null); setSessionError('Tu perfil no tiene acceso activo.'); return;
+        }
+        setSession({ role: perfil.rol as Role, name: perfil.nombre, email: perfil.email });
+        setSessionError('');
+      } catch {
+        if (active && version === current) { setSession(null); setSessionError('No se pudo recuperar tu sesión. Vuelve a iniciar sesión.'); }
+      } finally { if (active && version === current) setRestoring(false); }
+    };
+    void restore();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(event => {
+      if (event === 'SIGNED_OUT') { version++; setSession(null); setRestoring(false); }
+      // Defer Supabase calls until the auth callback has released its lock.
+      else if (event === 'SIGNED_IN' || event === 'USER_UPDATED') { queueMicrotask(() => { if (active) void restore(); }); }
+    });
+    return () => { active = false; version++; subscription.unsubscribe(); };
+  }, []);
 
   if (supabaseConfigError) return <ConfigurationErrorScreen />;
 
   const handleLogin = (role: Role, name: string, email: string) => setSession({ role, name, email });
 
-  if (!session) return <LoginScreen onLogin={handleLogin} />;
-  return <AppShell session={session} onLogout={() => setSession(null)} />;
+  const logout = async () => {
+    const { error } = await supabase.auth.signOut({ scope: 'local' });
+    if (error) { setSessionError('No se pudo cerrar la sesión. Inténtalo nuevamente.'); return; }
+    setSession(null); setSessionError('');
+  };
+
+  if (restoring) return <div role="status" style={{ padding: 32 }}>Recuperando sesión…</div>;
+  return <>
+    {sessionError && <div role="alert" style={{ padding: 12, background: '#FEF2F2', color: '#B91C1C' }}>{sessionError}</div>}
+    {session ? <AppProvider key={session.email}><AppShell session={session} onLogout={() => void logout()} /></AppProvider>
+      : <LoginScreen onLogin={handleLogin} />}
+  </>;
 }

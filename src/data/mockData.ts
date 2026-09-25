@@ -70,7 +70,7 @@ export interface Material {
 
   categoria: string;
 
-  unidad: 'UND';
+  unidad: string;
 
   marca?: string;
 
@@ -95,6 +95,8 @@ export interface ReqMaterial {
   skuId: string;
   nombre: string;
   cantidad: number;
+  unidad?: string;
+  marca?: string;
 }
 
 export interface Requerimiento {
