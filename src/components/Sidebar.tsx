@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Role } from '../data/mockData';
 import { useAppStore } from '../store/AppContext';
 import { ASSETS } from '../config/assets';
@@ -51,20 +51,30 @@ const EXPANDED_W  = 225;
 
 export default function Sidebar({ role, activeView, onNav, onLogout, userName, userEmail }: Props) {
   const { state } = useAppStore();
-  const [expanded, setExpanded] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 768px)').matches);
   const nav = navByRole[role];
   const badge = roleBadgeColors[role];
   const pendingReqs    = state.requerimientos.filter(r => r.estado === 'ENVIADO').length;
   const pendingCompras = state.compras.filter(c => c.estado === 'ENVIADO').length;
   const initials = userName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
 
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 768px)');
+    const sync = () => setIsMobile(media.matches);
+    sync();
+    media.addEventListener('change', sync);
+    return () => media.removeEventListener('change', sync);
+  }, []);
+
+  const expanded = isMobile || hovered;
   const W = expanded ? EXPANDED_W : COLLAPSED_W;
 
   return (
     <aside
       className="app-sidebar"
-      onMouseEnter={() => setExpanded(true)}
-      onMouseLeave={() => setExpanded(false)}
+      onMouseEnter={() => { if (!isMobile) setHovered(true); }}
+      onMouseLeave={() => { if (!isMobile) setHovered(false); }}
       style={{
         width: W,
         minWidth: W,

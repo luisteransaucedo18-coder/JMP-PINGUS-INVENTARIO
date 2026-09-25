@@ -438,6 +438,16 @@ body {
 
 /* Tablet */
 @media (max-width: 1024px) {
+  .app-scroll [style*="repeat(5, 1fr)"],
+  .app-scroll [style*="repeat(4, 1fr)"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .app-scroll [style*="1fr 320px"],
+  .app-scroll [style*="1fr 340px"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
   .login-screen {
     background: #fff;
   }
@@ -463,13 +473,94 @@ body {
 
 /* Celular / tablet pequeña */
 @media (max-width: 768px) {
+  .app-shell {
+    display: block !important;
+  }
+
+  .app-sidebar {
+    position: fixed !important;
+    inset: auto 0 0 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: calc(72px + env(safe-area-inset-bottom)) !important;
+    padding-bottom: env(safe-area-inset-bottom);
+    flex-direction: row !important;
+    border-top: 1px solid #E7E9F8;
+    box-shadow: 0 -8px 24px rgba(46, 61, 116, 0.12) !important;
+    transition: none !important;
+    z-index: 80 !important;
+  }
+
+  .sidebar-logo,
+  .sidebar-role,
+  .sidebar-footer {
+    display: none !important;
+  }
+
+  .sidebar-nav {
+    display: flex !important;
+    align-items: stretch;
+    gap: 2px;
+    width: 100%;
+    padding: 6px 8px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scrollbar-width: none;
+  }
+
+  .sidebar-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sidebar-nav > div {
+    display: none !important;
+  }
+
+  .sidebar-link,
+  .sidebar-link.active {
+    flex: 1 0 76px !important;
+    width: auto !important;
+    min-width: 76px !important;
+    height: 58px;
+    margin: 0 !important;
+    padding: 7px 6px !important;
+    border: 0 !important;
+    border-radius: 8px !important;
+    flex-direction: column;
+    justify-content: center !important;
+    gap: 4px;
+    text-align: center;
+  }
+
+  .sidebar-link > span:first-child {
+    width: 20px !important;
+  }
+
+  .sidebar-link > span:nth-child(2) {
+    flex: 0 0 auto !important;
+    width: 100%;
+    font-size: 10px !important;
+    line-height: 1.15;
+    text-overflow: ellipsis;
+  }
+
+  .sidebar-link > span:last-child:not(:nth-child(2)) {
+    position: absolute;
+    top: 3px;
+    right: 8px;
+    margin: 0 !important;
+  }
+
   .app-main {
+    width: 100% !important;
+    height: 100dvh;
     padding: 10px 0 0 !important;
+    padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important;
     gap: 10px !important;
   }
 
   .app-header {
-    margin: 0 24px !important;
+    margin: 0 12px !important;
     min-height: 62px;
     height: auto !important;
     padding: 10px 14px !important;
@@ -490,6 +581,146 @@ body {
 
   .header-search {
     display: none !important;
+  }
+
+  .app-scroll {
+    width: 100%;
+    overflow-x: hidden !important;
+  }
+
+  .app-scroll > div {
+    width: 100%;
+    min-width: 0;
+    padding: 12px !important;
+  }
+
+  .app-scroll [style*="grid-template-columns"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .app-scroll [style*="justify-content: space-between"],
+  .modal [style*="justify-content: space-between"] {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .app-scroll [style*="margin-left: auto"] {
+    margin-left: 0 !important;
+  }
+
+  .app-scroll .input-field,
+  .app-scroll .select-field {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  .profile-identity-row {
+    align-items: flex-start !important;
+    flex-wrap: wrap;
+  }
+
+  .profile-identity-copy {
+    flex-basis: calc(100% - 110px) !important;
+  }
+
+  .profile-identity-meta {
+    align-items: flex-start !important;
+    flex-direction: column;
+  }
+
+  .profile-edit-button {
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  .profile-tabs {
+    padding: 0 8px !important;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .profile-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .profile-tabs button {
+    flex: 0 0 auto;
+    padding: 14px 12px !important;
+    white-space: nowrap;
+  }
+
+  .panel,
+  .kpi-card {
+    max-width: 100%;
+  }
+
+  .panel:has(.data-table) {
+    overflow-x: auto;
+  }
+
+  .panel > .section-header,
+  .section-header {
+    position: sticky;
+    left: 0;
+    min-width: min(100%, 320px);
+    padding: 13px 14px !important;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .kpi-card {
+    padding: 16px !important;
+  }
+
+  .data-table {
+    min-width: 680px;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 9px 10px;
+  }
+
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 8px;
+  }
+
+  .modal {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 92dvh !important;
+    border-radius: 12px 12px 8px 8px;
+  }
+
+  .modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    padding: 14px 16px !important;
+    background: #fff;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .modal [style*="grid-template-columns"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .modal .data-table {
+    min-width: 0;
+  }
+
+  .notifications-panel {
+    inset: 0 0 calc(72px + env(safe-area-inset-bottom)) auto !important;
+    width: min(100%, 420px) !important;
+  }
+
+  .toast {
+    right: 12px;
+    bottom: calc(84px + env(safe-area-inset-bottom));
+    left: 12px;
+    width: auto;
   }
 
   .login-screen {
@@ -530,6 +761,61 @@ body {
 @media (max-width: 480px) {
   .header-avatar {
     display: none !important;
+  }
+
+  .profile-hero-content {
+    padding: 0 18px 22px !important;
+  }
+
+  .profile-avatar {
+    width: 72px !important;
+    height: 72px !important;
+    font-size: 24px !important;
+  }
+
+  .profile-identity-copy {
+    flex-basis: calc(100% - 92px) !important;
+  }
+
+  .app-header {
+    min-height: 58px;
+    padding: 9px 12px !important;
+  }
+
+  .header-title h1 {
+    font-size: 15px !important;
+  }
+
+  .header-title > div {
+    font-size: 10.5px !important;
+  }
+
+  .btn {
+    min-height: 40px;
+    white-space: normal;
+    line-height: 1.2;
+    justify-content: center;
+  }
+
+  .select-field,
+  .input-field,
+  input,
+  select,
+  textarea {
+    max-width: 100%;
+    font-size: 16px !important;
+  }
+
+  .requirement-timeline-wrap {
+    padding: 16px 12px 14px;
+  }
+
+  .requirement-timeline__label {
+    font-size: 10px;
+  }
+
+  .requirement-timeline__date {
+    font-size: 9px;
   }
 
   .login-panel {
