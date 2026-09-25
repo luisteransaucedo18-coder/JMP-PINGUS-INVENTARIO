@@ -4,6 +4,7 @@ import { SEDES, Sede, Proyecto } from '../../data/mockData';
 import MaterialPreviewModal, { PreviewBtn } from '../../components/MaterialPreviewModal';
 import { Material } from '../../data/mockData';
 import { obtenerMateriales } from '../../service/materialService';
+import { crearProyecto, crearSolicitud } from '../../service/requerimientoService';
 
 
 interface Props { onToast: (msg: string) => void; usuario: string; onNav: (v: string) => void; }
@@ -13,7 +14,7 @@ interface LineaMat { skuId: string; nombre: string; cantidad: string; query: str
 const BLANK_FORM = { sede: 'Chiclayo' as Sede, ubicacion: '', descripcion: '', tecnico: '' };
 
 export default function NuevaSolicitudView({ onToast, usuario, onNav }: Props) {
-  const { state, dbActions } = useAppStore();
+  const { state, refreshRemoteData } = useAppStore();
   const [form, setForm] = useState({ ...BLANK_FORM });
   const [lineas, setLineas] = useState<LineaMat[]>([{ skuId: '', nombre: '', cantidad: '', query: '', showDrop: false }]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -21,6 +22,7 @@ export default function NuevaSolicitudView({ onToast, usuario, onNav }: Props) {
   const [previewMat, setPreviewMat] = useState<Material | null>(null);
   const [materiales, setMateriales] = useState<Material[]>([]);
 const [loadingMateriales, setLoadingMateriales] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   /* ─── Project selector state ─── */
   const [proyectoQuery, setProyectoQuery] = useState('');
@@ -83,28 +85,130 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
     setForm({ ...BLANK_FORM });
   };
 
-  const handleCreateProject = async () => {
-    const e: Record<string, string> = {};
-    if (!newProject.nombre.trim()) e.nombre = 'Requerido';
-    if (!newProject.cliente.trim()) e.cliente = 'Requerido';
-    if (!newProject.responsable.trim()) e.responsable = 'Requerido';
-    if (!form.ubicacion.trim()) e.ubicacion = 'Ingresa la ubicación del proyecto';
-    if (Object.keys(e).length) { setProjectErrors(e); return; }
-    const dup = state.proyectos.find(p => p.nombre.toLowerCase() === newProject.nombre.toLowerCase());
-    if (dup) { setProjectErrors({ nombre: 'Ya existe un proyecto con este nombre' }); return; }
-    try {
-      const project = await dbActions.createProject({ nombre: newProject.nombre, cliente: newProject.cliente, responsable: newProject.responsable, sede: form.sede, ubicacion: form.ubicacion, observaciones: '' });
-      setSelectedProject(project);
-      setProyectoQuery(project.nombre);
-      setShowCreateProject(false);
-      setShowDropdown(false);
-      onToast('✓ Proyecto creado y seleccionado');
-    } catch (error) {
-      console.error('Error creando proyecto:', error);
-      onToast(error instanceof Error ? error.message : 'No se pudo crear el proyecto');
-    }
-  };
+ const handleCreateProject = async () => {
+  // Evitar doble ejecución mientras se está guardando
+  if (saving) return;
 
+  const e: Record<string, string> = {};
+
+  if (!newProject.nombre.trim()) {
+    e.nombre = 'Requerido';
+  }
+
+  if (!newProject.cliente.trim()) {
+    e.cliente = 'Requerido';
+  }
+
+  if (!newProject.responsable.trim()) {
+    e.responsable = 'Requerido';
+  }
+
+ if (!form.ubicacion.trim()) {
+  setErrors(prev => ({
+    ...prev,
+    ubicacion: 'Ingresa la ubicación del proyecto',
+  }));
+
+  onToast('Debes ingresar la ubicación del proyecto');
+  return;
+}
+
+  if (Object.keys(e).length > 0) {
+    setProjectErrors(e);
+
+    // Mostrar también un mensaje visible
+    onToast('Completa todos los campos obligatorios del proyecto');
+    return;
+  }
+
+  const nombre = newProject.nombre.trim();
+
+  const dup = state.proyectos.find(
+    p => p.nombre.trim().toLowerCase() === nombre.toLowerCase()
+  );
+
+  if (dup) {
+    setProjectErrors({
+      nombre: 'Ya existe un proyecto con este nombre',
+    });
+    return;
+  }
+
+  setSaving(true);
+  setProjectErrors({});
+
+  try {
+    console.log('Creando proyecto...', {
+      nombre,
+      cliente: newProject.cliente.trim(),
+      responsable: newProject.responsable.trim(),
+      sede: form.sede,
+      ubicacion: form.ubicacion.trim(),
+    });
+
+    const project = await crearProyecto({
+      nombre,
+      cliente: newProject.cliente.trim(),
+      responsable: newProject.responsable.trim(),
+      sede: form.sede,
+      ubicacion: form.ubicacion.trim(),
+      observaciones: '',
+    });
+
+    console.log('Proyecto creado:', project);
+
+    if (!project) {
+      throw new Error(
+        'El proyecto no fue devuelto después de guardarlo'
+      );
+    }
+
+    if (!project.id) {
+      throw new Error(
+        'El proyecto fue creado pero no se recibió su ID'
+      );
+    }
+
+    // Actualizar primero los datos remotos
+    try {
+      await refreshRemoteData();
+    } catch (refreshError) {
+      console.warn(
+        'Proyecto creado, pero falló la actualización de datos:',
+        refreshError
+      );
+    }
+
+    // Seleccionar inmediatamente el proyecto creado
+    selectProject(project);
+
+    // Limpiar formulario de creación
+    setNewProject({
+      nombre: '',
+      cliente: '',
+      responsable: '',
+    });
+
+    setShowCreateProject(false);
+
+    onToast('✓ Proyecto creado y seleccionado correctamente');
+  } catch (error) {
+    console.error('ERROR AL CREAR PROYECTO:', error);
+
+    const message =
+      error instanceof Error
+        ? error.message
+        : 'No se pudo crear el proyecto';
+
+    setProjectErrors({
+      nombre: message,
+    });
+
+    onToast(`Error: ${message}`);
+  } finally {
+    setSaving(false);
+  }
+};
   const setField = (k: string, v: string) => {
     setForm(p => ({ ...p, [k]: v }));
     setErrors(p => ({ ...p, [k]: '' }));
@@ -197,28 +301,21 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
     const proyectoNombre = resolvedProject?.nombre ?? proyectoQuery;
     const tecnico = form.tecnico || resolvedProject?.responsable || '';
 
+    if (!proyectoId) { setErrors({ proyecto: 'Selecciona un proyecto registrado antes de guardar' }); return; }
+    setSaving(true);
     try {
-      await dbActions.createRequirement({
-        proyectoId,
-        proyecto: proyectoNombre,
-        sede: form.sede,
-        ubicacion: form.ubicacion,
-        descripcion: form.descripcion,
-        tecnico,
-        analista: usuario,
+      await crearSolicitud({ proyectoId, sede: form.sede, ubicacion: form.ubicacion, descripcion: form.descripcion, tecnico,
         materiales: validLineas.map(l => {
           const material = materiales.find(m => m.id === l.skuId);
           return { skuId: l.skuId, nombre: l.nombre, cantidad: parseFloat(l.cantidad), unidad: material?.unidad, marca: material?.marca };
-        }),
-        draft,
-      });
+        }), borrador: draft });
+      await refreshRemoteData();
       setSubmitted(true);
       onToast(draft ? 'Borrador guardado correctamente' : 'Solicitud enviada al coordinador');
       setTimeout(() => onNav('mis-solicitudes'), 1200);
     } catch (error) {
-      console.error('Error guardando requerimiento:', error);
-      onToast(error instanceof Error ? error.message : 'No se pudo guardar el requerimiento');
-    }
+      onToast(error instanceof Error ? error.message : 'No se pudo guardar la solicitud');
+    } finally { setSaving(false); }
   };
 
   if (submitted) {
@@ -325,7 +422,7 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                  <button className="btn btn-primary" style={{ fontSize: 12 }} onClick={handleCreateProject}>Guardar proyecto</button>
+                  <button className="btn btn-primary" style={{ fontSize: 12 }} disabled={saving} onClick={() => void handleCreateProject()}>{saving ? 'Guardando…' : 'Guardar proyecto'}</button>
                   <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={() => setShowCreateProject(false)}>Cancelar</button>
                 </div>
               </div>
@@ -642,6 +739,9 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
                           ).style.background = ''
                         }
                       >
+                        <div style={{ width: 34, height: 34, borderRadius: 6, background: '#F4F4F5', overflow: 'hidden', flexShrink: 0, display: 'grid', placeItems: 'center', color: '#A1A1AA', fontSize: 10 }}>
+                          {m.imagen ? <img src={m.imagen} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : 'SKU'}
+                        </div>
                         <div
                           style={{
                             flex: 1,
@@ -694,61 +794,10 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
                         color: '#71717A',
                       }}
                     >
-                      Sin coincidencias — se registrará
-                      como nuevo material
+                      No se encontraron materiales en el catálogo.
                     </div>
                   )}
 
-                  {matches.length > 0 && (
-                    <div
-                      onMouseDown={() =>
-                        selectMaterial(i, {
-                          id: `NEW-${Date.now()}`,
-                          nombre: linea.query,
-                        })
-                      }
-                      style={{
-                        padding: '9px 14px',
-                        background: '#F8F9FF',
-                        borderTop:
-                          '1px solid #E4E4E7',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                      }}
-                      onMouseEnter={e =>
-                        (
-                          e.currentTarget as HTMLElement
-                        ).style.background = '#EFF6FF'
-                      }
-                      onMouseLeave={e =>
-                        (
-                          e.currentTarget as HTMLElement
-                        ).style.background = '#F8F9FF'
-                      }
-                    >
-                      <span
-                        style={{
-                          color: '#2563EB',
-                          fontWeight: 700,
-                        }}
-                      >
-                        +
-                      </span>
-
-                      <span
-                        style={{
-                          fontSize: 12,
-                          color: '#2563EB',
-                          fontWeight: 600,
-                        }}
-                      >
-                        Usar "{linea.query}" como nuevo
-                        material
-                      </span>
-                    </div>
-                  )}
                 </div>
               )}
           </div>
@@ -909,13 +958,13 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
         {/* Footer */}
         <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', paddingBottom: 24 }}>
           <button className="btn btn-ghost" onClick={() => onNav('mis-solicitudes')}>Cancelar</button>
-          <button className="btn btn-ghost" style={{ borderColor: '#2563EB', color: '#2563EB', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => handleSave(true)}>
+          <button className="btn btn-ghost" disabled={saving} style={{ borderColor: '#2563EB', color: '#2563EB', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => void handleSave(true)}>
             <svg width="14" height="14" viewBox="0 0 15 15" fill="none"><path d="M2 2h9l2 2v9a1 1 0 01-1 1H3a1 1 0 01-1-1V2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M5 2v4h5V2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><rect x="4" y="8.5" width="7" height="4.5" rx="0.5" stroke="currentColor" strokeWidth="1.3"/></svg>
-            Guardar borrador
+            {saving ? 'Guardando…' : 'Guardar borrador'}
           </button>
-          <button className="btn btn-primary" style={{ padding: '10px 24px', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => handleSave(false)}>
+          <button className="btn btn-primary" disabled={saving} style={{ padding: '10px 24px', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => void handleSave(false)}>
             <svg width="14" height="14" viewBox="0 0 15 15" fill="none"><path d="M1 1l13 6.5L1 14V9l8-1.5L1 6V1z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg>
-            Enviar al coordinador
+            {saving ? 'Enviando…' : 'Enviar al coordinador'}
           </button>
         </div>
       </div>

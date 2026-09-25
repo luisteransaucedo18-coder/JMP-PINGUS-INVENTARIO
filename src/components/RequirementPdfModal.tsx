@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Entrega, Material, Requerimiento } from '../data/mockData';
 import PdfDocumentViewer from './PdfDocumentViewer';
+import { createRequirementPdf, REQUIREMENT_PDF_LOGO } from '../utils/requirementPdf';
 
 interface Props {
   requirement: Requerimiento;
@@ -26,7 +27,6 @@ export default function RequirementPdfModal({ requirement, materials, deliveries
     setUrl(''); setError('');
     async function generate() {
       try {
-        const { createRequirementPdf, REQUIREMENT_PDF_LOGO } = await import('../utils/requirementPdf');
         const response = await fetch(`${import.meta.env.BASE_URL}${REQUIREMENT_PDF_LOGO.slice(1)}`, { signal: controller.signal });
         if (!response.ok) throw new Error('No se pudo cargar el logo del formato.');
         const bytes = await createRequirementPdf(requirement, materials, deliveries, new Uint8Array(await response.arrayBuffer()));
@@ -48,13 +48,13 @@ export default function RequirementPdfModal({ requirement, materials, deliveries
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <div className="modal-header" style={{ flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h2 id="requirement-pdf-title" style={{ margin: 0, fontSize: 16 }}>Pedido de materiales · {requirement.id}</h2>
+            <h2 id="requirement-pdf-title" style={{ margin: 0, fontSize: 16 }}>Pedido de materiales · {requirement.codigo ?? requirement.id}</h2>
             <p style={{ margin: '5px 0 0', fontSize: 12, color: '#71717A' }}>Formato JM-FI-GL-07 · Solicitud confirmada</p>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {url && <>
               <a className="btn btn-ghost" href={url} target="_blank" rel="noopener noreferrer">Abrir PDF</a>
-              <a className="btn btn-ghost" href={url} download={`JM-FI-GL-07-${requirement.id}.pdf`}>Descargar</a>
+              <a className="btn btn-ghost" href={url} download={`JM-FI-GL-07-${requirement.codigo ?? requirement.id}.pdf`}>Descargar</a>
             </>}
             <button autoFocus className="btn btn-ghost" onClick={onClose}>Cerrar</button>
           </div>

@@ -14,8 +14,6 @@ type MaterialDB = {
   imagen_url?: string | null;
   created_at?: string;
   updated_at?: string;
-  categorias_material?: { nombre: string } | null;
-  inventario_sedes?: Array<{ sede: string; stock: number | string }>;
 };
 
 // ======================================================
@@ -23,22 +21,20 @@ type MaterialDB = {
 // ======================================================
 
 function mapMaterialDBToMaterial(m: MaterialDB): Material {
-  const stockSedes = { Chiclayo: 0, Chimbote: 0, Trujillo: 0 };
-  for (const row of m.inventario_sedes ?? []) {
-    if (row.sede === 'Chiclayo' || row.sede === 'Chimbote' || row.sede === 'Trujillo') {
-      stockSedes[row.sede] = Number(row.stock ?? 0);
-    }
-  }
-
   return {
     id: m.sku,
     nombre: m.nombre,
     descripcion: m.descripcion,
     categoria: String(m.categoria_id),
-    unidad: m.unidad ?? 'UND',
+
+    unidad: m.unidad?.trim() || 'UND',
     marca: m.marca ?? undefined,
 
-    stockSedes,
+    stockSedes: {
+      Chiclayo: 0,
+      Chimbote: 0,
+      Trujillo: 0,
+    },
 
     minimo: Number(m.stock_minimo ?? 0),
     precioUnitario: Number(m.precio_unitario ?? 0),
@@ -53,18 +49,23 @@ function mapMaterialDBToMaterial(m: MaterialDB): Material {
 // ======================================================
 
 export async function obtenerMateriales(): Promise<Material[]> {
-  const { data, error } = await supabase
-    .from('materiales')
-    .select('sku,nombre,descripcion,categoria_id,unidad,marca,stock_minimo,precio_unitario,estado,imagen_url,created_at,updated_at,categorias_material(nombre),inventario_sedes(sede,stock)')
-    .eq('activo', true)
-    .order('nombre', { ascending: true });
+  const [{ data, error }, { data: inventario, error: inventoryError }] = await Promise.all([
+    supabase.from('materiales').select('*').order('nombre', { ascending: true }),
+    supabase.from('inventario_sedes').select('material_sku,sede,stock'),
+  ]);
 
-  if (error) {
+  if (error || inventoryError) {
     console.error('Error obteniendo materiales:', error);
-    throw error;
+    throw error ?? inventoryError;
   }
 
-  return (data ?? []).map(mapMaterialDBToMaterial);
+  const stockPorSku = new Map<string, Material['stockSedes']>();
+  for (const row of inventario ?? []) {
+    const stock = stockPorSku.get(row.material_sku) ?? { Chiclayo: 0, Chimbote: 0, Trujillo: 0 };
+    if (row.sede === 'Chiclayo' || row.sede === 'Chimbote' || row.sede === 'Trujillo') stock[row.sede] = Number(row.stock ?? 0);
+    stockPorSku.set(row.material_sku, stock);
+  }
+  return (data ?? []).map(material => ({ ...mapMaterialDBToMaterial(material), stockSedes: stockPorSku.get(material.sku) ?? { Chiclayo: 0, Chimbote: 0, Trujillo: 0 } }));
 }
 
 // ======================================================

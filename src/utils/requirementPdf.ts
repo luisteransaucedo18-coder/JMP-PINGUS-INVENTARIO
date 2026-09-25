@@ -52,8 +52,9 @@ export async function createRequirementPdf(
   logoBytes: Uint8Array,
 ): Promise<Uint8Array> {
   if (requirement.estado !== 'CONFIRMADO') throw new Error('La solicitud aún no está confirmada.');
+  const reference = requirement.codigo ?? requirement.id;
   const doc = await PDFDocument.create();
-  doc.setTitle(`JM-FI-GL-07 - ${requirement.id}`);
+  doc.setTitle(`JM-FI-GL-07 - ${reference}`);
   doc.setAuthor(COMPANY);
   const regular = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
@@ -88,7 +89,7 @@ export async function createRequirementPdf(
     const widths = [85, 70, 178, 65, 81, 30, 46];
     const labels = ['RAZÓN SOCIAL', 'RUC', 'PROYECTO', 'CIUDAD', 'FECHA REQUERIDA', 'AÑO', 'NÚMERO'];
     // The current request has no required-date field. Do not substitute its creation date.
-    const values = [COMPANY, RUC, requirement.proyecto, requirement.sede, '', requirement.fecha.slice(0, 4), requirement.id.split('-').slice(-1)[0] ?? requirement.id];
+    const values = [COMPANY, RUC, requirement.proyecto, requirement.sede, '', requirement.fecha.slice(0, 4), reference.split('-').slice(-1)[0] ?? reference];
     const valueHeight = Math.max(28, ...values.map((v, i) => wrap(v, widths[i] - 6, regular, 7).length * 9 + 6));
     if (valueHeight > 100) throw new Error('El nombre del proyecto es demasiado largo para el formato.');
     let x = LEFT;
@@ -153,12 +154,12 @@ export async function createRequirementPdf(
     cell('Ver comentarios en la página siguiente.', LEFT, 746, WIDTH, 65);
     for (let offset = 0; offset < commentLines.length; offset += 72) {
       page = doc.addPage([595.28, HEIGHT]);
-      band(`Comentarios - ${requirement.id}`, 20);
+      band(`Comentarios - ${reference}`, 20);
       cell(commentLines.slice(offset, offset + 72).join('\n'), LEFT, 37, WIDTH, 730);
     }
   }
   doc.getPages().forEach((p, index, pages) => {
-    p.drawText(`${requirement.id} - CONFIRMADO`, { x: LEFT, y: 17, size: 7, font: regular });
+    p.drawText(`${reference} - CONFIRMADO`, { x: LEFT, y: 17, size: 7, font: regular });
     p.drawText(`Página ${index + 1} de ${pages.length}`, { x: 495, y: 17, size: 7, font: regular });
   });
   return doc.save();

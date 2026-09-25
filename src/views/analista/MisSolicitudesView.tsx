@@ -3,6 +3,7 @@ import { useAppStore } from '../../store/AppContext';
 import { Requerimiento } from '../../data/mockData';
 import RequirementStatusTimeline from '../../components/RequirementStatusTimeline';
 import RequirementPdfModal from '../../components/RequirementPdfModal';
+import { enviarSolicitud } from '../../service/requerimientoService';
 
 const BADGE: Record<string, string> = { BORRADOR: 'gray', ENVIADO: 'amber', CONFIRMADO: 'green', RECHAZADO: 'red' };
 
@@ -15,7 +16,7 @@ const DOCUMENT_STATUS: Record<string, { label: string; color: string; descriptio
 interface Props { usuario: string; onToast: (msg: string) => void; onNav: (v: string) => void; }
 
 export default function MisSolicitudesView({ usuario, onToast, onNav }: Props) {
-  const { state, dbActions } = useAppStore();
+  const { state, refreshRemoteData } = useAppStore();
   const [filter, setFilter] = useState('');
   const [selected, setSelected] = useState<Requerimiento | null>(null);
   const [pdfId, setPdfId] = useState<string | null>(null);
@@ -28,13 +29,11 @@ export default function MisSolicitudesView({ usuario, onToast, onNav }: Props) {
 
   const handleSubmit = async (id: string) => {
     try {
-      await dbActions.submitRequirement(id);
+      await enviarSolicitud(id);
+      await refreshRemoteData();
       onToast('✓ Solicitud enviada al coordinador');
       setSelected(null);
-    } catch (error) {
-      console.error('Error enviando requerimiento:', error);
-      onToast(error instanceof Error ? error.message : 'No se pudo enviar la solicitud');
-    }
+    } catch (error) { onToast(error instanceof Error ? error.message : 'No se pudo enviar la solicitud'); }
   };
 
   return (
@@ -70,7 +69,7 @@ export default function MisSolicitudesView({ usuario, onToast, onNav }: Props) {
               <tr className="empty-state-row"><td colSpan={9} style={{ textAlign: 'center', color: '#71717A', padding: 32 }}>Sin solicitudes{filter ? ` con estado ${filter}` : ''}</td></tr>
             ) : misReqs.map(r => (
               <tr key={r.id} style={{ cursor: 'pointer' }} onClick={() => setSelected(r)}>
-                <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#2563EB' }}>{r.id}</td>
+                <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#2563EB' }}>{r.codigo ?? r.id}</td>
                 <td style={{ fontWeight: 500, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.proyecto}</td>
                 <td style={{ fontSize: 12 }}>{r.sede}</td>
                 <td style={{ fontSize: 12, color: '#71717A', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.tecnico}</td>
@@ -91,7 +90,7 @@ export default function MisSolicitudesView({ usuario, onToast, onNav }: Props) {
                 </td>
                 <td onClick={e => e.stopPropagation()}>
                   {r.estado === 'BORRADOR' && (
-                    <button className="btn btn-primary" style={{ padding: '3px 10px', fontSize: 11 }} onClick={() => handleSubmit(r.id)}>
+                    <button className="btn btn-primary" style={{ padding: '3px 10px', fontSize: 11 }} onClick={() => void handleSubmit(r.id)}>
                       Enviar
                     </button>
                   )}
@@ -112,7 +111,7 @@ export default function MisSolicitudesView({ usuario, onToast, onNav }: Props) {
           <div className="modal" style={{ width: 620 }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <div style={{ fontSize: 11, color: '#71717A', fontFamily: 'monospace', marginBottom: 3 }}>{selected.id}</div>
+                <div style={{ fontSize: 11, color: '#71717A', fontFamily: 'monospace', marginBottom: 3 }}>{selected.codigo ?? selected.id}</div>
                 <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#18181B' }}>{selected.proyecto}</h2>
               </div>
               <span className={`badge status-badge badge-${BADGE[selected.estado]}`}>{selected.estado}</span>
@@ -152,7 +151,7 @@ export default function MisSolicitudesView({ usuario, onToast, onNav }: Props) {
             )}
             <div style={{ padding: '14px 22px', borderTop: '1px solid #E4E4E7', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               {selected.estado === 'BORRADOR' && (
-                <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => { handleSubmit(selected.id); }}><svg width="13" height="13" viewBox="0 0 15 15" fill="none"><path d="M1 1l13 6.5L1 14V9l8-1.5L1 6V1z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg> Enviar al coordinador</button>
+                <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => void handleSubmit(selected.id)}><svg width="13" height="13" viewBox="0 0 15 15" fill="none"><path d="M1 1l13 6.5L1 14V9l8-1.5L1 6V1z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg> Enviar al coordinador</button>
               )}
               <button className="btn btn-ghost" onClick={() => setSelected(null)}>Cerrar</button>
             </div>

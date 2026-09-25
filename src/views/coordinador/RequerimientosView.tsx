@@ -3,13 +3,14 @@ import { useAppStore } from '../../store/AppContext';
 import { Requerimiento, SEDES, Material } from '../../data/mockData';
 import MaterialPreviewModal, { PreviewBtn } from '../../components/MaterialPreviewModal';
 import RequirementStatusTimeline from '../../components/RequirementStatusTimeline';
+import { revisarSolicitud } from '../../service/requerimientoService';
 
 const BADGE: Record<string, string> = { BORRADOR: 'gray', ENVIADO: 'amber', CONFIRMADO: 'green', RECHAZADO: 'red' };
 
 interface Props { onToast: (msg: string) => void; usuario: string; }
 
 export default function RequerimientosView({ onToast, usuario }: Props) {
-  const { state, dbActions } = useAppStore();
+  const { state, refreshRemoteData } = useAppStore();
   const [estadoFilter, setEstadoFilter] = useState('ENVIADO');
   const [sedeFilter, setSedeFilter] = useState('');
   const [search, setSearch] = useState('');
@@ -17,6 +18,7 @@ export default function RequerimientosView({ onToast, usuario }: Props) {
   const [obsModal, setObsModal] = useState('');
   const [action, setAction] = useState<'confirm' | 'reject' | null>(null);
   const [previewMat, setPreviewMat] = useState<Material | null>(null);
+  const [reviewing, setReviewing] = useState(false);
 
   const filtered = state.requerimientos
     .filter(r =>
@@ -27,26 +29,26 @@ export default function RequerimientosView({ onToast, usuario }: Props) {
     .sort((a, b) => b.fecha.localeCompare(a.fecha));
 
   const handleConfirm = async (r: Requerimiento) => {
+    setReviewing(true);
     try {
-      await dbActions.reviewRequirement(r.id, true, obsModal || undefined);
-      onToast(`✓ REQ ${r.id} confirmada — inventario actualizado`);
+      await revisarSolicitud(r.id, true, obsModal || undefined);
+      await refreshRemoteData();
+      onToast(`✓ ${r.codigo ?? r.id} confirmada — inventario actualizado`);
       setSelected(null); setObsModal(''); setAction(null);
-    } catch (error) {
-      console.error('Error confirmando requerimiento:', error);
-      onToast(error instanceof Error ? error.message : 'No se pudo confirmar el requerimiento');
-    }
+    } catch (error) { onToast(error instanceof Error ? error.message : 'No se pudo confirmar la solicitud'); }
+    finally { setReviewing(false); }
   };
 
   const handleReject = async (r: Requerimiento) => {
     if (!obsModal.trim()) { onToast('⚠ Indica el motivo del rechazo'); return; }
+    setReviewing(true);
     try {
-      await dbActions.reviewRequirement(r.id, false, obsModal);
-      onToast(`REQ ${r.id} rechazada — analista notificado`);
+      await revisarSolicitud(r.id, false, obsModal);
+      await refreshRemoteData();
+      onToast(`${r.codigo ?? r.id} rechazada — analista notificado`);
       setSelected(null); setObsModal(''); setAction(null);
-    } catch (error) {
-      console.error('Error rechazando requerimiento:', error);
-      onToast(error instanceof Error ? error.message : 'No se pudo rechazar el requerimiento');
-    }
+    } catch (error) { onToast(error instanceof Error ? error.message : 'No se pudo rechazar la solicitud'); }
+    finally { setReviewing(false); }
   };
 
   const openAction = (r: Requerimiento, type: 'confirm' | 'reject') => {
@@ -106,7 +108,7 @@ export default function RequerimientosView({ onToast, usuario }: Props) {
                 ? <tr className="empty-state-row"><td colSpan={9} style={{ textAlign: 'center', color: '#71717A', padding: 32 }}>Sin solicitudes para este filtro</td></tr>
                 : filtered.map(r => (
                   <tr key={r.id} style={{ cursor: 'pointer' }} onClick={() => { setSelected(r); setAction(null); }}>
-                    <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#2563EB' }}>{r.id}</td>
+                    <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#2563EB' }}>{r.codigo ?? r.id}</td>
                     <td style={{ fontWeight: 500, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.proyecto}</td>
                     <td style={{ fontSize: 12 }}>{r.sede}</td>
                     <td style={{ fontSize: 12, color: '#71717A' }}>{r.analista}</td>
@@ -136,7 +138,7 @@ export default function RequerimientosView({ onToast, usuario }: Props) {
           <div className="modal" style={{ width: 640 }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <div style={{ fontSize: 11, color: '#71717A', fontFamily: 'monospace', marginBottom: 3 }}>{selected.id}</div>
+                <div style={{ fontSize: 11, color: '#71717A', fontFamily: 'monospace', marginBottom: 3 }}>{selected.codigo ?? selected.id}</div>
                 <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#18181B' }}>{selected.proyecto}</h2>
               </div>
               <span className={`badge status-badge badge-${BADGE[selected.estado]}`}>{selected.estado}</span>
@@ -207,8 +209,8 @@ export default function RequerimientosView({ onToast, usuario }: Props) {
                     <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 10 }}>
                       <button className="btn btn-ghost" onClick={() => setAction(null)}>← Volver</button>
                       {action === 'confirm'
-                        ? <button className="btn btn-primary" style={{ background: '#059669', border: 'none', padding: '8px 20px', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => handleConfirm(selected)}><svg width="13" height="13" viewBox="0 0 15 15" fill="none"><path d="M2 7.5l3.5 3.5 7-7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg> Confirmar</button>
-                        : <button className="btn btn-danger" style={{ padding: '8px 20px', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => handleReject(selected)}><svg width="12" height="12" viewBox="0 0 15 15" fill="none"><path d="M2.5 2.5l10 10M12.5 2.5l-10 10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg> Rechazar</button>
+                        ? <button className="btn btn-primary" disabled={reviewing} style={{ background: '#059669', border: 'none', padding: '8px 20px', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => void handleConfirm(selected)}><svg width="13" height="13" viewBox="0 0 15 15" fill="none"><path d="M2 7.5l3.5 3.5 7-7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg> {reviewing ? 'Confirmando…' : 'Confirmar'}</button>
+                        : <button className="btn btn-danger" disabled={reviewing} style={{ padding: '8px 20px', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => void handleReject(selected)}><svg width="12" height="12" viewBox="0 0 15 15" fill="none"><path d="M2.5 2.5l10 10M12.5 2.5l-10 10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg> {reviewing ? 'Rechazando…' : 'Rechazar'}</button>
                       }
                     </div>
                   </div>
