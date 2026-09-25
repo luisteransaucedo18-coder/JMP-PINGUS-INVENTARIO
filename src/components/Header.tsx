@@ -16,17 +16,22 @@ export default function Header({ title, subtitle, actions, userName, userInitial
   return (
     <div className="app-header" style={{
       padding: '0 28px',
+      margin: '0 24px',
       height: 68,
       background: '#fff',
-      boxShadow: '0 1px 0 #EEF0FF',
+      border: '1px solid #E7E9F8',
+      borderRadius: 8,
+      boxShadow: '0 8px 24px rgba(46, 61, 116, 0.10), 0 1px 2px rgba(46, 61, 116, 0.06)',
       display: 'flex',
       alignItems: 'center',
       gap: 20,
       flexShrink: 0,
+      position: 'relative',
+      zIndex: 10,
     }}>
       {/* Title */}
-      <div className="header-title" style={{ minWidth: 0, flexShrink: 0 }}>
-        <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#1A1D23', letterSpacing: '-0.02em', lineHeight: 1.2 }}>{title}</h1>
+      <div className="header-title" style={{ minWidth: 0, flex: '0 1 auto' }}>
+        <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#1A1D23', letterSpacing: 0, lineHeight: 1.2 }}>{title}</h1>
         {subtitle && <div style={{ fontSize: 11.5, color: '#8B8FA8', marginTop: 2, fontWeight: 400 }}>{subtitle}</div>}
       </div>
 
@@ -63,7 +68,6 @@ export default function Header({ title, subtitle, actions, userName, userInitial
 
       {/* Action slot */}
       {actions && <div style={{ display: 'flex', alignItems: 'center' }}>{actions}</div>}
-
 
       {/* Notification bell */}
       <div style={{ position: 'relative', flexShrink: 0 }}>

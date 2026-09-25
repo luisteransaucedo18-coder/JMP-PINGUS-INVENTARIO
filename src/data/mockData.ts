@@ -80,6 +80,8 @@ export interface Material {
 
   minimo: number;
 
+  precioUnitario: number;
+
   estado: EstadoMaterial;
 
   // URL de Supabase Storage

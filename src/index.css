@@ -463,6 +463,35 @@ body {
 
 /* Celular / tablet pequeña */
 @media (max-width: 768px) {
+  .app-main {
+    padding: 10px 0 0 !important;
+    gap: 10px !important;
+  }
+
+  .app-header {
+    margin: 0 24px !important;
+    min-height: 62px;
+    height: auto !important;
+    padding: 10px 14px !important;
+    gap: 12px !important;
+  }
+
+  .header-title {
+    flex: 1 1 auto !important;
+    min-width: 0;
+  }
+
+  .header-title h1,
+  .header-title > div {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .header-search {
+    display: none !important;
+  }
+
   .login-screen {
     min-height: 100dvh !important;
     flex-direction: column !important;
@@ -499,6 +528,10 @@ body {
 
 /* Celulares pequeños */
 @media (max-width: 480px) {
+  .header-avatar {
+    display: none !important;
+  }
+
   .login-panel {
     padding: 24px 18px !important;
   }

@@ -16,6 +16,15 @@ const ESTADO_STYLE: Record<string, { bg: string; color: string }> = {
 
 const SEDE_COLOR: Record<Sede, string> = { Chiclayo: '#2563EB', Chimbote: '#059669', Trujillo: '#7C3AED' };
 
+const formatPrecio = (precio: number) =>
+  precio > 0
+    ? new Intl.NumberFormat('es-PE', {
+        style: 'currency',
+        currency: 'PEN',
+        minimumFractionDigits: 2,
+      }).format(precio)
+    : 'Sin precio';
+
 function CatIllustration({categoria }: { categoria: string }) {
   const cfg = CATEGORIA_COLORS[categoria] || CATEGORIA_COLORS['Gas Natural'];
 
@@ -156,6 +165,7 @@ export default function MaterialPreviewModal({ material, onClose }: Props) {
             ['Unidad de medida', material.unidad],
             ['Marca / Especificación', material.marca || '—'],
             ['Stock mínimo', `${material.minimo} UND`],
+            ['Precio unitario', formatPrecio(material.precioUnitario)],
           ].map(([label, value]) => (
             <div key={label} style={{ background: '#F9FAFB', borderRadius: 8, padding: '10px 12px' }}>
               <div style={{ fontSize: 10.5, color: '#A1A1AA', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 3 }}>{label}</div>

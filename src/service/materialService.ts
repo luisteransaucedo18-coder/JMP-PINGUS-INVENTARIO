@@ -2,21 +2,16 @@ import { supabase } from './supabase';
 import type { Material } from '../data/mockData';
 
 type MaterialDB = {
-  id: string;
+  sku: string;
   nombre: string;
   descripcion: string;
-  categoria: string;
+  categoria_id: number;
   unidad: string | null;
   marca?: string | null;
-
-  stock_chiclayo: number | null;
-  stock_chimbote: number | null;
-  stock_trujillo: number | null;
-
-  minimo: number | null;
+  stock_minimo: number | null;
+  precio_unitario: number | null;
   estado: 'OK' | 'BAJO' | 'CRÍTICO' | 'AGOTADO';
-
-  imagen?: string | null;
+  imagen_url?: string | null;
   created_at?: string;
   updated_at?: string;
 };
@@ -31,6 +26,7 @@ function mapMaterialDBToMaterial(m: MaterialDB): Material {
     nombre: m.nombre,
     descripcion: m.descripcion,
     categoria: String(m.categoria_id),
+
     unidad: m.unidad?.trim() || 'UND',
     marca: m.marca ?? undefined,
 
@@ -41,6 +37,7 @@ function mapMaterialDBToMaterial(m: MaterialDB): Material {
     },
 
     minimo: Number(m.stock_minimo ?? 0),
+    precioUnitario: Number(m.precio_unitario ?? 0),
     estado: m.estado,
 
     // URL que guardaste en Supabase
@@ -111,6 +108,7 @@ export async function crearMaterial(material: Material) {
         stock_trujillo: material.stockSedes.Trujillo,
 
         minimo: material.minimo,
+        precio_unitario: material.precioUnitario,
         estado: material.estado,
 
         imagen: material.imagen ?? null,

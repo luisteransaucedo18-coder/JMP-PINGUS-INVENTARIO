@@ -317,18 +317,18 @@ function AppShell({ session, onLogout }: { session: { role: Role; name: string; 
     : (VIEW_TITLES as any)[session.role]?.[view];
 
   return (
-    <div className="app-shell" style={{ display: 'flex', height: '100dvh', overflow: 'hidden', background: '#EEF0FF', position: 'relative' }}>
+    <div className="app-shell" style={{ display: 'flex', height: '100dvh', overflow: 'hidden', background: 'linear-gradient(180deg, #FFFFFF 0%, #EFF6FF 48%, #2563EB 100%)', position: 'relative' }}>
       <Sidebar role={session.role} activeView={view} onNav={setView} onLogout={onLogout} userName={session.name} userEmail={session.email} />
-      <div className="app-main" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div className="app-main" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '14px 0 0', gap: 12 }}>
         <Header
           title={titles?.title || 'Sistema de Gestión'}
           subtitle={titles?.subtitle}
           userName={session.name}
           userInitials={session.name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()}
           unreadCount={unread}
-          onBellClick={() => setNotifOpen(o => !o)}
+          onBellClick={() => setNotifOpen(open => !open)}
         />
-        <div className="app-scroll" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+        <div className="app-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
           {renderView(session.role, view, msg => setToast(msg), setView, session.name, session.email)}
         </div>
       </div>
