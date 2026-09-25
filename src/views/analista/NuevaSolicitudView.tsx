@@ -250,34 +250,29 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
     setLineas(p => p.map((l, j) => j !== i ? l : { ...l, showDrop: false }));
   };
 
-      const getMatchingMats = (query: string) => {
-        const q = query
-          .trim()
-          .toLowerCase();
+     const getMatchingMats = (query: string) => {
+  const q = query.trim().toLowerCase();
 
-        if (q.length < 2) {
-          return [];
-        }
+  // Si no escribió nada, mostrar materiales existentes
+  if (!q) {
+    return materiales.slice(0, 10);
+  }
 
-        return materiales
-          .filter((m) => {
-            const sku = m.id
-              ?.toLowerCase() ?? '';
+  // Si escribe, filtrar únicamente materiales existentes
+  return materiales
+    .filter((m) => {
+      const sku = m.id?.toLowerCase() ?? '';
+      const nombre = m.nombre?.toLowerCase() ?? '';
+      const categoria = m.categoria?.toLowerCase() ?? '';
 
-            const nombre = m.nombre
-              ?.toLowerCase() ?? '';
-
-            const categoria = m.categoria
-              ?.toLowerCase() ?? '';
-
-            return (
-              sku.includes(q) ||
-              nombre.includes(q) ||
-              categoria.includes(q)
-            );
-          })
-          .slice(0, 8);
-      };
+      return (
+        sku.includes(q) ||
+        nombre.includes(q) ||
+        categoria.includes(q)
+      );
+    })
+    .slice(0, 10);
+};
 
   const validate = (draft: boolean) => {
     const e: Record<string, string> = {};
@@ -663,10 +658,15 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
                 </button>
               </div>
             ) : (
-              <input
+            <input
                 className="input-field"
-                placeholder="Escribe el nombre del material…"
+                placeholder={
+                  loadingMateriales
+                    ? 'Cargando materiales...'
+                    : 'Selecciona o busca un material...'
+                }
                 value={linea.query}
+                disabled={loadingMateriales}
                 style={{
                   width: '100%',
                   height: 42,
