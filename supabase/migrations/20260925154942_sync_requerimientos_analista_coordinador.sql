@@ -142,18 +142,18 @@ begin
   return p_id;
 end $$;
 
-create or replace function public.revisar_requerimiento(p_id uuid,p_confirmar boolean,p_observaciones text default null) returns uuid
+create or replace function public.revisar_requerimiento(p_requerimiento_id uuid,p_confirmar boolean,p_observaciones text default null) returns void
 language plpgsql security invoker set search_path = '' as $$
 declare v_req public.requerimientos; v_estado public.estado_requerimiento;
 begin
   if auth.uid() is null or public.rol_actual() is distinct from 'coordinador' then raise exception 'Solo el coordinador puede revisar solicitudes'; end if;
-  select * into v_req from public.requerimientos where id=p_id for update;
+  select * into v_req from public.requerimientos where id=p_requerimiento_id for update;
   if not found then raise exception 'Solicitud no encontrada'; end if;
   v_estado := case when p_confirmar then 'CONFIRMADO'::public.estado_requerimiento else 'RECHAZADO'::public.estado_requerimiento end;
-  if v_req.estado=v_estado and v_req.confirmado_por=auth.uid() then return p_id; end if;
+  if v_req.estado=v_estado and v_req.confirmado_por=auth.uid() then return; end if;
   if v_req.estado<>'ENVIADO' then raise exception 'La solicitud ya fue revisada. Actualiza la lista'; end if;
-  update public.requerimientos set estado=v_estado,observaciones=nullif(btrim(p_observaciones),'') where id=p_id;
-  return p_id;
+  update public.requerimientos set estado=v_estado,observaciones=nullif(btrim(p_observaciones),'') where id=p_requerimiento_id;
+  return;
 end $$;
 
 revoke all on function public.crear_requerimiento(uuid,jsonb,jsonb,boolean) from public,anon;

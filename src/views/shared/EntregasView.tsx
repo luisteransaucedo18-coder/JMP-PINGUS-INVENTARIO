@@ -3,6 +3,7 @@ import { useAppStore } from '../../store/AppContext';
 import { Requerimiento, EntregaItem, EstadoEntrega } from '../../data/mockData';
 import MaterialPreviewModal, { PreviewBtn } from '../../components/MaterialPreviewModal';
 import { Material } from '../../data/mockData';
+import { registrarEntrega } from '../../service/devolucionService';
 
 interface Props { onToast: (msg: string) => void; usuario: string; }
 
@@ -127,6 +128,7 @@ function EntregaForm({ req, usuario, onDone, onCancel }: { req: Requerimiento; u
   const [showComprobante, setShowComprobante] = useState(false);
   const [entregaId, setEntregaId] = useState('');
   const [previewMat, setPreviewMat] = useState<Material | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const updateQty = (i: number, v: string) => {
     const n = Math.max(0, Math.min(items[i].cantidadSolicitada, parseInt(v) || 0));
@@ -145,17 +147,22 @@ function EntregaForm({ req, usuario, onDone, onCancel }: { req: Requerimiento; u
     setShowConfirm(true);
   };
 
-  const handleSubmit = () => {
-    dispatch({
-      type: 'CREATE_ENTREGA',
-      payload: { requerimientoId: req.id, proyectoNombre: req.proyecto, tecnico, dniTecnico: dni, responsableEntrega: usuario, items, observaciones: obs },
-    });
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    try {
+      const persistedId = await registrarEntrega(req.id, tecnico, dni, obs, items);
+      dispatch({
+        type: 'CREATE_ENTREGA',
+        payload: { requerimientoId: req.id, proyectoNombre: req.proyecto, tecnico, dniTecnico: dni, responsableEntrega: usuario, items, observaciones: obs },
+      });
     const today = new Date().toISOString().split('T')[0];
     const hora = new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
-    const newId = `ENT-2026-${String(Math.floor(Math.random() * 900) + 100)}`;
-    setEntregaId(newId);
+    setEntregaId(persistedId);
     setShowConfirm(false);
     setShowComprobante(true);
+    } catch (error) {
+      setErrors(prev => ({ ...prev, submit: error instanceof Error ? error.message : 'No se pudo registrar la entrega.' }));
+    } finally { setSubmitting(false); }
   };
 
   const allComplete = items.every(i => i.cantidadEntregada >= i.cantidadSolicitada);
@@ -285,8 +292,8 @@ function EntregaForm({ req, usuario, onDone, onCancel }: { req: Requerimiento; u
             </div>
             <div style={{ padding: '14px 22px', borderTop: '1px solid #E4E4E7', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button className="btn btn-ghost" onClick={() => setShowConfirm(false)}>Revisar</button>
-              <button className="btn btn-primary" style={{ background: '#059669', border: 'none', padding: '9px 22px' }} onClick={handleSubmit}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><svg width="13" height="13" viewBox="0 0 15 15" fill="none"><path d="M2 7.5l3.5 3.5 7-7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg> Registrar entrega</span>
+              <button className="btn btn-primary" disabled={submitting} style={{ background: '#059669', border: 'none', padding: '9px 22px' }} onClick={() => void handleSubmit()}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><svg width="13" height="13" viewBox="0 0 15 15" fill="none"><path d="M2 7.5l3.5 3.5 7-7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg> {submitting ? 'Registrando…' : 'Registrar entrega'}</span>
               </button>
             </div>
           </div>

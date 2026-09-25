@@ -104,6 +104,7 @@ export interface ReqMaterial {
 export interface Requerimiento {
   dbId?: string;
   id: string;
+  codigo?: string;
   proyectoId: string;
   proyecto: string;
   sede: Sede;

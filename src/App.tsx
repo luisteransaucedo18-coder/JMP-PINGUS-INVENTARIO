@@ -22,7 +22,6 @@ import NotificationsPanel, { useNotifications } from './components/Notifications
 import NuevaCompraView from './views/analista/NuevaCompraView';
 import MisComprasView from './views/analista/MisComprasView';
 import ComprasView from './views/coordinador/ComprasView';
-import DevolucionesView from './views/coordinador/DevolucionesView';
 
 
 const VIEW_TITLES: Record<string, Record<string, { title: string; subtitle?: string }>> = {
@@ -43,6 +42,7 @@ const VIEW_TITLES: Record<string, Record<string, { title: string; subtitle?: str
     inventario:        { title: 'Inventario', subtitle: 'Consulta de existencias por sede' },
     'nueva-compra':    { title: 'Nueva Solicitud de Compra', subtitle: 'Solicitar compra de materiales faltantes' },
     'mis-compras':     { title: 'Mis Órdenes de Compra', subtitle: 'Seguimiento de solicitudes de compra' },
+    devoluciones:      { title: 'Devoluciones', subtitle: 'Registrar devoluciones de materiales entregados' },
   },
   coordinador: {
     dashboard:      { title: 'Panel de Coordinación', subtitle: 'Gestión de requerimientos e inventario' },
@@ -53,6 +53,7 @@ const VIEW_TITLES: Record<string, Record<string, { title: string; subtitle?: str
     inventario:     { title: 'Inventario', subtitle: 'Catálogo de materiales — edición habilitada' },
     usuarios:       { title: 'Gestión de Usuarios', subtitle: 'Crear, activar y desactivar cuentas' },
     compras:        { title: 'Órdenes de Compra', subtitle: 'Aprobar solicitudes y confirmar ingresos de stock' },
+    devoluciones:   { title: 'Devoluciones', subtitle: 'Validar devoluciones y registrar ingresos de stock' },
   },
 };
 
@@ -254,6 +255,7 @@ function renderView(role: Role, view: string, onToast: (m: string) => void, onNa
     if (view === 'inventario') return <InventarioView role={role} onToast={onToast} />;
     if (view === 'nueva-compra') return <NuevaCompraView onToast={onToast} usuario={usuario} onNav={onNav} />;
     if (view === 'mis-compras') return <MisComprasView usuario={usuario} onNav={onNav} />;
+    if (view === 'devoluciones') return <DevolucionesView role="analista" onToast={onToast} />;
   }
   if (role === 'coordinador') {
     if (view === 'dashboard' || !view) return <CoordinadorDashboard onNav={onNav} />;
@@ -264,6 +266,7 @@ function renderView(role: Role, view: string, onToast: (m: string) => void, onNa
     if (view === 'inventario') return <InventarioView role={role} onToast={onToast} />;
     if (view === 'usuarios') return <UsuariosView onToast={onToast} />;
     if (view === 'compras') return <ComprasView onToast={onToast} usuario={usuario} />;
+    if (view === 'devoluciones') return <DevolucionesView role="coordinador" onToast={onToast} />;
   }
   return <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#71717A' }}>Vista en construcción</div>;
 }

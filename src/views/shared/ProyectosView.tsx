@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAppStore } from '../../store/AppContext';
+import { crearProyecto } from '../../service/requerimientoService';
 import { Proyecto, Requerimiento, Role, SEDES, Sede } from '../../data/mockData';
 import RequirementStatusTimeline from '../../components/RequirementStatusTimeline';
 
@@ -10,9 +11,10 @@ const SEDE_BG: Record<Sede, string> = { Chiclayo: '#DBEAFE', Chimbote: '#CCFBF1'
 const ESTADO_COLOR: Record<string, string> = { ENVIADO: '#D97706', CONFIRMADO: '#059669', RECHAZADO: '#DC2626', BORRADOR: '#71717A' };
 const ESTADO_BG: Record<string, string> = { ENVIADO: '#FEF3C7', CONFIRMADO: '#CCFBF1', RECHAZADO: '#FEE2E2', BORRADOR: '#F4F4F5' };
 
-function NewProyectoModal({ onSave, onClose }: { onSave: (p: Omit<Proyecto, 'id' | 'creadoEn'>) => void; onClose: () => void }) {
+function NewProyectoModal({ onSave, onClose }: { onSave: (p: Omit<Proyecto, 'id' | 'creadoEn'>) => Promise<void>; onClose: () => void }) {
   const [form, setForm] = useState({ nombre: '', ubicacion: '', sede: 'Chiclayo' as Sede, responsable: '', cliente: '', observaciones: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -23,10 +25,11 @@ function NewProyectoModal({ onSave, onClose }: { onSave: (p: Omit<Proyecto, 'id'
     return e;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
-    onSave(form);
+    setSaving(true);
+    try { await onSave(form); } catch (error) { setErrors({ nombre: error instanceof Error ? error.message : 'No se pudo guardar el proyecto.' }); } finally { setSaving(false); }
   };
 
   return (
@@ -80,7 +83,7 @@ function NewProyectoModal({ onSave, onClose }: { onSave: (p: Omit<Proyecto, 'id'
         </div>
         <div style={{ padding: '14px 22px', borderTop: '1px solid #E4E4E7', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
-          <button className="btn btn-primary" onClick={handleSave}>Crear proyecto</button>
+          <button className="btn btn-primary" disabled={saving} onClick={() => void handleSave()}>{saving ? 'Guardando…' : 'Crear proyecto'}</button>
         </div>
       </div>
     </div>
@@ -269,7 +272,7 @@ function ProjectDetail({ proyecto, onBack }: { proyecto: Proyecto; onBack: () =>
 }
 
 export default function ProyectosView({ role, onToast }: Props) {
-  const { state, dbActions } = useAppStore();
+  const { state, refreshRemoteData } = useAppStore();
   const [search, setSearch] = useState('');
   const [sedeFilter, setSedeFilter] = useState('');
   const [showNew, setShowNew] = useState(false);
@@ -284,15 +287,11 @@ export default function ProyectosView({ role, onToast }: Props) {
 
   const handleCreate = async (data: Omit<Proyecto, 'id' | 'creadoEn'>) => {
     const dup = state.proyectos.find(p => p.nombre.toLowerCase() === data.nombre.toLowerCase());
-    if (dup) { onToast('⚠ Ya existe un proyecto con ese nombre'); return; }
-    try {
-      await dbActions.createProject(data);
-      setShowNew(false);
-      onToast('✓ Proyecto creado correctamente');
-    } catch (error) {
-      console.error('Error creando proyecto:', error);
-      onToast(error instanceof Error ? error.message : 'No se pudo crear el proyecto');
-    }
+    if (dup) throw new Error('Ya existe un proyecto con ese nombre');
+    await crearProyecto(data);
+    setShowNew(false);
+    onToast('✓ Proyecto creado correctamente');
+    void refreshRemoteData().catch(() => onToast('El proyecto fue creado; la lista se actualizará al recargar.'));
   };
 
   if (selected) return <ProjectDetail proyecto={selected} onBack={() => setSelected(null)} />;
