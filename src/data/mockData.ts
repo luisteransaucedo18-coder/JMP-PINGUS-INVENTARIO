@@ -162,6 +162,26 @@ export interface Entrega {
   observaciones?: string;
 }
 
+export interface DevolucionItem {
+  skuId: string;
+  nombre: string;
+  cantidad: number;
+}
+
+export interface Devolucion {
+  id: string;
+  entregaId: string;
+  requerimientoId: string;
+  sede: Sede;
+  tecnico: string;
+  responsableRecepcion: string;
+  fecha: string;
+  hora: string;
+  items: DevolucionItem[];
+  observaciones?: string;
+  evidencias?: string[];
+}
+
 
 // ======================================================
 // USUARIOS
@@ -208,3 +228,5 @@ export const usuarios: Usuario[] = [];
 export const requerimientos: Requerimiento[] = [];
 
 export const entregas: Entrega[] = [];
+
+export const devoluciones: Devolucion[] = [];

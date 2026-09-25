@@ -22,6 +22,7 @@ import NotificationsPanel, { useNotifications } from './components/Notifications
 import NuevaCompraView from './views/analista/NuevaCompraView';
 import MisComprasView from './views/analista/MisComprasView';
 import ComprasView from './views/coordinador/ComprasView';
+import DevolucionesView from './views/coordinador/DevolucionesView';
 
 
 const VIEW_TITLES: Record<string, Record<string, { title: string; subtitle?: string }>> = {
@@ -38,6 +39,7 @@ const VIEW_TITLES: Record<string, Record<string, { title: string; subtitle?: str
     'mis-solicitudes': { title: 'Mis Solicitudes', subtitle: 'Historial de requerimientos enviados' },
     proyectos:         { title: 'Proyectos', subtitle: 'Gestionar y buscar proyectos' },
     entregas:          { title: 'Entregas al Técnico', subtitle: 'Registrar entrega de materiales aprobados' },
+    devoluciones:      { title: 'Devoluciones', subtitle: 'Registrar materiales devueltos por el técnico' },
     inventario:        { title: 'Inventario', subtitle: 'Consulta de existencias por sede' },
     'nueva-compra':    { title: 'Nueva Solicitud de Compra', subtitle: 'Solicitar compra de materiales faltantes' },
     'mis-compras':     { title: 'Mis Órdenes de Compra', subtitle: 'Seguimiento de solicitudes de compra' },
@@ -47,6 +49,7 @@ const VIEW_TITLES: Record<string, Record<string, { title: string; subtitle?: str
     requerimientos: { title: 'Requerimientos', subtitle: 'Validar y confirmar solicitudes de analistas' },
     proyectos:      { title: 'Proyectos', subtitle: 'Administrar proyectos y requerimientos' },
     entregas:       { title: 'Entregas al Técnico', subtitle: 'Preparar y registrar entregas de materiales' },
+    devoluciones:   { title: 'Devoluciones', subtitle: 'Registrar materiales devueltos por el técnico' },
     inventario:     { title: 'Inventario', subtitle: 'Catálogo de materiales — edición habilitada' },
     usuarios:       { title: 'Gestión de Usuarios', subtitle: 'Crear, activar y desactivar cuentas' },
     compras:        { title: 'Órdenes de Compra', subtitle: 'Aprobar solicitudes y confirmar ingresos de stock' },
@@ -74,6 +77,10 @@ function LoginScreen({ onLogin }: { onLogin: (role: Role, name: string, email: s
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const handleSsoUnavailable = (provider: string) => {
+    setError(`El acceso con ${provider} aún no está habilitado. Usa tu correo institucional.`);
+  };
 
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
@@ -170,105 +177,61 @@ const handleSubmit = async (e: React.FormEvent) => {
 
 
   return (
-    <div className="login-screen" style={{ display: 'flex', minHeight: '100dvh', fontFamily: 'Inter, sans-serif' }}>
-      {/* Left — form */}
-      <div className="login-panel" style={{ width: '45%', minWidth: 380, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 56px', background: '#fff' }}>
-        <div style={{ marginBottom: 32, textAlign: 'center' }}>
-              <img
-                src={ASSETS.logo}
-                alt="JIP"
-                style={{
-                  height: 52,
-                  objectFit: 'contain'
-                }}
-              />       
-        </div>
+    <main className="auth-screen">
+      <section className="auth-card" aria-label="Acceso al sistema JIP">
+        <aside className="auth-visual">
+          <img className="auth-mascot" src={ASSETS.mascota} alt="Mascota de JIP" />
+        </aside>
 
-        <div style={{ width: '100%', maxWidth: 360 }}>
-          <h1 style={{ fontSize: 26, fontWeight: 700, color: '#18181B', margin: '0 0 6px', letterSpacing: '-0.02em' }}>Iniciar Sesión</h1>
-          <p style={{ fontSize: 14, color: '#71717A', margin: '0 0 28px', lineHeight: 1.5 }}>
-            Bienvenido de vuelta.<br />Ingresa tus credenciales para acceder al sistema.
-          </p>
+        <div className="auth-form-panel">
+          <div className="auth-form-wrap">
+            <header className="auth-heading">
+              <img className="auth-form-logo" src={ASSETS.logo} alt="JIP" />
+              <span>Plataforma interna JIP</span>
+              <h1>Bienvenido</h1>
+              <p>Inicia sesión para continuar con la gestión de materiales.</p>
+            </header>
 
-          <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#52525B', marginBottom: 6 }}>Correo electrónico</label>
-              <input className="input-field" type="email" placeholder="correo@jip.pe" value={email}
-                onChange={e => { setEmail(e.target.value); setError(''); }} autoComplete="email" />
-            </div>
-            <div style={{ marginBottom: 22, position: 'relative' }}>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#52525B', marginBottom: 6 }}>Contraseña</label>
-              <input className="input-field" type={showPass ? 'text' : 'password'} placeholder="••••••••"
-                value={password} onChange={e => { setPassword(e.target.value); setError(''); }}
-                autoComplete="current-password" style={{ paddingRight: 40 }} />
-              <button type="button" onClick={() => setShowPass(!showPass)}
-                style={{ position: 'absolute', right: 12, bottom: 10, background: 'none', border: 'none', cursor: 'pointer', color: '#A1A1AA', padding: 0 }}>
-                {showPass
-                  ? <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7s2-4 6-4 6 4 6 4-2 4-6 4-6-4-6-4z" stroke="#A1A1AA" strokeWidth="1.2"/><circle cx="7" cy="7" r="1.5" stroke="#A1A1AA" strokeWidth="1.2"/><path d="M2 2l10 10" stroke="#A1A1AA" strokeWidth="1.2" strokeLinecap="round"/></svg>
-                  : <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7s2-4 6-4 6 4 6 4-2 4-6 4-6-4-6-4z" stroke="#A1A1AA" strokeWidth="1.2"/><circle cx="7" cy="7" r="1.5" stroke="#A1A1AA" strokeWidth="1.2"/></svg>
-                }
+            <br></br>
+            <br></br>
+
+            <form className="auth-form" onSubmit={handleSubmit}>
+              <label className="auth-field">
+                <span>Correo electrónico</span>
+                <span className="auth-control">
+                  <svg aria-hidden="true" width="17" height="17" viewBox="0 0 17 17" fill="none"><rect x="1.5" y="3" width="14" height="11" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="m2.5 4.5 6 4.5 6-4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <input type="email" placeholder="correo@jip.pe" value={email}
+                    onChange={e => { setEmail(e.target.value); setError(''); }} autoComplete="email" required />
+                </span>
+              </label>
+
+              <label className="auth-field">
+                <span>Contraseña</span>
+                <span className="auth-control">
+                  <svg aria-hidden="true" width="17" height="17" viewBox="0 0 17 17" fill="none"><rect x="2.5" y="7" width="12" height="8" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M5.5 7V5a3 3 0 0 1 6 0v2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
+                  <input type={showPass ? 'text' : 'password'} placeholder="••••••••" value={password}
+                    onChange={e => { setPassword(e.target.value); setError(''); }} autoComplete="current-password" required />
+                  <button type="button" className="auth-password-toggle" onClick={() => setShowPass(!showPass)} aria-label={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
+                    {showPass
+                      ? <svg width="17" height="17" viewBox="0 0 17 17" fill="none"><path d="M2 8.5s2.2-4 6.5-4 6.5 4 6.5 4-2.2 4-6.5 4S2 8.5 2 8.5Z" stroke="currentColor" strokeWidth="1.3"/><circle cx="8.5" cy="8.5" r="1.7" stroke="currentColor" strokeWidth="1.3"/><path d="m2.5 2.5 12 12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+                      : <svg width="17" height="17" viewBox="0 0 17 17" fill="none"><path d="M2 8.5s2.2-4 6.5-4 6.5 4 6.5 4-2.2 4-6.5 4S2 8.5 2 8.5Z" stroke="currentColor" strokeWidth="1.3"/><circle cx="8.5" cy="8.5" r="1.7" stroke="currentColor" strokeWidth="1.3"/></svg>
+                    }
+                  </button>
+                </span>
+              </label>
+
+              {error && <div className="auth-error" role="alert">{error}</div>}
+
+              <button type="submit" className="auth-submit" disabled={loading}>
+                {loading ? <><span className="auth-spinner" />Verificando...</> : 'Ingresar al sistema'}
               </button>
-            </div>
+            </form>
 
-            {error && (
-              <div style={{ background: '#FEE2E2', border: '1px solid #FECACA', borderRadius: 6, padding: '10px 12px', marginBottom: 16, fontSize: 12.5, color: '#DC2626' }}>
-                {error}
-              </div>
-            )}
-
-            <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px', fontSize: 14, borderRadius: 8, fontWeight: 600 }} disabled={loading}>
-              {loading
-                ? <span style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}><span style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite', display: 'inline-block' }} />Verificando...</span>
-                : 'Ingresar al Sistema'
-              }
-            </button>
-          </form>
-
-          <p style={{ textAlign: 'center', fontSize: 12, color: '#A1A1AA', marginTop: 20, marginBottom: 16 }}>Acceso restringido para personal autorizado.</p>
-
+            <p className="auth-legal">Acceso restringido para personal autorizado.</p>
+          </div>
         </div>
-      </div>
-
-      {/* Right — hero */}
-      <div className="login-hero" style={{
-        flex: 1,
-        background: 'linear-gradient(160deg, #3B82F6 0%, #2563EB 40%, #1D4ED8 100%)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'flex-start',
-        padding: '52px 48px 0',
-        position: 'relative',
-        overflow: 'hidden',
-      }}>
-        <div style={{ position: 'relative', textAlign: 'center', maxWidth: 480, zIndex: 1 }}>
-          <h2 style={{ fontSize: 26, fontWeight: 800, color: '#fff', margin: '0 0 12px', letterSpacing: '-0.02em', lineHeight: 1.25 }}>
-            Gestión integral de inventario y materiales
-          </h2>
-          <p style={{ fontSize: 14.5, color: 'rgba(255,255,255,0.8)', margin: 0, lineHeight: 1.6 }}>
-            Optimiza tus procesos logísticos y controla el stock en tiempo real desde cualquier sede.
-          </p>
-        </div>
-            <img
-              src={ASSETS.mascota}
-              alt="JIP mascota"
-              style={{
-                position: 'absolute',
-                bottom: 0,
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: '90%',
-                maxWidth: 560,
-                height: 'auto',
-                objectFit: 'contain',
-                objectPosition: 'bottom',
-                filter: 'drop-shadow(0 -8px 32px rgba(0,0,0,0.18))'
-              }}
-            />
-      </div>
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
+      </section>
+    </main>
   );
 }
 
@@ -287,6 +250,7 @@ function renderView(role: Role, view: string, onToast: (m: string) => void, onNa
     if (view === 'mis-solicitudes') return <MisSolicitudesView usuario={usuario} onToast={onToast} onNav={onNav} />;
     if (view === 'proyectos') return <ProyectosView role={role} onToast={onToast} />;
     if (view === 'entregas') return <EntregasView onToast={onToast} usuario={usuario} />;
+    if (view === 'devoluciones') return <DevolucionesView onToast={onToast} usuario={usuario} />;
     if (view === 'inventario') return <InventarioView role={role} onToast={onToast} />;
     if (view === 'nueva-compra') return <NuevaCompraView onToast={onToast} usuario={usuario} onNav={onNav} />;
     if (view === 'mis-compras') return <MisComprasView usuario={usuario} onNav={onNav} />;
@@ -296,6 +260,7 @@ function renderView(role: Role, view: string, onToast: (m: string) => void, onNa
     if (view === 'requerimientos') return <RequerimientosView onToast={onToast} usuario={usuario} />;
     if (view === 'proyectos') return <ProyectosView role={role} onToast={onToast} />;
     if (view === 'entregas') return <EntregasView onToast={onToast} usuario={usuario} />;
+    if (view === 'devoluciones') return <DevolucionesView onToast={onToast} usuario={usuario} />;
     if (view === 'inventario') return <InventarioView role={role} onToast={onToast} />;
     if (view === 'usuarios') return <UsuariosView onToast={onToast} />;
     if (view === 'compras') return <ComprasView onToast={onToast} usuario={usuario} />;

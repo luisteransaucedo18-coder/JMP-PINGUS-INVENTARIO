@@ -18,6 +18,7 @@ const navByRole: Record<Role, NavItem[]> = {
     { id: 'mis-solicitudes',  label: 'Mis Solicitudes',  icon: <ClipboardIcon /> },
     { id: 'proyectos',        label: 'Proyectos',        icon: <MapIcon /> },
     { id: 'entregas',         label: 'Entregas',         icon: <InIcon /> },
+    { id: 'devoluciones',     label: 'Devoluciones',     icon: <ReturnIcon /> },
     { id: 'mis-compras',      label: 'Órdenes de Compra', icon: <CartIcon /> },
     { id: 'inventario',       label: 'Inventario',       icon: <BoxIcon /> },
   ],
@@ -27,6 +28,7 @@ const navByRole: Record<Role, NavItem[]> = {
     { id: 'compras',         label: 'Compras',          icon: <CartIcon /> },
     { id: 'proyectos',       label: 'Proyectos',        icon: <MapIcon /> },
     { id: 'entregas',        label: 'Entregas',         icon: <InIcon /> },
+    { id: 'devoluciones',    label: 'Devoluciones',     icon: <ReturnIcon /> },
     { id: 'inventario',      label: 'Inventario',       icon: <BoxIcon /> },
     { id: 'usuarios',        label: 'Usuarios',         icon: <UsersIcon /> },
   ],
@@ -208,6 +210,9 @@ function PlusIcon() {
 }
 function CartIcon() {
   return <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M1 1h2l2 8h7l1.5-5H4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><circle cx="6" cy="13" r="1" fill="currentColor"/><circle cx="11" cy="13" r="1" fill="currentColor"/></svg>;
+}
+function ReturnIcon() {
+  return <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M6 4H3V1M3.4 4a5.5 5.5 0 1 1-.7 5.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="m3 4 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>;
 }
 function LogoutIcon() {
   return <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M6 2H2v11h4M10 10l3-2.5L10 5M13 7.5H6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>;

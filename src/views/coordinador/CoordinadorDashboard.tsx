@@ -11,9 +11,9 @@ export default function CoordinadorDashboard({ onNav }: Props) {
   const alertas = state.materials.filter(m => m.estado !== 'OK');
 
   return (
-    <div style={{ padding: 24, overflowY: 'auto', flex: 1 }}>
+    <div className="coordinator-dashboard" style={{ padding: 24, overflowY: 'auto', flex: 1 }}>
       {/* KPIs */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+      <div className="coordinator-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
         {[
           { label: 'Por confirmar', value: pendientes.length, sub: 'solicitudes enviadas', color: '#D97706', bg: '#FEF3C7', nav: 'requerimientos' },
           { label: 'Confirmadas hoy', value: state.requerimientos.filter(r => r.estado === 'CONFIRMADO' && r.fechaConfirmacion === new Date().toISOString().split('T')[0]).length, sub: 'aprobadas', color: '#059669', bg: '#CCFBF1', nav: null },
@@ -33,9 +33,9 @@ export default function CoordinadorDashboard({ onNav }: Props) {
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 20 }}>
+      <div className="coordinator-dashboard-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 20 }}>
         {/* Solicitudes por confirmar */}
-        <div className="panel">
+        <div className="panel coordinator-main-panel">
           <div className="section-header">
             <span className="section-title">Solicitudes por Confirmar</span>
             <button className="btn btn-ghost" style={{ fontSize: 11, padding: '4px 10px' }} onClick={() => onNav('requerimientos')}>Ver todas →</button>
@@ -69,14 +69,14 @@ export default function CoordinadorDashboard({ onNav }: Props) {
         </div>
 
         {/* Panel derecho */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div className="coordinator-side-panels" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {/* Alertas stock */}
           <div className="panel">
             <div className="section-header">
               <span className="section-title">Alertas de Inventario</span>
               <span className="badge badge-red">{alertas.length}</span>
             </div>
-            {alertas.slice(0, 5).map(m => (
+            {alertas.slice(0, 8).map(m => (
               <div key={m.id} style={{ padding: '10px 14px', borderBottom: '1px solid #F4F4F5', display: 'flex', gap: 10, alignItems: 'center' }}>
                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: m.estado === 'AGOTADO' ? '#DC2626' : '#D97706', flexShrink: 0 }} />
                 <div style={{ flex: 1 }}>
@@ -99,9 +99,9 @@ export default function CoordinadorDashboard({ onNav }: Props) {
           </div>
 
           {/* Resumen por sede */}
-          <div className="panel">
+          <div className="panel coordinator-sites-panel">
             <div className="section-header"><span className="section-title">Solicitudes por sede</span></div>
-            <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div className="coordinator-sites-list" style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
               {SEDES.map(sede => {
                 const cnt = state.requerimientos.filter(r => r.sede === sede && r.estado === 'ENVIADO').length;
                 return (

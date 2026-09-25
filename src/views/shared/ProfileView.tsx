@@ -70,7 +70,7 @@ export default function ProfileView({ role, userName, userEmail, onToast }: Prop
   const ESTADO_BG:    Record<string, string> = { CONFIRMADO: '#CCFBF1', ENVIADO: '#FEF3C7', RECHAZADO: '#FEE2E2', BORRADOR: '#F4F4F5' };
 
   return (
-    <div style={{ padding: 28, overflowY: 'auto', flex: 1, background: '#EEF0FF' }}>
+    <div style={{ padding: 28, overflowY: 'auto', flex: 1, background: 'transparent' }}>
       <div style={{ maxWidth: 860, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 22 }}>
 
         {/* ── Hero card ── */}

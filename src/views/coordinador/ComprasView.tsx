@@ -61,7 +61,7 @@ export default function ComprasView({ onToast, usuario }: Props) {
     c.items.reduce((s, it) => s + it.cantidadSolicitada * (it.precioUnitario ?? 0), 0);
 
   return (
-    <div style={{ padding: 24, overflowY: 'auto', flex: 1, background: '#EEF0FF' }}>
+    <div style={{ padding: 24, overflowY: 'auto', flex: 1, background: 'transparent' }}>
 
       {/* ── KPI strip ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 22 }}>

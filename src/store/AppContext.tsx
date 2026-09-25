@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useReducer, useState, ReactNode } from 'react';
 import {
-  Material, Requerimiento, Usuario, ReqMaterial, Proyecto, Entrega, EntregaItem,
+  Material, Requerimiento, Usuario, ReqMaterial, Proyecto, Entrega, EntregaItem, Devolucion, DevolucionItem,
   RequerimientoCompra, CompraItem,
   EstadoMaterial, Sede,
   materials as initMaterials,
@@ -8,6 +8,7 @@ import {
   usuarios as initUsuarios,
   proyectos as initProyectos,
   entregas as initEntregas,
+  devoluciones as initDevoluciones,
   compras as initCompras,
 } from '../data/mockData';
 import { obtenerMateriales } from '../service/materialService';
@@ -26,6 +27,7 @@ interface AppState {
   users: Usuario[];
   proyectos: Proyecto[];
   entregas: Entrega[];
+  devoluciones: Devolucion[];
   compras: RequerimientoCompra[];
 }
 
@@ -40,6 +42,7 @@ type Action =
   | { type: 'CREATE_USER'; payload: { nombre: string; email: string; rol: string; sede: Sede } }
   | { type: 'TOGGLE_USER_STATUS'; payload: string }
   | { type: 'CREATE_ENTREGA'; payload: { requerimientoId: string; proyectoNombre: string; tecnico: string; dniTecnico: string; responsableEntrega: string; items: EntregaItem[]; observaciones?: string } }
+  | { type: 'CREATE_DEVOLUCION'; payload: { entregaId: string; responsableRecepcion: string; items: DevolucionItem[]; observaciones?: string; evidencias?: string[] } }
   | { type: 'CREATE_COMPRA'; payload: { sede: Sede; analista: string; motivo: string; items: CompraItem[]; draft: boolean } }
   | { type: 'APPROVE_COMPRA'; payload: { id: string; coordinador: string; observaciones?: string } }
   | { type: 'REJECT_COMPRA'; payload: { id: string; coordinador: string; observaciones: string } }
@@ -56,6 +59,7 @@ function calcEstado(stockSedes: Record<Sede, number>, minimo: number): EstadoMat
 let matCounter = 100;
 let userCounter = 20;
 let entCounter = 10;
+let devCounter = 0;
 let ocCounter = 10;
 
 function reducer(state: AppState, action: Action): AppState {
@@ -160,6 +164,42 @@ function reducer(state: AppState, action: Action): AppState {
           estado,
           observaciones: action.payload.observaciones,
         }],
+      };
+    }
+
+    case 'CREATE_DEVOLUCION': {
+      const entrega = state.entregas.find(item => item.id === action.payload.entregaId);
+      if (!entrega) return state;
+      const requerimiento = state.requerimientos.find(item => item.id === entrega.requerimientoId);
+      if (!requerimiento) return state;
+      devCounter++;
+      const now = new Date();
+      const fecha = now.toISOString().split('T')[0];
+      const hora = now.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+      const items = action.payload.items.filter(item => item.cantidad > 0);
+      const updatedMaterials = state.materials.map(material => {
+        const returned = items.find(item => item.skuId === material.id)?.cantidad ?? 0;
+        if (!returned) return material;
+        const stockSedes = { ...material.stockSedes };
+        stockSedes[requerimiento.sede] = (stockSedes[requerimiento.sede] ?? 0) + returned;
+        return { ...material, stockSedes, estado: calcEstado(stockSedes, material.minimo) };
+      });
+      return {
+        ...state,
+        materials: updatedMaterials,
+        devoluciones: [{
+          id: `DEV-2026-${String(devCounter).padStart(3, '0')}`,
+          entregaId: entrega.id,
+          requerimientoId: entrega.requerimientoId,
+          sede: requerimiento.sede,
+          tecnico: entrega.tecnico,
+          responsableRecepcion: action.payload.responsableRecepcion,
+          fecha,
+          hora,
+          items,
+          observaciones: action.payload.observaciones,
+          evidencias: action.payload.evidencias,
+        }, ...state.devoluciones],
       };
     }
 
@@ -277,6 +317,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     users: initUsuarios.map(u => ({ ...u })),
     proyectos: initProyectos.map(p => ({ ...p })),
     entregas: initEntregas.map(e => ({ ...e })),
+    devoluciones: initDevoluciones.map(d => ({ ...d })),
     compras: initCompras.map(c => ({ ...c })),
   });
   const [loadingDatabase, setLoadingDatabase] = useState(true);
