@@ -206,7 +206,10 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
         descripcion: form.descripcion,
         tecnico,
         analista: usuario,
-        materiales: validLineas.map(l => ({ skuId: l.skuId, nombre: l.nombre, cantidad: parseFloat(l.cantidad) })),
+        materiales: validLineas.map(l => {
+          const material = materiales.find(m => m.id === l.skuId);
+          return { skuId: l.skuId, nombre: l.nombre, cantidad: parseFloat(l.cantidad), unidad: material?.unidad, marca: material?.marca };
+        }),
         draft,
       });
       setSubmitted(true);

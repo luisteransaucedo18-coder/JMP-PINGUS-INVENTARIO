@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { useAppStore } from '../../store/AppContext';
 import { Requerimiento } from '../../data/mockData';
 import RequirementStatusTimeline from '../../components/RequirementStatusTimeline';
+import RequirementPdfModal from '../../components/RequirementPdfModal';
 
 const BADGE: Record<string, string> = { BORRADOR: 'gray', ENVIADO: 'amber', CONFIRMADO: 'green', RECHAZADO: 'red' };
 
 const DOCUMENT_STATUS: Record<string, { label: string; color: string; description: string }> = {
   BORRADOR: { label: 'Pendiente de envío', color: 'gray', description: 'Envía la solicitud para iniciar el trámite.' },
   ENVIADO: { label: 'En trámite', color: 'amber', description: 'El PDF estará disponible después de la confirmación del coordinador y su generación.' },
-  CONFIRMADO: { label: 'Pendiente de formato', color: 'gray', description: 'La solicitud está confirmada. Falta incorporar el formato del documento para generar el PDF.' },
   RECHAZADO: { label: 'No disponible', color: 'red', description: 'Las solicitudes rechazadas no generan un PDF de confirmación.' },
 };
 
@@ -18,6 +18,8 @@ export default function MisSolicitudesView({ usuario, onToast, onNav }: Props) {
   const { state, dbActions } = useAppStore();
   const [filter, setFilter] = useState('');
   const [selected, setSelected] = useState<Requerimiento | null>(null);
+  const [pdfId, setPdfId] = useState<string | null>(null);
+  const pdfRequirement = state.requerimientos.find(r => r.id === pdfId && r.estado === 'CONFIRMADO');
 
   const misReqs = state.requerimientos
     .filter(r => r.analista === usuario || r.analista.includes(usuario.split(' ')[0]))
@@ -75,14 +77,17 @@ export default function MisSolicitudesView({ usuario, onToast, onNav }: Props) {
                 <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#71717A' }}>{r.fecha}</td>
                 <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{r.materiales.length} SKU</td>
                 <td><span className={`badge status-badge badge-${BADGE[r.estado]}`}>{r.estado}</span></td>
-                <td>
-                  <span
+                <td onClick={e => e.stopPropagation()}>
+                  {r.estado === 'CONFIRMADO' ? (
+                    <button className="btn btn-ghost" style={{ fontSize: 12, whiteSpace: 'nowrap' }}
+                      aria-label={`Visualizar PDF de ${r.id}`} onClick={() => setPdfId(r.id)}>Visualizar PDF</button>
+                  ) : <span
                     className={`badge badge-${DOCUMENT_STATUS[r.estado]?.color ?? 'gray'}`}
                     title={DOCUMENT_STATUS[r.estado]?.description ?? 'Documento no disponible.'}
                     style={{ whiteSpace: 'nowrap' }}
                   >
                     {DOCUMENT_STATUS[r.estado]?.label ?? 'No disponible'}
-                  </span>
+                  </span>}
                 </td>
                 <td onClick={e => e.stopPropagation()}>
                   {r.estado === 'BORRADOR' && (
@@ -97,6 +102,9 @@ export default function MisSolicitudesView({ usuario, onToast, onNav }: Props) {
         </table>
         </div>
       </div>
+
+      {pdfRequirement && <RequirementPdfModal requirement={pdfRequirement} materials={state.materials}
+        deliveries={state.entregas} onClose={() => setPdfId(null)} />}
 
       {/* Detail modal */}
       {selected && (

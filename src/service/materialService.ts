@@ -34,7 +34,7 @@ function mapMaterialDBToMaterial(m: MaterialDB): Material {
     id: m.sku,
     nombre: m.nombre,
     descripcion: m.descripcion,
-    categoria: m.categorias_material?.nombre ?? String(m.categoria_id),
+    categoria: String(m.categoria_id),
     unidad: m.unidad ?? 'UND',
     marca: m.marca ?? undefined,
 

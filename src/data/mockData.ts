@@ -97,6 +97,8 @@ export interface ReqMaterial {
   skuId: string;
   nombre: string;
   cantidad: number;
+  unidad?: string;
+  marca?: string;
 }
 
 export interface Requerimiento {
