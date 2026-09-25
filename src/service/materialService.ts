@@ -14,6 +14,8 @@ type MaterialDB = {
   imagen_url?: string | null;
   created_at?: string;
   updated_at?: string;
+  categorias_material?: { nombre: string } | null;
+  inventario_sedes?: Array<{ sede: string; stock: number | string }>;
 };
 
 // ======================================================
@@ -21,19 +23,22 @@ type MaterialDB = {
 // ======================================================
 
 function mapMaterialDBToMaterial(m: MaterialDB): Material {
+  const stockSedes = { Chiclayo: 0, Chimbote: 0, Trujillo: 0 };
+  for (const row of m.inventario_sedes ?? []) {
+    if (row.sede === 'Chiclayo' || row.sede === 'Chimbote' || row.sede === 'Trujillo') {
+      stockSedes[row.sede] = Number(row.stock ?? 0);
+    }
+  }
+
   return {
     id: m.sku,
     nombre: m.nombre,
     descripcion: m.descripcion,
-    categoria: String(m.categoria_id),
+    categoria: m.categorias_material?.nombre ?? String(m.categoria_id),
     unidad: m.unidad ?? 'UND',
     marca: m.marca ?? undefined,
 
-    stockSedes: {
-      Chiclayo: 0,
-      Chimbote: 0,
-      Trujillo: 0,
-    },
+    stockSedes,
 
     minimo: Number(m.stock_minimo ?? 0),
     precioUnitario: Number(m.precio_unitario ?? 0),
@@ -50,7 +55,8 @@ function mapMaterialDBToMaterial(m: MaterialDB): Material {
 export async function obtenerMateriales(): Promise<Material[]> {
   const { data, error } = await supabase
     .from('materiales')
-    .select('*')
+    .select('sku,nombre,descripcion,categoria_id,unidad,marca,stock_minimo,precio_unitario,estado,imagen_url,created_at,updated_at,categorias_material(nombre),inventario_sedes(sede,stock)')
+    .eq('activo', true)
     .order('nombre', { ascending: true });
 
   if (error) {

@@ -100,6 +100,7 @@ export interface ReqMaterial {
 }
 
 export interface Requerimiento {
+  dbId?: string;
   id: string;
   proyectoId: string;
   proyecto: string;
@@ -122,6 +123,7 @@ export interface Requerimiento {
 // ======================================================
 
 export interface Proyecto {
+  dbId?: string;
   id: string;
   nombre: string;
   ubicacion: string;

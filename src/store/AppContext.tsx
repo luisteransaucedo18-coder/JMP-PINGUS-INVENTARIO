@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useReducer, useState, ReactNode } from 'react';
 import {
   Material, Requerimiento, Usuario, ReqMaterial, Proyecto, Entrega, EntregaItem,
   RequerimientoCompra, CompraItem,
@@ -10,6 +10,15 @@ import {
   entregas as initEntregas,
   compras as initCompras,
 } from '../data/mockData';
+import { obtenerMateriales } from '../service/materialService';
+import { crearProyecto, obtenerProyectos } from '../service/proyectoService';
+import { supabase } from '../service/supabase';
+import {
+  crearRequerimiento,
+  enviarRequerimiento,
+  obtenerRequerimientos,
+  revisarRequerimiento,
+} from '../service/requerimientoService';
 
 interface AppState {
   materials: Material[];
@@ -21,15 +30,15 @@ interface AppState {
 }
 
 type Action =
+  | { type: 'SET_MATERIALS'; payload: Material[] }
+  | { type: 'SET_PROYECTOS'; payload: Proyecto[] }
+  | { type: 'SET_REQUERIMIENTOS'; payload: Requerimiento[] }
+  | { type: 'UPSERT_PROYECTO'; payload: Proyecto }
+  | { type: 'UPSERT_REQUERIMIENTO'; payload: Requerimiento }
   | { type: 'ADD_MATERIAL'; payload: Omit<Material, 'id' | 'estado'> }
   | { type: 'UPDATE_MATERIAL_STOCK'; payload: { id: string; stockSedes: Record<Sede, number>; minimo?: number } }
-  | { type: 'CREATE_REQUERIMIENTO'; payload: { proyectoId: string; proyecto: string; sede: Sede; ubicacion: string; descripcion: string; tecnico: string; analista: string; materiales: ReqMaterial[]; draft: boolean } }
-  | { type: 'SUBMIT_REQUERIMIENTO'; payload: string }
-  | { type: 'CONFIRM_REQUERIMIENTO'; payload: { id: string; coordinador: string; observaciones?: string } }
-  | { type: 'REJECT_REQUERIMIENTO'; payload: { id: string; coordinador: string; observaciones: string } }
   | { type: 'CREATE_USER'; payload: { nombre: string; email: string; rol: string; sede: Sede } }
   | { type: 'TOGGLE_USER_STATUS'; payload: string }
-  | { type: 'CREATE_PROYECTO'; payload: Omit<Proyecto, 'id' | 'creadoEn'> }
   | { type: 'CREATE_ENTREGA'; payload: { requerimientoId: string; proyectoNombre: string; tecnico: string; dniTecnico: string; responsableEntrega: string; items: EntregaItem[]; observaciones?: string } }
   | { type: 'CREATE_COMPRA'; payload: { sede: Sede; analista: string; motivo: string; items: CompraItem[]; draft: boolean } }
   | { type: 'APPROVE_COMPRA'; payload: { id: string; coordinador: string; observaciones?: string } }
@@ -45,14 +54,33 @@ function calcEstado(stockSedes: Record<Sede, number>, minimo: number): EstadoMat
 }
 
 let matCounter = 100;
-let reqCounter = 10;
 let userCounter = 20;
-let pryCounter = 10;
 let entCounter = 10;
 let ocCounter = 10;
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
+
+    case 'SET_MATERIALS':
+      return { ...state, materials: action.payload };
+
+    case 'SET_PROYECTOS':
+      return { ...state, proyectos: action.payload };
+
+    case 'SET_REQUERIMIENTOS':
+      return { ...state, requerimientos: action.payload };
+
+    case 'UPSERT_PROYECTO':
+      return {
+        ...state,
+        proyectos: [action.payload, ...state.proyectos.filter(item => item.id !== action.payload.id)],
+      };
+
+    case 'UPSERT_REQUERIMIENTO':
+      return {
+        ...state,
+        requerimientos: [action.payload, ...state.requerimientos.filter(item => item.id !== action.payload.id)],
+      };
 
     case 'ADD_MATERIAL': {
       const prefix = action.payload.categoria.substring(0, 3).toUpperCase();
@@ -82,74 +110,6 @@ function reducer(state: AppState, action: Action): AppState {
       };
     }
 
-    case 'CREATE_REQUERIMIENTO': {
-      reqCounter++;
-      const pad = String(reqCounter).padStart(3, '0');
-      const id = `REQ-2026-${pad}`;
-      const today = new Date().toISOString().split('T')[0];
-      return {
-        ...state,
-        requerimientos: [...state.requerimientos, {
-          id,
-          proyectoId: action.payload.proyectoId,
-          proyecto: action.payload.proyecto,
-          sede: action.payload.sede,
-          ubicacion: action.payload.ubicacion,
-          descripcion: action.payload.descripcion,
-          tecnico: action.payload.tecnico,
-          analista: action.payload.analista,
-          fecha: today,
-          materiales: action.payload.materiales,
-          estado: action.payload.draft ? 'BORRADOR' : 'ENVIADO',
-        }],
-      };
-    }
-
-    case 'SUBMIT_REQUERIMIENTO': {
-      return {
-        ...state,
-        requerimientos: state.requerimientos.map(r =>
-          r.id === action.payload && r.estado === 'BORRADOR'
-            ? { ...r, estado: 'ENVIADO' }
-            : r
-        ),
-      };
-    }
-
-    case 'CONFIRM_REQUERIMIENTO': {
-      const req = state.requerimientos.find(r => r.id === action.payload.id);
-      if (!req || req.estado !== 'ENVIADO') return state;
-      const updatedMaterials = state.materials.map(mat => {
-        const reqMat = req.materiales.find(m => m.skuId === mat.id);
-        if (!reqMat) return mat;
-        const newSedes = { ...mat.stockSedes };
-        newSedes[req.sede] = Math.max(0, newSedes[req.sede] - reqMat.cantidad);
-        return { ...mat, stockSedes: newSedes, estado: calcEstado(newSedes, mat.minimo) };
-      });
-      const today = new Date().toISOString().split('T')[0];
-      return {
-        ...state,
-        materials: updatedMaterials,
-        requerimientos: state.requerimientos.map(r =>
-          r.id === action.payload.id
-            ? { ...r, estado: 'CONFIRMADO', observaciones: action.payload.observaciones, confirmadoPor: action.payload.coordinador, fechaConfirmacion: today }
-            : r
-        ),
-      };
-    }
-
-    case 'REJECT_REQUERIMIENTO': {
-      const today = new Date().toISOString().split('T')[0];
-      return {
-        ...state,
-        requerimientos: state.requerimientos.map(r =>
-          r.id === action.payload.id
-            ? { ...r, estado: 'RECHAZADO', observaciones: action.payload.observaciones, confirmadoPor: action.payload.coordinador, fechaConfirmacion: today }
-            : r
-        ),
-      };
-    }
-
     case 'CREATE_USER': {
       userCounter++;
       const id = `USR-${String(userCounter).padStart(3, '0')}`;
@@ -174,16 +134,6 @@ function reducer(state: AppState, action: Action): AppState {
         users: state.users.map(u =>
           u.id === action.payload ? { ...u, estado: u.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO' } : u
         ),
-      };
-    }
-
-    case 'CREATE_PROYECTO': {
-      pryCounter++;
-      const id = `PRY-${String(pryCounter).padStart(3, '0')}`;
-      const today = new Date().toISOString().split('T')[0];
-      return {
-        ...state,
-        proyectos: [...state.proyectos, { ...action.payload, id, creadoEn: today }],
       };
     }
 
@@ -291,7 +241,33 @@ function reducer(state: AppState, action: Action): AppState {
   }
 }
 
-interface AppContextType { state: AppState; dispatch: React.Dispatch<Action> }
+type NuevoProyecto = Omit<Proyecto, 'id' | 'dbId' | 'creadoEn'>;
+type NuevoRequerimiento = {
+  proyectoId: string;
+  proyecto: string;
+  sede: Sede;
+  ubicacion: string;
+  descripcion: string;
+  tecnico: string;
+  analista: string;
+  materiales: ReqMaterial[];
+  draft: boolean;
+};
+
+interface DatabaseActions {
+  createProject: (payload: NuevoProyecto) => Promise<Proyecto>;
+  createRequirement: (payload: NuevoRequerimiento) => Promise<Requerimiento>;
+  submitRequirement: (id: string) => Promise<Requerimiento>;
+  reviewRequirement: (id: string, confirm: boolean, observations?: string) => Promise<Requerimiento>;
+  refresh: () => Promise<void>;
+}
+
+interface AppContextType {
+  state: AppState;
+  dispatch: React.Dispatch<Action>;
+  dbActions: DatabaseActions;
+  loadingDatabase: boolean;
+}
 const AppContext = createContext<AppContextType | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -303,7 +279,94 @@ export function AppProvider({ children }: { children: ReactNode }) {
     entregas: initEntregas.map(e => ({ ...e })),
     compras: initCompras.map(c => ({ ...c })),
   });
-  return <AppContext.Provider value={{ state, dispatch }}>{children}</AppContext.Provider>;
+  const [loadingDatabase, setLoadingDatabase] = useState(true);
+
+  const refresh = async () => {
+    const [materials, projects, requirements] = await Promise.all([
+      obtenerMateriales(),
+      obtenerProyectos(),
+      obtenerRequerimientos(),
+    ]);
+    dispatch({ type: 'SET_MATERIALS', payload: materials });
+    dispatch({ type: 'SET_PROYECTOS', payload: projects });
+    dispatch({ type: 'SET_REQUERIMIENTOS', payload: requirements });
+  };
+
+  useEffect(() => {
+    let active = true;
+    setLoadingDatabase(true);
+    refresh()
+      .catch(error => console.error('Error cargando datos de Supabase:', error))
+      .finally(() => { if (active) setLoadingDatabase(false); });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+    const syncFromDatabase = () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => {
+        refresh().catch(error => console.error('Error sincronizando cambios de Supabase:', error));
+      }, 150);
+    };
+
+    const channel = supabase
+      .channel('operational-data-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'proyectos' }, syncFromDatabase)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'requerimientos' }, syncFromDatabase)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'requerimiento_items' }, syncFromDatabase)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventario_sedes' }, syncFromDatabase)
+      .subscribe();
+
+    return () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      void supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const dbActions: DatabaseActions = {
+    createProject: async payload => {
+      const project = await crearProyecto(payload);
+      dispatch({ type: 'UPSERT_PROYECTO', payload: project });
+      return project;
+    },
+    createRequirement: async payload => {
+      const project = state.proyectos.find(item => item.id === payload.proyectoId || item.nombre === payload.proyecto);
+      if (!project?.dbId) throw new Error('Selecciona un proyecto guardado en la base de datos.');
+      const requirement = await crearRequerimiento({
+        proyectoDbId: project.dbId,
+        sede: payload.sede,
+        ubicacion: payload.ubicacion,
+        descripcion: payload.descripcion,
+        tecnico: payload.tecnico,
+        materiales: payload.materiales,
+        draft: payload.draft,
+      });
+      dispatch({ type: 'UPSERT_REQUERIMIENTO', payload: requirement });
+      return requirement;
+    },
+    submitRequirement: async id => {
+      const current = state.requerimientos.find(item => item.id === id);
+      if (!current) throw new Error('No se encontro el requerimiento.');
+      const requirement = await enviarRequerimiento(current);
+      dispatch({ type: 'UPSERT_REQUERIMIENTO', payload: requirement });
+      return requirement;
+    },
+    reviewRequirement: async (id, confirm, observations) => {
+      const current = state.requerimientos.find(item => item.id === id);
+      if (!current) throw new Error('No se encontro el requerimiento.');
+      const requirement = await revisarRequerimiento(current, confirm, observations);
+      dispatch({ type: 'UPSERT_REQUERIMIENTO', payload: requirement });
+      if (confirm) {
+        const materials = await obtenerMateriales();
+        dispatch({ type: 'SET_MATERIALS', payload: materials });
+      }
+      return requirement;
+    },
+    refresh,
+  };
+
+  return <AppContext.Provider value={{ state, dispatch, dbActions, loadingDatabase }}>{children}</AppContext.Provider>;
 }
 
 export function useAppStore() {

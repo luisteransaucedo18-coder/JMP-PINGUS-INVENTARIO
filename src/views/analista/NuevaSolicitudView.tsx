@@ -13,7 +13,7 @@ interface LineaMat { skuId: string; nombre: string; cantidad: string; query: str
 const BLANK_FORM = { sede: 'Chiclayo' as Sede, ubicacion: '', descripcion: '', tecnico: '' };
 
 export default function NuevaSolicitudView({ onToast, usuario, onNav }: Props) {
-  const { state, dispatch } = useAppStore();
+  const { state, dbActions } = useAppStore();
   const [form, setForm] = useState({ ...BLANK_FORM });
   const [lineas, setLineas] = useState<LineaMat[]>([{ skuId: '', nombre: '', cantidad: '', query: '', showDrop: false }]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -83,7 +83,7 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
     setForm({ ...BLANK_FORM });
   };
 
-  const handleCreateProject = () => {
+  const handleCreateProject = async () => {
     const e: Record<string, string> = {};
     if (!newProject.nombre.trim()) e.nombre = 'Requerido';
     if (!newProject.cliente.trim()) e.cliente = 'Requerido';
@@ -92,12 +92,17 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
     if (Object.keys(e).length) { setProjectErrors(e); return; }
     const dup = state.proyectos.find(p => p.nombre.toLowerCase() === newProject.nombre.toLowerCase());
     if (dup) { setProjectErrors({ nombre: 'Ya existe un proyecto con este nombre' }); return; }
-    dispatch({ type: 'CREATE_PROYECTO', payload: { nombre: newProject.nombre, cliente: newProject.cliente, responsable: newProject.responsable, sede: form.sede, ubicacion: form.ubicacion, observaciones: '' } });
-    // After dispatch the project will be in state next render — for now use a temporary id
-    setProyectoQuery(newProject.nombre);
-    setShowCreateProject(false);
-    setShowDropdown(false);
-    onToast('✓ Proyecto creado y seleccionado');
+    try {
+      const project = await dbActions.createProject({ nombre: newProject.nombre, cliente: newProject.cliente, responsable: newProject.responsable, sede: form.sede, ubicacion: form.ubicacion, observaciones: '' });
+      setSelectedProject(project);
+      setProyectoQuery(project.nombre);
+      setShowCreateProject(false);
+      setShowDropdown(false);
+      onToast('✓ Proyecto creado y seleccionado');
+    } catch (error) {
+      console.error('Error creando proyecto:', error);
+      onToast(error instanceof Error ? error.message : 'No se pudo crear el proyecto');
+    }
   };
 
   const setField = (k: string, v: string) => {
@@ -181,7 +186,7 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
     return e;
   };
 
-  const handleSave = (draft: boolean) => {
+  const handleSave = async (draft: boolean) => {
     const e = validate(draft);
     if (Object.keys(e).length) { setErrors(e); return; }
     const validLineas = lineas.filter(l => (l.skuId || l.nombre) && parseFloat(l.cantidad) > 0);
@@ -192,9 +197,8 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
     const proyectoNombre = resolvedProject?.nombre ?? proyectoQuery;
     const tecnico = form.tecnico || resolvedProject?.responsable || '';
 
-    dispatch({
-      type: 'CREATE_REQUERIMIENTO',
-      payload: {
+    try {
+      await dbActions.createRequirement({
         proyectoId,
         proyecto: proyectoNombre,
         sede: form.sede,
@@ -204,11 +208,14 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
         analista: usuario,
         materiales: validLineas.map(l => ({ skuId: l.skuId, nombre: l.nombre, cantidad: parseFloat(l.cantidad) })),
         draft,
-      },
-    });
-    setSubmitted(true);
-    onToast(draft ? 'Borrador guardado correctamente' : 'Solicitud enviada al coordinador');
-    setTimeout(() => onNav('mis-solicitudes'), 1200);
+      });
+      setSubmitted(true);
+      onToast(draft ? 'Borrador guardado correctamente' : 'Solicitud enviada al coordinador');
+      setTimeout(() => onNav('mis-solicitudes'), 1200);
+    } catch (error) {
+      console.error('Error guardando requerimiento:', error);
+      onToast(error instanceof Error ? error.message : 'No se pudo guardar el requerimiento');
+    }
   };
 
   if (submitted) {

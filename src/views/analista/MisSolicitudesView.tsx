@@ -15,7 +15,7 @@ const DOCUMENT_STATUS: Record<string, { label: string; color: string; descriptio
 interface Props { usuario: string; onToast: (msg: string) => void; onNav: (v: string) => void; }
 
 export default function MisSolicitudesView({ usuario, onToast, onNav }: Props) {
-  const { state, dispatch } = useAppStore();
+  const { state, dbActions } = useAppStore();
   const [filter, setFilter] = useState('');
   const [selected, setSelected] = useState<Requerimiento | null>(null);
 
@@ -24,10 +24,15 @@ export default function MisSolicitudesView({ usuario, onToast, onNav }: Props) {
     .filter(r => !filter || r.estado === filter)
     .sort((a, b) => b.fecha.localeCompare(a.fecha));
 
-  const handleSubmit = (id: string) => {
-    dispatch({ type: 'SUBMIT_REQUERIMIENTO', payload: id });
-    onToast('✓ Solicitud enviada al coordinador');
-    setSelected(null);
+  const handleSubmit = async (id: string) => {
+    try {
+      await dbActions.submitRequirement(id);
+      onToast('✓ Solicitud enviada al coordinador');
+      setSelected(null);
+    } catch (error) {
+      console.error('Error enviando requerimiento:', error);
+      onToast(error instanceof Error ? error.message : 'No se pudo enviar la solicitud');
+    }
   };
 
   return (

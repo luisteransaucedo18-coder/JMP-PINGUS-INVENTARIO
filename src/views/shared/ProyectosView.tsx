@@ -269,7 +269,7 @@ function ProjectDetail({ proyecto, onBack }: { proyecto: Proyecto; onBack: () =>
 }
 
 export default function ProyectosView({ role, onToast }: Props) {
-  const { state, dispatch } = useAppStore();
+  const { state, dbActions } = useAppStore();
   const [search, setSearch] = useState('');
   const [sedeFilter, setSedeFilter] = useState('');
   const [showNew, setShowNew] = useState(false);
@@ -282,12 +282,17 @@ export default function ProyectosView({ role, onToast }: Props) {
       p.responsable.toLowerCase().includes(search.toLowerCase()))
   );
 
-  const handleCreate = (data: Omit<Proyecto, 'id' | 'creadoEn'>) => {
+  const handleCreate = async (data: Omit<Proyecto, 'id' | 'creadoEn'>) => {
     const dup = state.proyectos.find(p => p.nombre.toLowerCase() === data.nombre.toLowerCase());
     if (dup) { onToast('⚠ Ya existe un proyecto con ese nombre'); return; }
-    dispatch({ type: 'CREATE_PROYECTO', payload: data });
-    setShowNew(false);
-    onToast('✓ Proyecto creado correctamente');
+    try {
+      await dbActions.createProject(data);
+      setShowNew(false);
+      onToast('✓ Proyecto creado correctamente');
+    } catch (error) {
+      console.error('Error creando proyecto:', error);
+      onToast(error instanceof Error ? error.message : 'No se pudo crear el proyecto');
+    }
   };
 
   if (selected) return <ProjectDetail proyecto={selected} onBack={() => setSelected(null)} />;

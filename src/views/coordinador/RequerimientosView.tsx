@@ -9,7 +9,7 @@ const BADGE: Record<string, string> = { BORRADOR: 'gray', ENVIADO: 'amber', CONF
 interface Props { onToast: (msg: string) => void; usuario: string; }
 
 export default function RequerimientosView({ onToast, usuario }: Props) {
-  const { state, dispatch } = useAppStore();
+  const { state, dbActions } = useAppStore();
   const [estadoFilter, setEstadoFilter] = useState('ENVIADO');
   const [sedeFilter, setSedeFilter] = useState('');
   const [search, setSearch] = useState('');
@@ -26,17 +26,27 @@ export default function RequerimientosView({ onToast, usuario }: Props) {
     )
     .sort((a, b) => b.fecha.localeCompare(a.fecha));
 
-  const handleConfirm = (r: Requerimiento) => {
-    dispatch({ type: 'CONFIRM_REQUERIMIENTO', payload: { id: r.id, coordinador: usuario, observaciones: obsModal || undefined } });
-    onToast(`✓ REQ ${r.id} confirmada — inventario actualizado`);
-    setSelected(null); setObsModal(''); setAction(null);
+  const handleConfirm = async (r: Requerimiento) => {
+    try {
+      await dbActions.reviewRequirement(r.id, true, obsModal || undefined);
+      onToast(`✓ REQ ${r.id} confirmada — inventario actualizado`);
+      setSelected(null); setObsModal(''); setAction(null);
+    } catch (error) {
+      console.error('Error confirmando requerimiento:', error);
+      onToast(error instanceof Error ? error.message : 'No se pudo confirmar el requerimiento');
+    }
   };
 
-  const handleReject = (r: Requerimiento) => {
+  const handleReject = async (r: Requerimiento) => {
     if (!obsModal.trim()) { onToast('⚠ Indica el motivo del rechazo'); return; }
-    dispatch({ type: 'REJECT_REQUERIMIENTO', payload: { id: r.id, coordinador: usuario, observaciones: obsModal } });
-    onToast(`REQ ${r.id} rechazada — analista notificado`);
-    setSelected(null); setObsModal(''); setAction(null);
+    try {
+      await dbActions.reviewRequirement(r.id, false, obsModal);
+      onToast(`REQ ${r.id} rechazada — analista notificado`);
+      setSelected(null); setObsModal(''); setAction(null);
+    } catch (error) {
+      console.error('Error rechazando requerimiento:', error);
+      onToast(error instanceof Error ? error.message : 'No se pudo rechazar el requerimiento');
+    }
   };
 
   const openAction = (r: Requerimiento, type: 'confirm' | 'reject') => {
