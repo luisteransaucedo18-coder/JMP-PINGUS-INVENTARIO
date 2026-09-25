@@ -70,7 +70,7 @@ export interface Material {
 
   categoria: string;
 
-  unidad: 'UND';
+  unidad: string;
 
   marca?: string;
 
@@ -79,6 +79,8 @@ export interface Material {
   stockSedes: Record<Sede, number>;
 
   minimo: number;
+
+  precioUnitario: number;
 
   estado: EstadoMaterial;
 

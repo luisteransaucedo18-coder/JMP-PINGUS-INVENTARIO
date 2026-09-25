@@ -66,6 +66,15 @@ const SEDE_COLOR: Record<string, string> = {
   Trujillo: '#7C3AED',
 };
 
+const formatPrecio = (precio: number) =>
+  precio > 0
+    ? new Intl.NumberFormat('es-PE', {
+        style: 'currency',
+        currency: 'PEN',
+        minimumFractionDigits: 2,
+      }).format(precio)
+    : 'Sin precio';
+
 // ======================================================
 // COMPONENTE
 // ======================================================
@@ -413,6 +422,8 @@ export default function InventarioView({
           },
 
           minimo,
+
+          precioUnitario: 0,
 
           estado,
         });
@@ -1063,6 +1074,10 @@ export default function InventarioView({
                 </th>
 
                 <th>
+                  Precio unitario
+                </th>
+
+                <th>
                   Estado
                 </th>
 
@@ -1086,9 +1101,9 @@ export default function InventarioView({
 
                   <td
                     colSpan={
-                      canEdit
-                        ? 12
-                        : 11
+                      sedeView === 'todas'
+                        ? canEdit ? 13 : 12
+                        : canEdit ? 10 : 9
                     }
 
                     style={{
@@ -1356,6 +1371,32 @@ export default function InventarioView({
                           }}
                         >
                           {m.minimo}
+                        </td>
+
+
+                        <td
+                          style={{
+                            fontVariantNumeric:
+                              'tabular-nums',
+
+                            fontSize:
+                              12,
+
+                            fontWeight:
+                              600,
+
+                            color:
+                              m.precioUnitario > 0
+                                ? '#18181B'
+                                : '#A1A1AA',
+
+                            whiteSpace:
+                              'nowrap',
+                          }}
+                        >
+                          {formatPrecio(
+                            m.precioUnitario
+                          )}
                         </td>
 
 
@@ -1650,6 +1691,36 @@ export default function InventarioView({
                   >
                     {selected.minimo}
                     {' UND'}
+                  </div>
+
+                </div>
+
+
+                <div>
+
+                  <div
+                    style={{
+                      fontSize: 10,
+                      color: '#71717A',
+                      textTransform: 'uppercase',
+                      marginBottom: 4,
+                    }}
+                  >
+                    Precio unitario
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: selected.precioUnitario > 0
+                        ? '#18181B'
+                        : '#A1A1AA',
+                    }}
+                  >
+                    {formatPrecio(
+                      selected.precioUnitario
+                    )}
                   </div>
 
                 </div>
