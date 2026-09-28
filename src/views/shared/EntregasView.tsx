@@ -116,7 +116,7 @@ function Comprobante({ entregaId, req, tecnico, dni, responsable, items, fecha, 
 }
 
 function EntregaForm({ req, usuario, onDone, onCancel }: { req: Requerimiento; usuario: string; onDone: () => void; onCancel: () => void }) {
-  const { state, dispatch } = useAppStore();
+  const { state, refreshRemoteData } = useAppStore();
   const [tecnico, setTecnico] = useState(req.tecnico);
   const [dni, setDni] = useState('');
   const [obs, setObs] = useState('');
@@ -151,15 +151,10 @@ function EntregaForm({ req, usuario, onDone, onCancel }: { req: Requerimiento; u
     setSubmitting(true);
     try {
       const persistedId = await registrarEntrega(req.id, tecnico, dni, obs, items);
-      dispatch({
-        type: 'CREATE_ENTREGA',
-        payload: { requerimientoId: req.id, proyectoNombre: req.proyecto, tecnico, dniTecnico: dni, responsableEntrega: usuario, items, observaciones: obs },
-      });
-    const today = new Date().toISOString().split('T')[0];
-    const hora = new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
-    setEntregaId(persistedId);
-    setShowConfirm(false);
-    setShowComprobante(true);
+      await refreshRemoteData();
+      setEntregaId(persistedId);
+      setShowConfirm(false);
+      setShowComprobante(true);
     } catch (error) {
       setErrors(prev => ({ ...prev, submit: error instanceof Error ? error.message : 'No se pudo registrar la entrega.' }));
     } finally { setSubmitting(false); }

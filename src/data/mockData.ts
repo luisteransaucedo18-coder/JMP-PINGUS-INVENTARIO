@@ -40,6 +40,7 @@ export interface CompraItem {
 }
 
 export interface RequerimientoCompra {
+  uuid?: string;
   id: string;
   sede: Sede;
   analista: string;

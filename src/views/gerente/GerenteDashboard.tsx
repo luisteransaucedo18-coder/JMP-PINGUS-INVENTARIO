@@ -127,7 +127,9 @@ function SectionHead({ title, action, actionLabel = 'Ver todo' }: { title: strin
   );
 }
 
-export default function GerenteDashboard() {
+interface Props { onNav: (v: string) => void; }
+
+export default function GerenteDashboard({ onNav }: Props) {
   const { state } = useAppStore();
   const { materials, requerimientos } = state;
 
@@ -363,6 +365,32 @@ export default function GerenteDashboard() {
             </tbody>
           </table>
           </div>
+        </div>
+      </Card>
+
+      <Card style={{ padding: '22px 24px', marginTop: 22, border: '1px solid #DDD6FE' }}>
+        <SectionHead title="Accesos rápidos" />
+        <div className="dashboard-status-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12 }}>
+          {[
+            { label: 'Manual de Usuario', view: 'manual', primary: true },
+            { label: 'Ver reportes', view: 'reportes' },
+            { label: 'Consultar proyectos', view: 'proyectos' },
+            { label: 'Consultar inventario', view: 'inventario' },
+          ].map((item) => (
+            <button
+              key={item.label}
+              className={`btn ${item.primary ? 'btn-primary' : 'btn-ghost'}`}
+              style={{
+                width: '100%',
+                justifyContent: 'center',
+                borderColor: item.primary ? undefined : '#DDD6FE',
+                color: item.primary ? undefined : '#6D28D9',
+              }}
+              onClick={() => onNav(item.view)}
+            >
+              {item.label}
+            </button>
+          ))}
         </div>
       </Card>
     </div>

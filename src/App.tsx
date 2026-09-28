@@ -18,6 +18,7 @@ import ProyectosView from './views/shared/ProyectosView';
 import EntregasView from './views/shared/EntregasView';
 import UsuariosView from './views/admin/UsuariosView';
 import ProfileView from './views/shared/ProfileView';
+import ManualUsuarioView from './views/shared/ManualUsuarioView';
 import NotificationsPanel, { useNotifications } from './components/NotificationsPanel';
 import NuevaCompraView from './views/analista/NuevaCompraView';
 import MisComprasView from './views/analista/MisComprasView';
@@ -32,6 +33,7 @@ const VIEW_TITLES: Record<string, Record<string, { title: string; subtitle?: str
     inventario: { title: 'Inventario', subtitle: 'Stock por sede — solo lectura' },
     reportes:   { title: 'Reportes', subtitle: 'Análisis de requerimientos, stock e indicadores operativos' },
     proyectos:  { title: 'Proyectos', subtitle: 'Todos los proyectos registrados' },
+    manual:     { title: 'Manual de Usuario', subtitle: 'Funciones disponibles para el rol gerente' },
   },
   analista: {
     dashboard:         { title: 'Mi Panel', subtitle: 'Resumen de mis solicitudes' },
@@ -43,6 +45,7 @@ const VIEW_TITLES: Record<string, Record<string, { title: string; subtitle?: str
     inventario:        { title: 'Inventario', subtitle: 'Consulta de existencias por sede' },
     'nueva-compra':    { title: 'Nueva Solicitud de Compra', subtitle: 'Solicitar compra de materiales faltantes' },
     'mis-compras':     { title: 'Mis Órdenes de Compra', subtitle: 'Seguimiento de solicitudes de compra' },
+    manual:            { title: 'Manual de Usuario', subtitle: 'Funciones disponibles para el rol analista' },
   },
   coordinador: {
     dashboard:      { title: 'Panel de Coordinación', subtitle: 'Gestión de requerimientos e inventario' },
@@ -53,6 +56,7 @@ const VIEW_TITLES: Record<string, Record<string, { title: string; subtitle?: str
     inventario:     { title: 'Inventario', subtitle: 'Catálogo de materiales — edición habilitada' },
     usuarios:       { title: 'Gestión de Usuarios', subtitle: 'Crear, activar y desactivar cuentas' },
     compras:        { title: 'Órdenes de Compra', subtitle: 'Aprobar solicitudes y confirmar ingresos de stock' },
+    manual:         { title: 'Manual de Usuario', subtitle: 'Funciones disponibles para el rol coordinador' },
   },
 };
 
@@ -77,10 +81,6 @@ function LoginScreen({ onLogin }: { onLogin: (role: Role, name: string, email: s
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const handleSsoUnavailable = (provider: string) => {
-    setError(`El acceso con ${provider} aún no está habilitado. Usa tu correo institucional.`);
-  };
 
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
@@ -238,8 +238,9 @@ const handleSubmit = async (e: React.FormEvent) => {
 /* ─── View router ─── */
 function renderView(role: Role, view: string, onToast: (m: string) => void, onNav: (v: string) => void, usuario: string, userEmail: string) {
   if (view === 'perfil') return <ProfileView role={role} userName={usuario} userEmail={userEmail} onToast={onToast} />;
+  if (view === 'manual') return <ManualUsuarioView role={role} onNav={onNav} />;
   if (role === 'gerente') {
-    if (view === 'dashboard' || !view) return <GerenteDashboard />;
+    if (view === 'dashboard' || !view) return <GerenteDashboard onNav={onNav} />;
     if (view === 'inventario') return <InventarioView role={role} onToast={onToast} />;
     if (view === 'reportes') return <ReportesView />;
     if (view === 'proyectos') return <ProyectosView role={role} onToast={onToast} />;
@@ -252,7 +253,7 @@ function renderView(role: Role, view: string, onToast: (m: string) => void, onNa
     if (view === 'entregas') return <EntregasView onToast={onToast} usuario={usuario} />;
     if (view === 'devoluciones') return <DevolucionesView onToast={onToast} />;
     if (view === 'inventario') return <InventarioView role={role} onToast={onToast} />;
-    if (view === 'nueva-compra') return <NuevaCompraView onToast={onToast} usuario={usuario} onNav={onNav} />;
+    if (view === 'nueva-compra') return <NuevaCompraView onToast={onToast} onNav={onNav} />;
     if (view === 'mis-compras') return <MisComprasView usuario={usuario} onNav={onNav} />;
   }
   if (role === 'coordinador') {
@@ -263,7 +264,7 @@ function renderView(role: Role, view: string, onToast: (m: string) => void, onNa
     if (view === 'devoluciones') return <DevolucionesView onToast={onToast} />;
     if (view === 'inventario') return <InventarioView role={role} onToast={onToast} />;
     if (view === 'usuarios') return <UsuariosView onToast={onToast} />;
-    if (view === 'compras') return <ComprasView onToast={onToast} usuario={usuario} />;
+    if (view === 'compras') return <ComprasView onToast={onToast} />;
   }
   return <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#71717A' }}>Vista en construcción</div>;
 }

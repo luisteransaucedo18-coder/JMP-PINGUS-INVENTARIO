@@ -34,8 +34,9 @@ export default function CoordinadorDashboard({ onNav }: Props) {
       </div>
 
       <div className="coordinator-dashboard-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 20 }}>
-        {/* Solicitudes por confirmar */}
-        <div className="panel coordinator-main-panel">
+        <div className="coordinator-main-column">
+          {/* Solicitudes por confirmar */}
+          <div className="panel coordinator-main-panel">
           <div className="section-header">
             <span className="section-title">Solicitudes por Confirmar</span>
             <button className="btn btn-ghost" style={{ fontSize: 11, padding: '4px 10px' }} onClick={() => onNav('requerimientos')}>Ver todas →</button>
@@ -66,35 +67,93 @@ export default function CoordinadorDashboard({ onNav }: Props) {
               </div>
             </div>
           ))}
-        </div>
+          </div>
 
-        {/* Panel derecho */}
-        <div className="coordinator-side-panels" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {/* Alertas stock */}
-          <div className="panel">
+          <div className="panel coordinator-alerts-panel">
             <div className="section-header">
               <span className="section-title">Alertas de Inventario</span>
               <span className="badge badge-red">{alertas.length}</span>
             </div>
-            {alertas.slice(0, 8).map(m => (
-              <div key={m.id} style={{ padding: '10px 14px', borderBottom: '1px solid #F4F4F5', display: 'flex', gap: 10, alignItems: 'center' }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: m.estado === 'AGOTADO' ? '#DC2626' : '#D97706', flexShrink: 0 }} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 12, fontWeight: 500, color: '#18181B', lineHeight: 1.3 }}>{m.nombre}</div>
-                  <div style={{ fontSize: 10.5, color: '#71717A', marginTop: 1 }}>
-                    Total: {Object.values(m.stockSedes).reduce((s, v) => s + v, 0)} UND
+            <div className="coordinator-alerts-list">
+              {alertas.map(m => {
+                const total = Object.values(m.stockSedes).reduce((sum, stock) => sum + stock, 0);
+
+                return (
+                  <div key={m.id} className="coordinator-alert-item">
+                    <div
+                      className="coordinator-alert-indicator"
+                      style={{ background: m.estado === 'AGOTADO' || m.estado === 'CRÍTICO' ? '#DC2626' : '#D97706' }}
+                    />
+                    <div className="coordinator-alert-content">
+                      <div className="coordinator-alert-heading">
+                        <div>
+                          <div className="coordinator-alert-name">{m.nombre}</div>
+                          <div className="coordinator-alert-sku">SKU {m.id} · Stock mínimo: {m.minimo} {m.unidad}</div>
+                        </div>
+                        <span className={`badge status-badge badge-${m.estado === 'AGOTADO' || m.estado === 'CRÍTICO' ? 'red' : 'amber'}`}>
+                          {m.estado}
+                        </span>
+                      </div>
+                      <div className="coordinator-alert-stock-grid">
+                        <div className="coordinator-alert-total">
+                          <span>Stock total</span>
+                          <strong>{total} {m.unidad}</strong>
+                        </div>
+                        {SEDES.map(sede => (
+                          <div key={sede} className="coordinator-alert-site">
+                            <span>{sede}</span>
+                            <strong>{m.stockSedes[sede] ?? 0} {m.unidad}</strong>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <span className={`badge status-badge badge-${m.estado === 'AGOTADO' || m.estado === 'CRÍTICO' ? 'red' : 'amber'}`} style={{ fontSize: 10 }}>{m.estado}</span>
-              </div>
-            ))}
-            {alertas.length === 0 && (
-              <div style={{ padding: '16px', fontSize: 12, color: '#71717A', textAlign: 'center' }}>Sin alertas activas</div>
-            )}
-            <div style={{ padding: '10px 14px', borderTop: '1px solid #E4E4E7' }}>
+                );
+              })}
+              {alertas.length === 0 && (
+                <div className="coordinator-alert-empty">Sin alertas activas</div>
+              )}
+            </div>
+            <div style={{ padding: '12px 16px', borderTop: '1px solid #E4E4E7' }}>
               <button className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center', fontSize: 12 }} onClick={() => onNav('inventario')}>
                 Ver inventario completo →
               </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Panel derecho */}
+        <div className="coordinator-side-panels" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* Accesos rapidos */}
+          <div className="panel" style={{ background: '#F0FDFA', borderColor: '#99F6E4' }}>
+            <div style={{ padding: '18px 18px' }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#0F766E', marginBottom: 12 }}>
+                Accesos rápidos
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <button
+                  className="btn btn-primary"
+                  style={{ width: '100%', justifyContent: 'center' }}
+                  onClick={() => onNav('manual')}
+                >
+                  Manual de Usuario
+                </button>
+                <button
+                  className="btn btn-ghost"
+                  style={{ width: '100%', justifyContent: 'center', borderColor: '#99F6E4', color: '#0F766E' }}
+                  onClick={() => onNav('requerimientos')}
+                >
+                  Revisar requerimientos
+                </button>
+                <button
+                  className="btn btn-ghost"
+                  style={{ width: '100%', justifyContent: 'center', borderColor: '#99F6E4', color: '#0F766E' }}
+                  onClick={() => onNav('compras')}
+                >
+                  Gestionar compras
+                </button>
+              </div>
             </div>
           </div>
 

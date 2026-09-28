@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Material } from '../data/mockData';
+import type { Material, Sede } from '../data/mockData';
 
 type MaterialDB = {
   sku: string;
@@ -62,7 +62,7 @@ export async function obtenerMateriales(): Promise<Material[]> {
   const stockPorSku = new Map<string, Material['stockSedes']>();
   for (const row of inventario ?? []) {
     const stock = stockPorSku.get(row.material_sku) ?? { Chiclayo: 0, Chimbote: 0, Trujillo: 0 };
-    if (row.sede === 'Chiclayo' || row.sede === 'Chimbote' || row.sede === 'Trujillo') stock[row.sede] = Number(row.stock ?? 0);
+    if (row.sede === 'Chiclayo' || row.sede === 'Chimbote' || row.sede === 'Trujillo') stock[row.sede as Sede] = Number(row.stock ?? 0);
     stockPorSku.set(row.material_sku, stock);
   }
   return (data ?? []).map(material => ({ ...mapMaterialDBToMaterial(material), stockSedes: stockPorSku.get(material.sku) ?? { Chiclayo: 0, Chimbote: 0, Trujillo: 0 } }));

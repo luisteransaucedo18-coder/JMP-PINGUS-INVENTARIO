@@ -275,7 +275,7 @@ interface Props {
   role: Role;
   userName: string;
   readIds?: Set<string>;
-  onMarkRead?: (ids: Set<string>) => void;
+  onMarkRead?: React.Dispatch<React.SetStateAction<Set<string>>>;
 }
 
 export default function NotificationsPanel({ open, onClose, role, userName, readIds, onMarkRead }: Props) {
@@ -295,8 +295,8 @@ export default function NotificationsPanel({ open, onClose, role, userName, read
     return () => document.removeEventListener('mousedown', handler);
   }, [open, onClose]);
 
-  const markAllRead = () => setRead(new Set(notifications.map(n => n.id)) as any);
-  const markRead = (id: string) => setRead((prev: Set<string>) => new Set([...prev, id]) as any);
+  const markAllRead = () => setRead(new Set(notifications.map(n => n.id)));
+  const markRead = (id: string) => setRead(prev => new Set([...prev, id]));
 
   const unread = notifications.filter(n => !read.has(n.id)).length;
 

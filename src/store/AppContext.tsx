@@ -1,6 +1,9 @@
 import { createContext, useContext, useReducer, ReactNode, useCallback, useEffect } from 'react';
 import { supabase } from '../service/supabase';
 import { obtenerProyectos, obtenerRequerimientos } from '../service/requerimientoService';
+import { obtenerMateriales } from '../service/materialService';
+import { obtenerEntregas } from '../service/devolucionService';
+import { obtenerCompras } from '../service/compraService';
 import {
   Material, Requerimiento, Usuario, ReqMaterial, Proyecto, Entrega, EntregaItem, Devolucion, DevolucionItem,
   RequerimientoCompra, CompraItem,
@@ -41,7 +44,10 @@ type Action =
   | { type: 'REJECT_COMPRA'; payload: { id: string; coordinador: string; observaciones: string } }
   | { type: 'CONFIRM_COMPRA'; payload: { id: string; coordinador: string; notaCompra?: string } }
   | { type: 'REPLACE_REQUERIMIENTOS'; payload: Requerimiento[] }
-  | { type: 'REPLACE_PROYECTOS'; payload: Proyecto[] };
+  | { type: 'REPLACE_PROYECTOS'; payload: Proyecto[] }
+  | { type: 'REPLACE_MATERIALS'; payload: Material[] }
+  | { type: 'REPLACE_ENTREGAS'; payload: Entrega[] }
+  | { type: 'REPLACE_COMPRAS'; payload: RequerimientoCompra[] };
 
 function calcEstado(stockSedes: Record<Sede, number>, minimo: number): EstadoMaterial {
   const total = Object.values(stockSedes).reduce((s, v) => s + v, 0);
@@ -337,6 +343,15 @@ function reducer(state: AppState, action: Action): AppState {
     case 'REPLACE_PROYECTOS':
       return { ...state, proyectos: action.payload };
 
+    case 'REPLACE_MATERIALS':
+      return { ...state, materials: action.payload };
+
+    case 'REPLACE_ENTREGAS':
+      return { ...state, entregas: action.payload };
+
+    case 'REPLACE_COMPRAS':
+      return { ...state, compras: action.payload };
+
     default: return state;
   }
 }
@@ -355,9 +370,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     compras: initCompras.map(c => ({ ...c })),
   });
   const refreshRemoteData = useCallback(async () => {
-    const [requirements, projects] = await Promise.all([obtenerRequerimientos(), obtenerProyectos()]);
-    dispatch({ type: 'REPLACE_REQUERIMIENTOS', payload: requirements });
-    dispatch({ type: 'REPLACE_PROYECTOS', payload: projects });
+    const results = await Promise.allSettled([
+      obtenerRequerimientos(),
+      obtenerProyectos(),
+      obtenerMateriales(),
+      obtenerEntregas(),
+      obtenerCompras(),
+    ]);
+    const [requirements, projects, remoteMaterials, remoteDeliveries, remotePurchases] = results;
+    if (requirements.status === 'fulfilled') dispatch({ type: 'REPLACE_REQUERIMIENTOS', payload: requirements.value });
+    if (projects.status === 'fulfilled') dispatch({ type: 'REPLACE_PROYECTOS', payload: projects.value });
+    if (remoteMaterials.status === 'fulfilled') dispatch({ type: 'REPLACE_MATERIALS', payload: remoteMaterials.value });
+    if (remoteDeliveries.status === 'fulfilled') dispatch({ type: 'REPLACE_ENTREGAS', payload: remoteDeliveries.value });
+    if (remotePurchases.status === 'fulfilled') dispatch({ type: 'REPLACE_COMPRAS', payload: remotePurchases.value });
+    results.forEach(result => {
+      if (result.status === 'rejected') console.error('No se pudo sincronizar una fuente remota:', result.reason);
+    });
   }, []);
 
   useEffect(() => {
@@ -368,6 +396,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'requerimientos' }, () => { if (active) void refresh(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'requerimiento_items' }, () => { if (active) void refresh(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'proyectos' }, () => { if (active) void refresh(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'materiales' }, () => { if (active) void refresh(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventario_sedes' }, () => { if (active) void refresh(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'entregas' }, () => { if (active) void refresh(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'entrega_items' }, () => { if (active) void refresh(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ordenes_compra' }, () => { if (active) void refresh(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orden_compra_items' }, () => { if (active) void refresh(); })
       .subscribe();
     return () => { active = false; void supabase.removeChannel(channel); };
   }, [refreshRemoteData]);

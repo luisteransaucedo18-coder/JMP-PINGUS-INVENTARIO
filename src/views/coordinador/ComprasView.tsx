@@ -3,8 +3,9 @@ import { useAppStore } from '../../store/AppContext';
 import { RequerimientoCompra, EstadoCompra, SEDES, Sede } from '../../data/mockData';
 import MaterialPreviewModal, { PreviewBtn } from '../../components/MaterialPreviewModal';
 import { Material } from '../../data/mockData';
+import { confirmarCompra, revisarCompra } from '../../service/compraService';
 
-interface Props { onToast: (m: string) => void; usuario: string; }
+interface Props { onToast: (m: string) => void; }
 
 const E_COLOR: Record<EstadoCompra, string> = { BORRADOR: '#8B8FA8', ENVIADO: '#D97706', APROBADO: '#2563EB', COMPRADO: '#059669', RECHAZADO: '#DC2626' };
 const E_BG:    Record<EstadoCompra, string> = { BORRADOR: '#F4F4F5', ENVIADO: '#FEF3C7', APROBADO: '#DBEAFE', COMPRADO: '#CCFBF1', RECHAZADO: '#FEE2E2' };
@@ -12,8 +13,8 @@ const E_LABEL: Record<EstadoCompra, string> = { BORRADOR: 'Borrador', ENVIADO: '
 
 type ModalMode = 'detail' | 'approve' | 'reject' | 'confirm';
 
-export default function ComprasView({ onToast, usuario }: Props) {
-  const { state, dispatch } = useAppStore();
+export default function ComprasView({ onToast }: Props) {
+  const { state, refreshRemoteData } = useAppStore();
 
   const [estadoFilter, setEstadoFilter] = useState<EstadoCompra | ''>('ENVIADO');
   const [sedeFilter,   setSedeFilter]   = useState<Sede | ''>('');
@@ -34,22 +35,40 @@ export default function ComprasView({ onToast, usuario }: Props) {
   const approved = state.compras.filter(c => c.estado === 'APROBADO').length;
 
   /* Actions */
-  const doApprove = (c: RequerimientoCompra) => {
-    dispatch({ type: 'APPROVE_COMPRA', payload: { id: c.id, coordinador: usuario, observaciones: obs || undefined } });
-    onToast(`✓ Orden ${c.id} aprobada — autorizada para compra`);
-    closeModal();
+  const doApprove = async (c: RequerimientoCompra) => {
+    if (!c.uuid) return onToast('La orden no tiene un identificador persistido. Actualiza la lista.');
+    try {
+      await revisarCompra(c.uuid, true, obs);
+      await refreshRemoteData();
+      onToast(`✓ Orden ${c.id} aprobada — autorizada para compra`);
+      closeModal();
+    } catch (error) {
+      onToast(error instanceof Error ? error.message : 'No se pudo aprobar la orden');
+    }
   };
-  const doReject = (c: RequerimientoCompra) => {
+  const doReject = async (c: RequerimientoCompra) => {
     if (!obs.trim()) { onToast('⚠ Indica el motivo del rechazo'); return; }
-    dispatch({ type: 'REJECT_COMPRA', payload: { id: c.id, coordinador: usuario, observaciones: obs } });
-    onToast(`Orden ${c.id} rechazada`);
-    closeModal();
+    if (!c.uuid) return onToast('La orden no tiene un identificador persistido. Actualiza la lista.');
+    try {
+      await revisarCompra(c.uuid, false, obs);
+      await refreshRemoteData();
+      onToast(`Orden ${c.id} rechazada`);
+      closeModal();
+    } catch (error) {
+      onToast(error instanceof Error ? error.message : 'No se pudo rechazar la orden');
+    }
   };
-  const doConfirm = (c: RequerimientoCompra) => {
-    dispatch({ type: 'CONFIRM_COMPRA', payload: { id: c.id, coordinador: usuario, notaCompra: notaCompra || undefined } });
-    const totalItems = c.items.reduce((s, it) => s + it.cantidadSolicitada, 0);
-    onToast(`✓ Compra confirmada — ${totalItems} UND ingresadas al stock de ${c.sede}`);
-    closeModal();
+  const doConfirm = async (c: RequerimientoCompra) => {
+    if (!c.uuid) return onToast('La orden no tiene un identificador persistido. Actualiza la lista.');
+    try {
+      await confirmarCompra(c.uuid, notaCompra);
+      await refreshRemoteData();
+      const totalItems = c.items.reduce((s, it) => s + it.cantidadSolicitada, 0);
+      onToast(`✓ Compra confirmada — ${totalItems} UND ingresadas al stock de ${c.sede}`);
+      closeModal();
+    } catch (error) {
+      onToast(error instanceof Error ? error.message : 'No se pudo confirmar la compra');
+    }
   };
 
   const openModal = (c: RequerimientoCompra, m: ModalMode) => {
@@ -197,7 +216,7 @@ export default function ComprasView({ onToast, usuario }: Props) {
                 </thead>
                 <tbody>
                   {selected.items.map((it, i) => {
-                    const mat = materiales.find(m => m.id === it.skuId);
+                    const mat = state.materials.find(m => m.id === it.skuId);
                     const stock = mat ? mat.stockSedes[selected.sede] : null;
                     const sub = it.cantidadSolicitada * (it.precioUnitario ?? 0);
                     return (
@@ -310,7 +329,7 @@ export default function ComprasView({ onToast, usuario }: Props) {
                         Actualización de stock en {selected.sede}
                       </div>
                       {selected.items.map((it, i) => {
-                        const mat = materiales.find(m => m.id === it.skuId);
+                        const mat = state.materials.find(m => m.id === it.skuId);
                         const stockActual = mat ? mat.stockSedes[selected.sede] : 0;
                         const stockNuevo = stockActual + it.cantidadSolicitada;
                         return (

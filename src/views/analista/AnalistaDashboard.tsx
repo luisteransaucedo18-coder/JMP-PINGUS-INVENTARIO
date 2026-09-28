@@ -787,7 +787,7 @@ export default function AnalistaDashboard({
                     width: '100%',
                     justifyContent: 'center',
                   }}
-                  onClick={() => onNav('nueva-solicitud')}
+                  onClick={() => onNav('manual')}
                 >
                     Manual de Usuario
                 </button>
