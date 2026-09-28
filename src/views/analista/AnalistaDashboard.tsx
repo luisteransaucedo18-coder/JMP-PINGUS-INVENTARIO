@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAppStore } from '../../store/AppContext';
+import AnalistaHelpCenter from '../../components/AnalistaHelpCenter';
 
 const ESTADO_COLOR: Record<string, string> = {
   BORRADOR: '#A1A1AA',
@@ -33,6 +34,7 @@ export default function AnalistaDashboard({
 }: Props) {
 
   const { state } = useAppStore();
+  const [helpMode, setHelpMode] = useState<'faq' | 'manual' | null>(null);
 
   // =====================================================
   // RESPONSIVE
@@ -787,7 +789,7 @@ export default function AnalistaDashboard({
                     width: '100%',
                     justifyContent: 'center',
                   }}
-                  onClick={() => onNav('nueva-solicitud')}
+                  onClick={() => setHelpMode('manual')}
                 >
                     Manual de Usuario
                 </button>
@@ -800,9 +802,9 @@ export default function AnalistaDashboard({
                     borderColor: '#BFDBFE',
                     color: '#1D4ED8',
                   }}
-                  onClick={() => onNav('mis-solicitudes')}
+                  onClick={() => setHelpMode('faq')}
                 >
-                  Pregunta Frecuentes
+                  Preguntas frecuentes
                 </button>
 
                 <button
@@ -823,6 +825,7 @@ export default function AnalistaDashboard({
 
         </div>
       </div>
+      {helpMode && <AnalistaHelpCenter mode={helpMode} onClose={() => setHelpMode(null)} />}
     </div>
   );
 }

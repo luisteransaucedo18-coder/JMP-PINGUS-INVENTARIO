@@ -5,6 +5,7 @@ import Header from './components/Header';
 import { supabase, supabaseConfigError } from './service/supabase';
 import { ASSETS } from './config/assets';
 import { AppProvider } from './store/AppContext';
+import WorkspaceGate from './components/WorkspaceTransition';
 
 import GerenteDashboard from './views/gerente/GerenteDashboard';
 import ReportesView from './views/gerente/ReportesView';
@@ -378,7 +379,7 @@ export default function App() {
   if (restoring) return <div role="status" style={{ padding: 32 }}>Recuperando sesión…</div>;
   return <>
     {sessionError && <div role="alert" style={{ padding: 12, background: '#FEF2F2', color: '#B91C1C' }}>{sessionError}</div>}
-    {session ? <AppProvider key={session.email}><AppShell session={session} onLogout={() => void logout()} /></AppProvider>
+    {session ? <AppProvider key={session.email}><WorkspaceGate onLogout={() => void logout()}><AppShell session={session} onLogout={() => void logout()} /></WorkspaceGate></AppProvider>
       : <LoginScreen onLogin={handleLogin} />}
   </>;
 }

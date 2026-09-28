@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, ReactNode, useCallback, useEffect } from 'react';
+import { createContext, useContext, useReducer, ReactNode, useCallback, useEffect, useState } from 'react';
 import { supabase } from '../service/supabase';
 import { obtenerProyectos, obtenerRequerimientos } from '../service/requerimientoService';
 import {
@@ -341,10 +341,12 @@ function reducer(state: AppState, action: Action): AppState {
   }
 }
 
-interface AppContextType { state: AppState; dispatch: React.Dispatch<Action>; refreshRemoteData: () => Promise<void> }
+interface AppContextType { state: AppState; dispatch: React.Dispatch<Action>; refreshRemoteData: () => Promise<void>; initialLoad: 'loading' | 'ready' | 'error'; retryInitialLoad: () => void }
 const AppContext = createContext<AppContextType | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  const [initialLoad, setInitialLoad] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [state, dispatch] = useReducer(reducer, {
     materials: initMaterials.map(m => ({ ...m })),
     requerimientos: initReqs.map(r => ({ ...r })),
@@ -363,16 +365,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true;
     const refresh = async () => { try { await refreshRemoteData(); } catch (error) { console.error('No se pudo sincronizar datos remotos:', error); } };
-    void refresh();
+    setInitialLoad('loading');
+    void refreshRemoteData().then(() => { if (active) setInitialLoad('ready'); })
+      .catch(() => { if (active) setInitialLoad('error'); });
     const channel = supabase.channel('requerimientos-compartidos')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'requerimientos' }, () => { if (active) void refresh(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'requerimiento_items' }, () => { if (active) void refresh(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'proyectos' }, () => { if (active) void refresh(); })
       .subscribe();
     return () => { active = false; void supabase.removeChannel(channel); };
-  }, [refreshRemoteData]);
+  }, [refreshRemoteData, loadAttempt]);
 
-  return <AppContext.Provider value={{ state, dispatch, refreshRemoteData }}>{children}</AppContext.Provider>;
+  return <AppContext.Provider value={{ state, dispatch, refreshRemoteData, initialLoad, retryInitialLoad: () => setLoadAttempt(n => n + 1) }}>{children}</AppContext.Provider>;
 }
 
 export function useAppStore() {
