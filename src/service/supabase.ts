@@ -14,4 +14,9 @@ export const supabaseConfigError = !supabaseUrl || !supabaseKey
 export const supabase = createClient(
   supabaseUrl ?? 'https://invalid-project.supabase.co',
   supabaseKey ?? 'missing-supabase-key',
+  {
+    auth: {
+      persistSession: false,
+    },
+  },
 )

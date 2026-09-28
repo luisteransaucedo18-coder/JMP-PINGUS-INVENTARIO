@@ -20,7 +20,6 @@ const navByRole: Record<Role, NavItem[]> = {
     { id: 'entregas',         label: 'Entregas',         icon: <InIcon /> },
     { id: 'devoluciones',     label: 'Devoluciones',     icon: <ReturnIcon /> },
     { id: 'mis-compras',      label: 'Órdenes de Compra', icon: <CartIcon /> },
-    { id: 'devoluciones',     label: 'Devoluciones',      icon: <InIcon /> },
     { id: 'inventario',       label: 'Inventario',       icon: <BoxIcon /> },
   ],
   coordinador: [
@@ -30,7 +29,6 @@ const navByRole: Record<Role, NavItem[]> = {
     { id: 'devoluciones',    label: 'Devoluciones',     icon: <InIcon /> },
     { id: 'proyectos',       label: 'Proyectos',        icon: <MapIcon /> },
     { id: 'entregas',        label: 'Entregas',         icon: <InIcon /> },
-    { id: 'devoluciones',    label: 'Devoluciones',     icon: <ReturnIcon /> },
     { id: 'inventario',      label: 'Inventario',       icon: <BoxIcon /> },
     { id: 'usuarios',        label: 'Usuarios',         icon: <UsersIcon /> },
   ],
