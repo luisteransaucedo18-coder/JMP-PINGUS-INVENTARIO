@@ -138,7 +138,6 @@ export default function GerenteDashboard({ onNav }: Props) {
   const rechazados  = requerimientos.filter(r => r.estado === 'RECHAZADO').length;
   const borradores  = requerimientos.filter(r => r.estado === 'BORRADOR').length;
   const criticos    = materials.filter(m => m.estado === 'CRÍTICO' || m.estado === 'AGOTADO').length;
-  const totalStock  = materials.reduce((s, m) => s + Object.values(m.stockSedes).reduce((a, b) => a + b, 0), 0);
   const recentReqs  = [...requerimientos].sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 7);
 
   /* Bar chart data: reqs by sede (confirmed vs pending) */

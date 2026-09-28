@@ -6,8 +6,8 @@
   "packageManager": "pnpm@10.12.4",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
-    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit --noUnusedLocals --noUnusedParameters && vite build",
+    "typecheck": "tsc --noEmit --noUnusedLocals --noUnusedParameters",
     "preview": "vite preview",
     "format": "oxfmt"
   },

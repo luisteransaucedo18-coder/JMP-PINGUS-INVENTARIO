@@ -5,6 +5,7 @@ import MaterialPreviewModal, { PreviewBtn } from '../../components/MaterialPrevi
 import { Material, CompraItem } from '../../data/mockData';
 import { obtenerMateriales } from '../../service/materialService';
 import { crearCompra } from '../../service/compraService';
+import { searchMaterials } from '../../utils/materialSearch';
 
 
 interface Props { onToast: (m: string) => void; onNav: (v: string) => void; }
@@ -46,27 +47,7 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
       );
     });
 
-    const getMatches = (query: string) => {
-      const q = query.trim().toLowerCase();
-
-      if (q.length < 2) {
-        return [];
-      }
-
-      return materiales
-        .filter((m) => {
-          const sku = m.id?.toLowerCase() ?? '';
-          const nombre = m.nombre?.toLowerCase() ?? '';
-          const categoria = m.categoria?.toLowerCase() ?? '';
-
-          return (
-            sku.includes(q) ||
-            nombre.includes(q) ||
-            categoria.includes(q)
-          );
-        })
-        .slice(0, 8);
-    };
+    const getMatches = (query: string) => searchMaterials(materiales, query, 8, 2);
 
     const selectMat = (idx: number, mat: Material) => {
       const stockActual = mat.stockSedes[sede] ?? 0;
@@ -163,8 +144,6 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
   const cargarMateriales = async () => {
     try {
       const data = await obtenerMateriales();
-
-      console.log('Materiales para compra:', data);
 
       setMateriales(data ?? []);
     } catch (error) {

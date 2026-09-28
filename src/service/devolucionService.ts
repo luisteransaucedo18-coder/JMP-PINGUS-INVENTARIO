@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import { Entrega, Sede } from '../data/mockData';
 
-export type EstadoDevolucion = 'PENDIENTE_VALIDACION' | 'OBSERVADA' | 'VALIDADA';
+type EstadoDevolucion = 'PENDIENTE_VALIDACION' | 'OBSERVADA' | 'VALIDADA';
 export interface SaldoDevolucion { requerimientoId: string; requerimientoCodigo: string; skuId: string; nombre: string; unidad: string; disponible: number; }
 export interface DevolucionItem { skuId: string; nombre: string; unidad: string; cantidad: number; }
 export interface Devolucion { id: string; codigo: string; proyectoId: string; proyecto: string; requerimientoId: string; requerimientoCodigo: string; ubicacion: string; sedeReceptora: Sede; estado: EstadoDevolucion; analista: string; observacion?: string; createdAt: string; validadoPor?: string; fechaValidacion?: string; items: DevolucionItem[]; evidencias: string[]; historial: { estado: EstadoDevolucion; comentario?: string; actor: string; fecha: string }[]; }
@@ -51,24 +51,6 @@ export async function registrarDevolucion(input: { requerimientoId: string; sede
   const paths = await cargarEvidencias(id, input.files);
   const { error } = await supabase.rpc('registrar_devolucion', { p_id: id, p_requerimiento_id: input.requerimientoId, p_sede_receptora: input.sedeReceptora, p_items: input.items.map(i => ({ material_sku: i.skuId, material_nombre: i.nombre, unidad: i.unidad, cantidad: i.cantidad })), p_evidencias: paths });
   if (error) { await supabase.storage.from('evidencias-devoluciones').remove(paths); throw error; }
-}
-
-export async function resolverDevolucion(id: string, validar: boolean, observacion?: string): Promise<void> {
-  const { error } = await supabase.rpc('resolver_devolucion', { p_id: id, p_validar: validar, p_observacion: observacion ?? null });
-  if (error) throw error;
-}
-
-export async function corregirDevolucion(input: { id: string; sedeReceptora: Sede; items: DevolucionItem[]; evidenciasActuales: string[]; files: File[] }): Promise<void> {
-  const nuevas = await cargarEvidencias(input.id, input.files);
-  const evidencias = [...input.evidenciasActuales, ...nuevas];
-  const { error } = await supabase.rpc('corregir_devolucion', { p_id: input.id, p_sede_receptora: input.sedeReceptora, p_items: input.items.map(i => ({ material_sku: i.skuId, material_nombre: i.nombre, unidad: i.unidad, cantidad: i.cantidad })), p_evidencias: evidencias });
-  if (error) { await supabase.storage.from('evidencias-devoluciones').remove(nuevas); throw error; }
-}
-
-export async function obtenerUrlEvidencia(path: string): Promise<string> {
-  const { data, error } = await supabase.storage.from('evidencias-devoluciones').createSignedUrl(path, 60 * 10);
-  if (error || !data?.signedUrl) throw error ?? new Error('No se pudo abrir la evidencia.');
-  return data.signedUrl;
 }
 
 export async function registrarEntrega(requerimientoId: string, tecnico: string, dni: string, observaciones: string, items: { skuId: string; nombre: string; cantidadSolicitada: number; cantidadEntregada: number }[]): Promise<string> {

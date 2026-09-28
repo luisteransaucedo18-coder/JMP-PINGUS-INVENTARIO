@@ -8,13 +8,6 @@ const ESTADO_COLOR: Record<string, string> = {
   RECHAZADO: '#DC2626',
 };
 
-const ESTADO_BG: Record<string, string> = {
-  BORRADOR: '#F4F4F5',
-  ENVIADO: '#FEF3C7',
-  CONFIRMADO: '#CCFBF1',
-  RECHAZADO: '#FEE2E2',
-};
-
 const ESTADO_BADGE: Record<string, string> = {
   BORRADOR: 'gray',
   ENVIADO: 'amber',

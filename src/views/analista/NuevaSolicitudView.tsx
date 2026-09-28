@@ -5,15 +5,16 @@ import MaterialPreviewModal, { PreviewBtn } from '../../components/MaterialPrevi
 import { Material } from '../../data/mockData';
 import { obtenerMateriales } from '../../service/materialService';
 import { crearProyecto, crearSolicitud } from '../../service/requerimientoService';
+import { searchMaterials } from '../../utils/materialSearch';
 
 
-interface Props { onToast: (msg: string) => void; usuario: string; onNav: (v: string) => void; }
+interface Props { onToast: (msg: string) => void; onNav: (v: string) => void; }
 
 interface LineaMat { skuId: string; nombre: string; cantidad: string; query: string; showDrop: boolean; }
 
 const BLANK_FORM = { sede: 'Chiclayo' as Sede, ubicacion: '', descripcion: '', tecnico: '' };
 
-export default function NuevaSolicitudView({ onToast, usuario, onNav }: Props) {
+export default function NuevaSolicitudView({ onToast, onNav }: Props) {
   const { state, refreshRemoteData } = useAppStore();
   const [form, setForm] = useState({ ...BLANK_FORM });
   const [lineas, setLineas] = useState<LineaMat[]>([{ skuId: '', nombre: '', cantidad: '', query: '', showDrop: false }]);
@@ -45,8 +46,6 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
       setLoadingMateriales(true);
 
       const data = await obtenerMateriales();
-
-      console.log('Materiales para solicitud:', data);
 
       setMateriales(data ?? []);
     } catch (error) {
@@ -138,14 +137,6 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
   setProjectErrors({});
 
   try {
-    console.log('Creando proyecto...', {
-      nombre,
-      cliente: newProject.cliente.trim(),
-      responsable: newProject.responsable.trim(),
-      sede: form.sede,
-      ubicacion: form.ubicacion.trim(),
-    });
-
     const project = await crearProyecto({
       nombre,
       cliente: newProject.cliente.trim(),
@@ -154,8 +145,6 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
       ubicacion: form.ubicacion.trim(),
       observaciones: '',
     });
-
-    console.log('Proyecto creado:', project);
 
     if (!project) {
       throw new Error(
@@ -173,7 +162,7 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
     try {
       await refreshRemoteData();
     } catch (refreshError) {
-      console.warn(
+      console.error(
         'Proyecto creado, pero falló la actualización de datos:',
         refreshError
       );
@@ -250,29 +239,7 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
     setLineas(p => p.map((l, j) => j !== i ? l : { ...l, showDrop: false }));
   };
 
-     const getMatchingMats = (query: string) => {
-  const q = query.trim().toLowerCase();
-
-  // Si no escribió nada, mostrar materiales existentes
-  if (!q) {
-    return materiales.slice(0, 10);
-  }
-
-  // Si escribe, filtrar únicamente materiales existentes
-  return materiales
-    .filter((m) => {
-      const sku = m.id?.toLowerCase() ?? '';
-      const nombre = m.nombre?.toLowerCase() ?? '';
-      const categoria = m.categoria?.toLowerCase() ?? '';
-
-      return (
-        sku.includes(q) ||
-        nombre.includes(q) ||
-        categoria.includes(q)
-      );
-    })
-    .slice(0, 10);
-};
+  const getMatchingMats = (query: string) => searchMaterials(materiales, query, 10);
 
   const validate = (draft: boolean) => {
     const e: Record<string, string> = {};
@@ -293,7 +260,6 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
     // find project id — either selected or recently created
     const resolvedProject = selectedProject || state.proyectos.find(p => p.nombre === proyectoQuery);
     const proyectoId = resolvedProject?.id ?? '';
-    const proyectoNombre = resolvedProject?.nombre ?? proyectoQuery;
     const tecnico = form.tecnico || resolvedProject?.responsable || '';
 
     if (!proyectoId) { setErrors({ proyecto: 'Selecciona un proyecto registrado antes de guardar' }); return; }

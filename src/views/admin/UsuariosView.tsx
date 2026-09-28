@@ -87,8 +87,6 @@ export default function UsuariosView({ onToast }: Props) {
 
       const data = await obtenerPerfiles();
 
-      console.log('PERFILES SUPABASE:', data);
-
       setUsuarios((data ?? []) as Usuario[]);
     } catch (error) {
       console.error('Error cargando usuarios:', error);

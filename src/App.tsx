@@ -114,8 +114,6 @@ const handleSubmit = async (e: React.FormEvent) => {
       return;
     }
 
-    console.log('USUARIO AUTH:', user);
-
     // 2. Obtener perfil
     const { data: perfil, error: perfilError } =
       await supabase
@@ -132,8 +130,6 @@ const handleSubmit = async (e: React.FormEvent) => {
 
       return;
     }
-
-    console.log('PERFIL:', perfil);
 
     // 3. Comprobar que esté activo
     if (perfil.estado !== 'ACTIVO') {
@@ -247,7 +243,7 @@ function renderView(role: Role, view: string, onToast: (m: string) => void, onNa
   }
   if (role === 'analista') {
     if (view === 'dashboard' || !view) return <AnalistaDashboard usuario={usuario} onNav={onNav} />;
-    if (view === 'nueva-solicitud') return <NuevaSolicitudView onToast={onToast} usuario={usuario} onNav={onNav} />;
+    if (view === 'nueva-solicitud') return <NuevaSolicitudView onToast={onToast} onNav={onNav} />;
     if (view === 'mis-solicitudes') return <MisSolicitudesView usuario={usuario} onToast={onToast} onNav={onNav} />;
     if (view === 'proyectos') return <ProyectosView role={role} onToast={onToast} />;
     if (view === 'entregas') return <EntregasView onToast={onToast} usuario={usuario} />;
@@ -258,7 +254,7 @@ function renderView(role: Role, view: string, onToast: (m: string) => void, onNa
   }
   if (role === 'coordinador') {
     if (view === 'dashboard' || !view) return <CoordinadorDashboard onNav={onNav} />;
-    if (view === 'requerimientos') return <RequerimientosView onToast={onToast} usuario={usuario} />;
+    if (view === 'requerimientos') return <RequerimientosView onToast={onToast} />;
     if (view === 'proyectos') return <ProyectosView role={role} onToast={onToast} />;
     if (view === 'entregas') return <EntregasView onToast={onToast} usuario={usuario} />;
     if (view === 'devoluciones') return <DevolucionesView onToast={onToast} />;
