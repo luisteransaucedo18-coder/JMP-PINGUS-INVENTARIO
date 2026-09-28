@@ -31,6 +31,12 @@
 *.mpg                filter=lfs diff=lfs merge=lfs -text
 *.mpeg               filter=lfs diff=lfs merge=lfs -text
 
+# Vercel does not resolve Git LFS pointers from this repository. These are
+# runtime assets and must be committed as regular files so the deployed app
+# can stream the loading animation.
+/public/media/pinguino-caminando.mp4 -filter -diff -merge -text
+/public/media/pinguino-caminando-alpha.webm -filter -diff -merge -text
+
 # ---------------------------------------------------------------------------
 # Audio
 # ---------------------------------------------------------------------------
