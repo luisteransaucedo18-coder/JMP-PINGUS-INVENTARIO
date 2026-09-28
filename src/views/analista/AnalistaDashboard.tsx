@@ -782,11 +782,7 @@ export default function AnalistaDashboard({
                     width: '100%',
                     justifyContent: 'center',
                   }}
-<<<<<<< HEAD
                   onClick={() => setHelpMode('manual')}
-=======
-                  onClick={() => onNav('manual')}
->>>>>>> f27575ceeb1ae5b146f35b060c087ac60403816d
                 >
                     Manual de Usuario
                 </button>

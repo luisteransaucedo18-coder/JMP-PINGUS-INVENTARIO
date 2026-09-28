@@ -1,13 +1,8 @@
-<<<<<<< HEAD
-import { createContext, useContext, useReducer, ReactNode, useCallback, useEffect, useState } from 'react';
-import { supabase } from '../service/supabase';
-=======
-import { createContext, useCallback, useContext, useEffect, useReducer, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useReducer, useState, type ReactNode } from 'react';
 import type { Entrega, Material, Proyecto, Requerimiento, RequerimientoCompra } from '../data/mockData';
 import { obtenerCompras } from '../service/compraService';
 import { obtenerEntregas } from '../service/devolucionService';
 import { obtenerMateriales } from '../service/materialService';
->>>>>>> f27575ceeb1ae5b146f35b060c087ac60403816d
 import { obtenerProyectos, obtenerRequerimientos } from '../service/requerimientoService';
 import { supabase } from '../service/supabase';
 
@@ -41,37 +36,23 @@ function reducer(state: AppState, action: Action): AppState {
     case 'REPLACE_MATERIALS': return { ...state, materials: action.payload };
     case 'REPLACE_ENTREGAS': return { ...state, entregas: action.payload };
     case 'REPLACE_COMPRAS': return { ...state, compras: action.payload };
+    default: return state;
   }
 }
 
-<<<<<<< HEAD
-interface AppContextType { state: AppState; dispatch: React.Dispatch<Action>; refreshRemoteData: () => Promise<void>; initialLoad: 'loading' | 'ready' | 'error'; retryInitialLoad: () => void }
+interface AppContextType {
+  state: AppState;
+  refreshRemoteData: () => Promise<void>;
+  initialLoad: 'loading' | 'ready' | 'error';
+  retryInitialLoad: () => void;
+}
+
 const AppContext = createContext<AppContextType | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [initialLoad, setInitialLoad] = useState<'loading' | 'ready' | 'error'>('loading');
   const [loadAttempt, setLoadAttempt] = useState(0);
-  const [state, dispatch] = useReducer(reducer, {
-    materials: initMaterials.map(m => ({ ...m })),
-    requerimientos: initReqs.map(r => ({ ...r })),
-    users: initUsuarios.map(u => ({ ...u })),
-    proyectos: initProyectos.map(p => ({ ...p })),
-    entregas: initEntregas.map(e => ({ ...e })),
-    devoluciones: initDevoluciones.map(d => ({ ...d })),
-    compras: initCompras.map(c => ({ ...c })),
-  });
-=======
-interface AppContextType {
-  state: AppState;
-  refreshRemoteData: () => Promise<void>;
-}
-
-const AppContext = createContext<AppContextType | null>(null);
-
-export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
-
->>>>>>> f27575ceeb1ae5b146f35b060c087ac60403816d
   const refreshRemoteData = useCallback(async () => {
     const results = await Promise.allSettled([
       obtenerRequerimientos(),
@@ -93,38 +74,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
-<<<<<<< HEAD
-    const refresh = async () => { try { await refreshRemoteData(); } catch (error) { console.error('No se pudo sincronizar datos remotos:', error); } };
+    const refresh = async () => {
+      try {
+        await refreshRemoteData();
+        if (active) setInitialLoad('ready');
+      } catch (error) {
+        console.error('No se pudo sincronizar datos remotos:', error);
+        if (active) setInitialLoad('error');
+      }
+    };
     setInitialLoad('loading');
-    void refreshRemoteData().then(() => { if (active) setInitialLoad('ready'); })
-      .catch(() => { if (active) setInitialLoad('error'); });
-    const channel = supabase.channel('requerimientos-compartidos')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'requerimientos' }, () => { if (active) void refresh(); })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'requerimiento_items' }, () => { if (active) void refresh(); })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'proyectos' }, () => { if (active) void refresh(); })
-=======
-    const refresh = () => { if (active) void refreshRemoteData(); };
-    refresh();
+    void refresh();
     const channel = supabase.channel('datos-compartidos')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'requerimientos' }, refresh)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'requerimiento_items' }, refresh)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'proyectos' }, refresh)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'materiales' }, refresh)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventario_sedes' }, refresh)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'entregas' }, refresh)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'entrega_items' }, refresh)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ordenes_compra' }, refresh)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orden_compra_items' }, refresh)
->>>>>>> f27575ceeb1ae5b146f35b060c087ac60403816d
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'requerimientos' }, () => { void refresh(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'requerimiento_items' }, () => { void refresh(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'proyectos' }, () => { void refresh(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'materiales' }, () => { void refresh(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventario_sedes' }, () => { void refresh(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'entregas' }, () => { void refresh(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'entrega_items' }, () => { void refresh(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ordenes_compra' }, () => { void refresh(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orden_compra_items' }, () => { void refresh(); })
       .subscribe();
     return () => { active = false; void supabase.removeChannel(channel); };
   }, [refreshRemoteData, loadAttempt]);
 
-<<<<<<< HEAD
-  return <AppContext.Provider value={{ state, dispatch, refreshRemoteData, initialLoad, retryInitialLoad: () => setLoadAttempt(n => n + 1) }}>{children}</AppContext.Provider>;
-=======
-  return <AppContext.Provider value={{ state, refreshRemoteData }}>{children}</AppContext.Provider>;
->>>>>>> f27575ceeb1ae5b146f35b060c087ac60403816d
+  return <AppContext.Provider value={{ state, refreshRemoteData, initialLoad, retryInitialLoad: () => setLoadAttempt(value => value + 1) }}>{children}</AppContext.Provider>;
 }
 
 export function useAppStore() {
