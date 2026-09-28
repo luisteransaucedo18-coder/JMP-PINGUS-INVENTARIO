@@ -1777,17 +1777,114 @@ body {
 
 .coordinator-main-panel {
   min-height: 0;
-  overflow-y: auto;
+}
+
+.coordinator-main-column {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .coordinator-side-panels {
   min-height: 0;
 }
 
-.coordinator-side-panels > .panel:first-child {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
+.coordinator-alerts-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.coordinator-alert-item {
+  display: flex;
+  min-width: 0;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid #f4f4f5;
+}
+
+.coordinator-alert-item:nth-child(odd) {
+  border-right: 1px solid #f4f4f5;
+}
+
+.coordinator-alert-indicator {
+  width: 8px;
+  height: 8px;
+  margin-top: 5px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+}
+
+.coordinator-alert-content {
+  min-width: 0;
+  flex: 1;
+}
+
+.coordinator-alert-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.coordinator-alert-name {
+  color: #18181b;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.coordinator-alert-sku {
+  margin-top: 4px;
+  color: #71717a;
+  font-family: monospace;
+  font-size: 10.5px;
+}
+
+.coordinator-alert-stock-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.coordinator-alert-total,
+.coordinator-alert-site {
+  min-width: 0;
+  padding: 8px;
+  border-radius: 6px;
+  background: #fafafa;
+}
+
+.coordinator-alert-total {
+  background: #fff7ed;
+}
+
+.coordinator-alert-total span,
+.coordinator-alert-site span {
+  display: block;
+  overflow: hidden;
+  color: #71717a;
+  font-size: 9.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.coordinator-alert-total strong,
+.coordinator-alert-site strong {
+  display: block;
+  margin-top: 3px;
+  color: #27272a;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.coordinator-alert-empty {
+  grid-column: 1 / -1;
+  padding: 28px 16px;
+  color: #71717a;
+  font-size: 12px;
+  text-align: center;
 }
 
 .coordinator-sites-panel .section-header {
@@ -1809,9 +1906,22 @@ body {
     min-height: 360px;
   }
 
-  .coordinator-side-panels > .panel:first-child {
-    flex: 0 0 auto;
-    overflow-y: visible;
+  .coordinator-alerts-list {
+    grid-template-columns: 1fr;
+  }
+
+  .coordinator-alert-item:nth-child(odd) {
+    border-right: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .coordinator-alert-heading {
+    flex-direction: column;
+  }
+
+  .coordinator-alert-stock-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

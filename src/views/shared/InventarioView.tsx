@@ -15,9 +15,7 @@ import {
   EstadoMaterial,
 } from '../../data/mockData';
 
-import MaterialPreviewModal, {
-  PreviewBtn,
-} from '../../components/MaterialPreviewModal';
+import MaterialPreviewModal from '../../components/MaterialPreviewModal';
 
 // ======================================================
 // TIPOS
@@ -74,6 +72,23 @@ const formatPrecio = (precio: number) =>
         minimumFractionDigits: 2,
       }).format(precio)
     : 'Sin precio';
+
+function ModalActions({ primaryLabel, onPrimary, onCancel }: { primaryLabel: string; onPrimary: () => void; onCancel: () => void }) {
+  return <div style={{ padding: '14px 22px', borderTop: '1px solid #E4E4E7', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+    <button className="btn btn-primary" onClick={onPrimary}>{primaryLabel}</button>
+    <button className="btn btn-ghost" onClick={onCancel}>Cancelar</button>
+  </div>;
+}
+
+function MaterialModalHeader({ material, editing = false }: { material: Material; editing?: boolean }) {
+  return <div className="modal-header">
+    <div>
+      <div style={{ fontSize: 11, color: '#2563EB', fontFamily: 'monospace', marginBottom: 3 }}>{material.id}</div>
+      <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#18181B' }}>{editing ? 'Editar stock — ' : ''}{material.nombre}</h2>
+    </div>
+    {!editing && <span className={`badge status-badge badge-${ESTADO_BADGE[material.estado]}`}>{material.estado}</span>}
+  </div>;
+}
 
 // ======================================================
 // COMPONENTE
@@ -167,11 +182,6 @@ export default function InventarioView({
 
       const data =
         await obtenerMateriales();
-
-      console.log(
-        'MATERIALES SUPABASE:',
-        data
-      );
 
       setMateriales(
         data ?? []
@@ -1494,57 +1504,7 @@ export default function InventarioView({
             }
           >
 
-            <div className="modal-header">
-
-              <div>
-
-                <div
-                  style={{
-                    fontSize: 11,
-
-                    color:
-                      '#2563EB',
-
-                    fontFamily:
-                      'monospace',
-
-                    marginBottom:
-                      3,
-                  }}
-                >
-                  {selected.id}
-                </div>
-
-                <h2
-                  style={{
-                    margin: 0,
-
-                    fontSize: 15,
-
-                    fontWeight:
-                      700,
-
-                    color:
-                      '#18181B',
-                  }}
-                >
-                  {selected.nombre}
-                </h2>
-
-              </div>
-
-
-              <span
-                className={`badge status-badge badge-${
-                  ESTADO_BADGE[
-                    selected.estado
-                  ]
-                }`}
-              >
-                {selected.estado}
-              </span>
-
-            </div>
+            <MaterialModalHeader material={selected} />
 
 
             <div
@@ -2012,48 +1972,7 @@ export default function InventarioView({
             }
           >
 
-            <div className="modal-header">
-
-              <div>
-
-                <div
-                  style={{
-                    fontSize: 11,
-
-                    color:
-                      '#2563EB',
-
-                    fontFamily:
-                      'monospace',
-
-                    marginBottom:
-                      3,
-                  }}
-                >
-                  {selected.id}
-                </div>
-
-                <h2
-                  style={{
-                    margin: 0,
-
-                    fontSize:
-                      15,
-
-                    fontWeight:
-                      700,
-
-                    color:
-                      '#18181B',
-                  }}
-                >
-                  Editar stock —{' '}
-                  {selected.nombre}
-                </h2>
-
-              </div>
-
-            </div>
+            <MaterialModalHeader material={selected} editing />
 
 
             <div
@@ -2209,55 +2128,7 @@ export default function InventarioView({
             </div>
 
 
-            <div
-              style={{
-                padding:
-                  '14px 22px',
-
-                borderTop:
-                  '1px solid #E4E4E7',
-
-                display:
-                  'flex',
-
-                gap: 10,
-
-                justifyContent:
-                  'flex-end',
-              }}
-            >
-
-              <button
-                className=
-                  "btn btn-primary"
-
-                onClick={
-                  handleSaveStock
-                }
-              >
-                Guardar cambios
-              </button>
-
-
-              <button
-                className=
-                  "btn btn-ghost"
-
-                onClick={() => {
-
-                  setEditMode(
-                    false
-                  );
-
-                  setSelected(
-                    null
-                  );
-                }}
-              >
-                Cancelar
-              </button>
-
-            </div>
+            <ModalActions primaryLabel="Guardar cambios" onPrimary={handleSaveStock} onCancel={() => { setEditMode(false); setSelected(null); }} />
 
           </div>
 
@@ -2686,50 +2557,7 @@ export default function InventarioView({
             </div>
 
 
-            <div
-              style={{
-                padding:
-                  '14px 22px',
-
-                borderTop:
-                  '1px solid #E4E4E7',
-
-                display:
-                  'flex',
-
-                gap: 10,
-
-                justifyContent:
-                  'flex-end',
-              }}
-            >
-
-              <button
-                className=
-                  "btn btn-primary"
-
-                onClick={
-                  handleAddMaterial
-                }
-              >
-                Agregar al catálogo
-              </button>
-
-
-              <button
-                className=
-                  "btn btn-ghost"
-
-                onClick={() =>
-                  setShowAdd(
-                    false
-                  )
-                }
-              >
-                Cancelar
-              </button>
-
-            </div>
+            <ModalActions primaryLabel="Agregar al catálogo" onPrimary={handleAddMaterial} onCancel={() => setShowAdd(false)} />
 
           </div>
 

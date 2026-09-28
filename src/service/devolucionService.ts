@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
-import { Sede } from '../data/mockData';
+import { Entrega, Sede } from '../data/mockData';
 
-export type EstadoDevolucion = 'PENDIENTE_VALIDACION' | 'OBSERVADA' | 'VALIDADA';
+type EstadoDevolucion = 'PENDIENTE_VALIDACION' | 'OBSERVADA' | 'VALIDADA';
 export interface SaldoDevolucion { requerimientoId: string; requerimientoCodigo: string; skuId: string; nombre: string; unidad: string; disponible: number; }
 export interface DevolucionItem { skuId: string; nombre: string; unidad: string; cantidad: number; }
 export interface Devolucion { id: string; codigo: string; proyectoId: string; proyecto: string; requerimientoId: string; requerimientoCodigo: string; ubicacion: string; sedeReceptora: Sede; estado: EstadoDevolucion; analista: string; observacion?: string; createdAt: string; validadoPor?: string; fechaValidacion?: string; items: DevolucionItem[]; evidencias: string[]; historial: { estado: EstadoDevolucion; comentario?: string; actor: string; fecha: string }[]; }
@@ -53,26 +53,38 @@ export async function registrarDevolucion(input: { requerimientoId: string; sede
   if (error) { await supabase.storage.from('evidencias-devoluciones').remove(paths); throw error; }
 }
 
-export async function resolverDevolucion(id: string, validar: boolean, observacion?: string): Promise<void> {
-  const { error } = await supabase.rpc('resolver_devolucion', { p_id: id, p_validar: validar, p_observacion: observacion ?? null });
-  if (error) throw error;
-}
-
-export async function corregirDevolucion(input: { id: string; sedeReceptora: Sede; items: DevolucionItem[]; evidenciasActuales: string[]; files: File[] }): Promise<void> {
-  const nuevas = await cargarEvidencias(input.id, input.files);
-  const evidencias = [...input.evidenciasActuales, ...nuevas];
-  const { error } = await supabase.rpc('corregir_devolucion', { p_id: input.id, p_sede_receptora: input.sedeReceptora, p_items: input.items.map(i => ({ material_sku: i.skuId, material_nombre: i.nombre, unidad: i.unidad, cantidad: i.cantidad })), p_evidencias: evidencias });
-  if (error) { await supabase.storage.from('evidencias-devoluciones').remove(nuevas); throw error; }
-}
-
-export async function obtenerUrlEvidencia(path: string): Promise<string> {
-  const { data, error } = await supabase.storage.from('evidencias-devoluciones').createSignedUrl(path, 60 * 10);
-  if (error || !data?.signedUrl) throw error ?? new Error('No se pudo abrir la evidencia.');
-  return data.signedUrl;
-}
-
 export async function registrarEntrega(requerimientoId: string, tecnico: string, dni: string, observaciones: string, items: { skuId: string; nombre: string; cantidadSolicitada: number; cantidadEntregada: number }[]): Promise<string> {
   const { data, error } = await supabase.rpc('registrar_entrega', { p_requerimiento_id: requerimientoId, p_tecnico: tecnico, p_dni_tecnico: dni, p_observaciones: observaciones, p_items: items.map(item => ({ material_sku: item.skuId, material_nombre: item.nombre, cantidad_solicitada: item.cantidadSolicitada, cantidad_entregada: item.cantidadEntregada })) });
   if (error) throw error;
   return data;
+}
+
+export async function obtenerEntregas(): Promise<Entrega[]> {
+  const { data, error } = await supabase.from('entregas').select(`
+    id,requerimiento_id,proyecto_nombre,tecnico,dni_tecnico,fecha_hora,estado,observaciones,
+    items:entrega_items(material_sku,material_nombre,cantidad_solicitada,cantidad_entregada)
+  `).order('fecha_hora', { ascending: false });
+  if (error) throw error;
+
+  return (data ?? []).map((row: any) => {
+    const timestamp = new Date(row.fecha_hora);
+    return {
+      id: row.id,
+      requerimientoId: row.requerimiento_id,
+      proyectoNombre: row.proyecto_nombre,
+      tecnico: row.tecnico,
+      dniTecnico: row.dni_tecnico ?? '',
+      responsableEntrega: 'Usuario registrado',
+      fecha: timestamp.toISOString().split('T')[0],
+      hora: timestamp.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }),
+      estado: row.estado,
+      observaciones: row.observaciones ?? undefined,
+      items: (row.items ?? []).map((item: any) => ({
+        skuId: item.material_sku,
+        nombre: item.material_nombre,
+        cantidadSolicitada: Number(item.cantidad_solicitada),
+        cantidadEntregada: Number(item.cantidad_entregada),
+      })),
+    };
+  });
 }

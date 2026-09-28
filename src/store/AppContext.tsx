@@ -1,346 +1,50 @@
+<<<<<<< HEAD
 import { createContext, useContext, useReducer, ReactNode, useCallback, useEffect, useState } from 'react';
 import { supabase } from '../service/supabase';
+=======
+import { createContext, useCallback, useContext, useEffect, useReducer, type ReactNode } from 'react';
+import type { Entrega, Material, Proyecto, Requerimiento, RequerimientoCompra } from '../data/mockData';
+import { obtenerCompras } from '../service/compraService';
+import { obtenerEntregas } from '../service/devolucionService';
+import { obtenerMateriales } from '../service/materialService';
+>>>>>>> f27575ceeb1ae5b146f35b060c087ac60403816d
 import { obtenerProyectos, obtenerRequerimientos } from '../service/requerimientoService';
-import {
-  Material, Requerimiento, Usuario, ReqMaterial, Proyecto, Entrega, EntregaItem, Devolucion, DevolucionItem,
-  RequerimientoCompra, CompraItem,
-  EstadoMaterial, Sede,
-  materials as initMaterials,
-  requerimientos as initReqs,
-  usuarios as initUsuarios,
-  proyectos as initProyectos,
-  entregas as initEntregas,
-  devoluciones as initDevoluciones,
-  compras as initCompras,
-} from '../data/mockData';
+import { supabase } from '../service/supabase';
 
 interface AppState {
   materials: Material[];
   requerimientos: Requerimiento[];
-  users: Usuario[];
   proyectos: Proyecto[];
   entregas: Entrega[];
-  devoluciones: Devolucion[];
   compras: RequerimientoCompra[];
 }
 
 type Action =
-  | { type: 'ADD_MATERIAL'; payload: Omit<Material, 'id' | 'estado'> }
-  | { type: 'UPDATE_MATERIAL_STOCK'; payload: { id: string; stockSedes: Record<Sede, number>; minimo?: number } }
-  | { type: 'CREATE_REQUERIMIENTO'; payload: { proyectoId: string; proyecto: string; sede: Sede; ubicacion: string; descripcion: string; tecnico: string; analista: string; materiales: ReqMaterial[]; draft: boolean } }
-  | { type: 'SUBMIT_REQUERIMIENTO'; payload: string }
-  | { type: 'CONFIRM_REQUERIMIENTO'; payload: { id: string; coordinador: string; observaciones?: string } }
-  | { type: 'REJECT_REQUERIMIENTO'; payload: { id: string; coordinador: string; observaciones: string } }
-  | { type: 'CREATE_USER'; payload: { nombre: string; email: string; rol: string; sede: Sede } }
-  | { type: 'TOGGLE_USER_STATUS'; payload: string }
-  | { type: 'CREATE_PROYECTO'; payload: Omit<Proyecto, 'id' | 'creadoEn'> }
-  | { type: 'CREATE_ENTREGA'; payload: { requerimientoId: string; proyectoNombre: string; tecnico: string; dniTecnico: string; responsableEntrega: string; items: EntregaItem[]; observaciones?: string } }
-  | { type: 'CREATE_DEVOLUCION'; payload: { entregaId: string; responsableRecepcion: string; items: DevolucionItem[]; observaciones?: string; evidencias?: string[] } }
-  | { type: 'CREATE_COMPRA'; payload: { sede: Sede; analista: string; motivo: string; items: CompraItem[]; draft: boolean } }
-  | { type: 'APPROVE_COMPRA'; payload: { id: string; coordinador: string; observaciones?: string } }
-  | { type: 'REJECT_COMPRA'; payload: { id: string; coordinador: string; observaciones: string } }
-  | { type: 'CONFIRM_COMPRA'; payload: { id: string; coordinador: string; notaCompra?: string } }
   | { type: 'REPLACE_REQUERIMIENTOS'; payload: Requerimiento[] }
-  | { type: 'REPLACE_PROYECTOS'; payload: Proyecto[] };
+  | { type: 'REPLACE_PROYECTOS'; payload: Proyecto[] }
+  | { type: 'REPLACE_MATERIALS'; payload: Material[] }
+  | { type: 'REPLACE_ENTREGAS'; payload: Entrega[] }
+  | { type: 'REPLACE_COMPRAS'; payload: RequerimientoCompra[] };
 
-function calcEstado(stockSedes: Record<Sede, number>, minimo: number): EstadoMaterial {
-  const total = Object.values(stockSedes).reduce((s, v) => s + v, 0);
-  if (total === 0) return 'AGOTADO';
-  if (total <= Math.ceil(minimo * 0.3)) return 'CRÍTICO';
-  if (total <= minimo) return 'BAJO';
-  return 'OK';
-}
-
-let matCounter = 100;
-let reqCounter = 10;
-let userCounter = 20;
-let pryCounter = 10;
-let entCounter = 10;
-let devCounter = 0;
-let ocCounter = 10;
+const initialState: AppState = {
+  materials: [],
+  requerimientos: [],
+  proyectos: [],
+  entregas: [],
+  compras: [],
+};
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
-
-    case 'ADD_MATERIAL': {
-      const prefix = action.payload.categoria.substring(0, 3).toUpperCase();
-      matCounter++;
-      const id = `${prefix}-${String(matCounter).padStart(4, '0')}`;
-      const { stockSedes, minimo } = action.payload;
-      return {
-        ...state,
-        materials: [...state.materials, {
-          ...action.payload,
-          id,
-          unidad: 'UND',
-          estado: calcEstado(stockSedes, minimo),
-        }],
-      };
-    }
-
-    case 'UPDATE_MATERIAL_STOCK': {
-      return {
-        ...state,
-        materials: state.materials.map(m => {
-          if (m.id !== action.payload.id) return m;
-          const stockSedes = action.payload.stockSedes;
-          const minimo = action.payload.minimo ?? m.minimo;
-          return { ...m, stockSedes, minimo, estado: calcEstado(stockSedes, minimo) };
-        }),
-      };
-    }
-
-    case 'CREATE_REQUERIMIENTO': {
-      reqCounter++;
-      const pad = String(reqCounter).padStart(3, '0');
-      const id = `REQ-2026-${pad}`;
-      const today = new Date().toISOString().split('T')[0];
-      return {
-        ...state,
-        requerimientos: [...state.requerimientos, {
-          id,
-          proyectoId: action.payload.proyectoId,
-          proyecto: action.payload.proyecto,
-          sede: action.payload.sede,
-          ubicacion: action.payload.ubicacion,
-          descripcion: action.payload.descripcion,
-          tecnico: action.payload.tecnico,
-          analista: action.payload.analista,
-          fecha: today,
-          materiales: action.payload.materiales,
-          estado: action.payload.draft ? 'BORRADOR' : 'ENVIADO',
-        }],
-      };
-    }
-
-    case 'SUBMIT_REQUERIMIENTO': {
-      return {
-        ...state,
-        requerimientos: state.requerimientos.map(r =>
-          r.id === action.payload && r.estado === 'BORRADOR'
-            ? { ...r, estado: 'ENVIADO' }
-            : r
-        ),
-      };
-    }
-
-    case 'CONFIRM_REQUERIMIENTO': {
-      const req = state.requerimientos.find(r => r.id === action.payload.id);
-      if (!req || req.estado !== 'ENVIADO') return state;
-      const updatedMaterials = state.materials.map(mat => {
-        const reqMat = req.materiales.find(m => m.skuId === mat.id);
-        if (!reqMat) return mat;
-        const newSedes = { ...mat.stockSedes };
-        newSedes[req.sede] = Math.max(0, newSedes[req.sede] - reqMat.cantidad);
-        return { ...mat, stockSedes: newSedes, estado: calcEstado(newSedes, mat.minimo) };
-      });
-      const today = new Date().toISOString().split('T')[0];
-      return {
-        ...state,
-        materials: updatedMaterials,
-        requerimientos: state.requerimientos.map(r =>
-          r.id === action.payload.id
-            ? { ...r, estado: 'CONFIRMADO', observaciones: action.payload.observaciones, confirmadoPor: action.payload.coordinador, fechaConfirmacion: today }
-            : r
-        ),
-      };
-    }
-
-    case 'REJECT_REQUERIMIENTO': {
-      const today = new Date().toISOString().split('T')[0];
-      return {
-        ...state,
-        requerimientos: state.requerimientos.map(r =>
-          r.id === action.payload.id
-            ? { ...r, estado: 'RECHAZADO', observaciones: action.payload.observaciones, confirmadoPor: action.payload.coordinador, fechaConfirmacion: today }
-            : r
-        ),
-      };
-    }
-
-    case 'CREATE_USER': {
-      userCounter++;
-      const id = `USR-${String(userCounter).padStart(3, '0')}`;
-      return {
-        ...state,
-        users: [...state.users, {
-          id,
-          nombre: action.payload.nombre,
-          email: action.payload.email,
-          rol: action.payload.rol as any,
-          sede: action.payload.sede,
-          estado: 'ACTIVO',
-          ultimo_acceso: '—',
-          codigo: ''
-        }],
-      };
-    }
-
-    case 'TOGGLE_USER_STATUS': {
-      return {
-        ...state,
-        users: state.users.map(u =>
-          u.id === action.payload ? { ...u, estado: u.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO' } : u
-        ),
-      };
-    }
-
-    case 'CREATE_PROYECTO': {
-      pryCounter++;
-      const id = `PRY-${String(pryCounter).padStart(3, '0')}`;
-      const today = new Date().toISOString().split('T')[0];
-      return {
-        ...state,
-        proyectos: [...state.proyectos, { ...action.payload, id, creadoEn: today }],
-      };
-    }
-
-    case 'CREATE_ENTREGA': {
-      entCounter++;
-      const id = `ENT-2026-${String(entCounter).padStart(3, '0')}`;
-      const today = new Date().toISOString().split('T')[0];
-      const hora = new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
-      const allComplete = action.payload.items.every(i => i.cantidadEntregada >= i.cantidadSolicitada);
-      const someDelivered = action.payload.items.some(i => i.cantidadEntregada > 0);
-      const estado = allComplete ? 'COMPLETA' : someDelivered ? 'PARCIAL' : 'PENDIENTE';
-      return {
-        ...state,
-        entregas: [...state.entregas, {
-          id,
-          requerimientoId: action.payload.requerimientoId,
-          proyectoNombre: action.payload.proyectoNombre,
-          tecnico: action.payload.tecnico,
-          dniTecnico: action.payload.dniTecnico,
-          responsableEntrega: action.payload.responsableEntrega,
-          fecha: today,
-          hora,
-          items: action.payload.items,
-          estado,
-          observaciones: action.payload.observaciones,
-        }],
-      };
-    }
-
-    case 'CREATE_DEVOLUCION': {
-      const entrega = state.entregas.find(item => item.id === action.payload.entregaId);
-      if (!entrega) return state;
-      const requerimiento = state.requerimientos.find(item => item.id === entrega.requerimientoId);
-      if (!requerimiento) return state;
-      devCounter++;
-      const now = new Date();
-      const fecha = now.toISOString().split('T')[0];
-      const hora = now.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
-      const items = action.payload.items.filter(item => item.cantidad > 0);
-      const updatedMaterials = state.materials.map(material => {
-        const returned = items.find(item => item.skuId === material.id)?.cantidad ?? 0;
-        if (!returned) return material;
-        const stockSedes = { ...material.stockSedes };
-        stockSedes[requerimiento.sede] = (stockSedes[requerimiento.sede] ?? 0) + returned;
-        return { ...material, stockSedes, estado: calcEstado(stockSedes, material.minimo) };
-      });
-      return {
-        ...state,
-        materials: updatedMaterials,
-        devoluciones: [{
-          id: `DEV-2026-${String(devCounter).padStart(3, '0')}`,
-          entregaId: entrega.id,
-          requerimientoId: entrega.requerimientoId,
-          sede: requerimiento.sede,
-          tecnico: entrega.tecnico,
-          responsableRecepcion: action.payload.responsableRecepcion,
-          fecha,
-          hora,
-          items,
-          observaciones: action.payload.observaciones,
-          evidencias: action.payload.evidencias,
-        }, ...state.devoluciones],
-      };
-    }
-
-    case 'CREATE_COMPRA': {
-      ocCounter++;
-      const id = `OC-2026-${String(ocCounter).padStart(3, '0')}`;
-      const today = new Date().toISOString().split('T')[0];
-      return {
-        ...state,
-        compras: [...state.compras, {
-          id,
-          sede: action.payload.sede,
-          analista: action.payload.analista,
-          fecha: today,
-          motivo: action.payload.motivo,
-          items: action.payload.items,
-          estado: action.payload.draft ? 'BORRADOR' : 'ENVIADO',
-        }],
-      };
-    }
-
-    case 'APPROVE_COMPRA': {
-      const today = new Date().toISOString().split('T')[0];
-      return {
-        ...state,
-        compras: state.compras.map(c =>
-          c.id !== action.payload.id ? c : {
-            ...c,
-            estado: 'APROBADO',
-            coordinador: action.payload.coordinador,
-            observaciones: action.payload.observaciones,
-            fechaAprobacion: today,
-          }
-        ),
-      };
-    }
-
-    case 'REJECT_COMPRA': {
-      return {
-        ...state,
-        compras: state.compras.map(c =>
-          c.id !== action.payload.id ? c : {
-            ...c,
-            estado: 'RECHAZADO',
-            coordinador: action.payload.coordinador,
-            observaciones: action.payload.observaciones,
-          }
-        ),
-      };
-    }
-
-    case 'CONFIRM_COMPRA': {
-      const today = new Date().toISOString().split('T')[0];
-      const compra = state.compras.find(c => c.id === action.payload.id);
-      if (!compra) return state;
-      const updatedMaterials = state.materials.map(mat => {
-        const item = compra.items.find(i => i.skuId === mat.id);
-        if (!item) return mat;
-        const newStock = { ...mat.stockSedes };
-        newStock[compra.sede] = (newStock[compra.sede] ?? 0) + item.cantidadSolicitada;
-        return { ...mat, stockSedes: newStock, estado: calcEstado(newStock, mat.minimo) };
-      });
-      return {
-        ...state,
-        materials: updatedMaterials,
-        compras: state.compras.map(c =>
-          c.id !== action.payload.id ? c : {
-            ...c,
-            estado: 'COMPRADO',
-            coordinador: action.payload.coordinador,
-            fechaCompra: today,
-            notaCompra: action.payload.notaCompra,
-          }
-        ),
-      };
-    }
-
-    case 'REPLACE_REQUERIMIENTOS':
-      return { ...state, requerimientos: action.payload };
-
-    case 'REPLACE_PROYECTOS':
-      return { ...state, proyectos: action.payload };
-
-    default: return state;
+    case 'REPLACE_REQUERIMIENTOS': return { ...state, requerimientos: action.payload };
+    case 'REPLACE_PROYECTOS': return { ...state, proyectos: action.payload };
+    case 'REPLACE_MATERIALS': return { ...state, materials: action.payload };
+    case 'REPLACE_ENTREGAS': return { ...state, entregas: action.payload };
+    case 'REPLACE_COMPRAS': return { ...state, compras: action.payload };
   }
 }
 
+<<<<<<< HEAD
 interface AppContextType { state: AppState; dispatch: React.Dispatch<Action>; refreshRemoteData: () => Promise<void>; initialLoad: 'loading' | 'ready' | 'error'; retryInitialLoad: () => void }
 const AppContext = createContext<AppContextType | null>(null);
 
@@ -356,14 +60,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
     devoluciones: initDevoluciones.map(d => ({ ...d })),
     compras: initCompras.map(c => ({ ...c })),
   });
+=======
+interface AppContextType {
+  state: AppState;
+  refreshRemoteData: () => Promise<void>;
+}
+
+const AppContext = createContext<AppContextType | null>(null);
+
+export function AppProvider({ children }: { children: ReactNode }) {
+  const [state, dispatch] = useReducer(reducer, initialState);
+
+>>>>>>> f27575ceeb1ae5b146f35b060c087ac60403816d
   const refreshRemoteData = useCallback(async () => {
-    const [requirements, projects] = await Promise.all([obtenerRequerimientos(), obtenerProyectos()]);
-    dispatch({ type: 'REPLACE_REQUERIMIENTOS', payload: requirements });
-    dispatch({ type: 'REPLACE_PROYECTOS', payload: projects });
+    const results = await Promise.allSettled([
+      obtenerRequerimientos(),
+      obtenerProyectos(),
+      obtenerMateriales(),
+      obtenerEntregas(),
+      obtenerCompras(),
+    ]);
+    const [requirements, projects, materials, deliveries, purchases] = results;
+    if (requirements.status === 'fulfilled') dispatch({ type: 'REPLACE_REQUERIMIENTOS', payload: requirements.value });
+    if (projects.status === 'fulfilled') dispatch({ type: 'REPLACE_PROYECTOS', payload: projects.value });
+    if (materials.status === 'fulfilled') dispatch({ type: 'REPLACE_MATERIALS', payload: materials.value });
+    if (deliveries.status === 'fulfilled') dispatch({ type: 'REPLACE_ENTREGAS', payload: deliveries.value });
+    if (purchases.status === 'fulfilled') dispatch({ type: 'REPLACE_COMPRAS', payload: purchases.value });
+    results.forEach(result => {
+      if (result.status === 'rejected') console.error('No se pudo sincronizar una fuente remota:', result.reason);
+    });
   }, []);
 
   useEffect(() => {
     let active = true;
+<<<<<<< HEAD
     const refresh = async () => { try { await refreshRemoteData(); } catch (error) { console.error('No se pudo sincronizar datos remotos:', error); } };
     setInitialLoad('loading');
     void refreshRemoteData().then(() => { if (active) setInitialLoad('ready'); })
@@ -372,15 +102,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'requerimientos' }, () => { if (active) void refresh(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'requerimiento_items' }, () => { if (active) void refresh(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'proyectos' }, () => { if (active) void refresh(); })
+=======
+    const refresh = () => { if (active) void refreshRemoteData(); };
+    refresh();
+    const channel = supabase.channel('datos-compartidos')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'requerimientos' }, refresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'requerimiento_items' }, refresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'proyectos' }, refresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'materiales' }, refresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventario_sedes' }, refresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'entregas' }, refresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'entrega_items' }, refresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ordenes_compra' }, refresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orden_compra_items' }, refresh)
+>>>>>>> f27575ceeb1ae5b146f35b060c087ac60403816d
       .subscribe();
     return () => { active = false; void supabase.removeChannel(channel); };
   }, [refreshRemoteData, loadAttempt]);
 
+<<<<<<< HEAD
   return <AppContext.Provider value={{ state, dispatch, refreshRemoteData, initialLoad, retryInitialLoad: () => setLoadAttempt(n => n + 1) }}>{children}</AppContext.Provider>;
+=======
+  return <AppContext.Provider value={{ state, refreshRemoteData }}>{children}</AppContext.Provider>;
+>>>>>>> f27575ceeb1ae5b146f35b060c087ac60403816d
 }
 
 export function useAppStore() {
-  const ctx = useContext(AppContext);
-  if (!ctx) throw new Error('useAppStore must be used inside AppProvider');
-  return ctx;
+  const context = useContext(AppContext);
+  if (!context) throw new Error('useAppStore debe usarse dentro de AppProvider');
+  return context;
 }

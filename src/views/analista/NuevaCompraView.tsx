@@ -4,15 +4,17 @@ import { SEDES, Sede } from '../../data/mockData';
 import MaterialPreviewModal, { PreviewBtn } from '../../components/MaterialPreviewModal';
 import { Material, CompraItem } from '../../data/mockData';
 import { obtenerMateriales } from '../../service/materialService';
+import { crearCompra } from '../../service/compraService';
+import { searchMaterials } from '../../utils/materialSearch';
 
 
-interface Props { onToast: (m: string) => void; usuario: string; onNav: (v: string) => void; }
+interface Props { onToast: (m: string) => void; onNav: (v: string) => void; }
 
 const ESTADO_COLOR: Record<string, string> = { OK: '#059669', BAJO: '#D97706', CRÍTICO: '#DC2626', AGOTADO: '#991B1B' };
 const ESTADO_BG:    Record<string, string> = { OK: '#CCFBF1', BAJO: '#FEF3C7', CRÍTICO: '#FEE2E2', AGOTADO: '#FEE2E2' };
 
-export default function NuevaCompraView({ onToast, usuario, onNav }: Props) {
-  const { state, dispatch } = useAppStore();
+export default function NuevaCompraView({ onToast, onNav }: Props) {
+  const { refreshRemoteData } = useAppStore();
 
   const [sede, setSede] = useState<Sede>('Chiclayo');
   const [motivo, setMotivo] = useState('');
@@ -24,7 +26,7 @@ export default function NuevaCompraView({ onToast, usuario, onNav }: Props) {
   const [submitted, setSubmitted] = useState(false);
   const [activeTab, setActiveTab] = useState<'form' | 'criticos'>('form');
   const [materiales, setMateriales] = useState<Material[]>([]);
-  const [loadingMateriales, setLoadingMateriales] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   /* Materials by estado for quick add */
     const criticos = materiales.filter((m) => {
@@ -45,27 +47,7 @@ export default function NuevaCompraView({ onToast, usuario, onNav }: Props) {
       );
     });
 
-    const getMatches = (query: string) => {
-      const q = query.trim().toLowerCase();
-
-      if (q.length < 2) {
-        return [];
-      }
-
-      return materiales
-        .filter((m) => {
-          const sku = m.id?.toLowerCase() ?? '';
-          const nombre = m.nombre?.toLowerCase() ?? '';
-          const categoria = m.categoria?.toLowerCase() ?? '';
-
-          return (
-            sku.includes(q) ||
-            nombre.includes(q) ||
-            categoria.includes(q)
-          );
-        })
-        .slice(0, 8);
-    };
+    const getMatches = (query: string) => searchMaterials(materiales, query, 8, 2);
 
     const selectMat = (idx: number, mat: Material) => {
       const stockActual = mat.stockSedes[sede] ?? 0;
@@ -135,41 +117,39 @@ export default function NuevaCompraView({ onToast, usuario, onNav }: Props) {
     return e;
   };
 
-  const handleSave = (draft: boolean) => {
+  const handleSave = async (draft: boolean) => {
     const e = validate(draft);
     if (Object.keys(e).length) { setErrors(e); return; }
     const valid = items.filter(it => (it.skuId || it.nombre) && it.cantidadSolicitada > 0);
-    dispatch({
-      type: 'CREATE_COMPRA',
-      payload: {
+    setSaving(true);
+    try {
+      await crearCompra({
         sede,
-        analista: usuario,
         motivo,
-        draft,
+        borrador: draft,
         items: valid.map(({ skuId, nombre, cantidadSolicitada, precioUnitario }) => ({ skuId, nombre, cantidadSolicitada, precioUnitario })),
-      },
-    });
-    setSubmitted(true);
-    onToast(draft ? 'Borrador guardado' : 'Solicitud de compra enviada al coordinador');
-    setTimeout(() => onNav('mis-compras'), 1200);
+      });
+      await refreshRemoteData();
+      setSubmitted(true);
+      onToast(draft ? 'Borrador guardado' : 'Solicitud de compra enviada al coordinador');
+      setTimeout(() => onNav('mis-compras'), 1200);
+    } catch (error) {
+      onToast(error instanceof Error ? error.message : 'No se pudo guardar la solicitud de compra');
+    } finally {
+      setSaving(false);
+    }
   };
 
   useEffect(() => {
   const cargarMateriales = async () => {
     try {
-      setLoadingMateriales(true);
-
       const data = await obtenerMateriales();
-
-      console.log('Materiales para compra:', data);
 
       setMateriales(data ?? []);
     } catch (error) {
       console.error('Error cargando materiales:', error);
       onToast('Error al cargar los materiales');
-    } finally {
-      setLoadingMateriales(false);
-    }
+    } finally { /* La vista conserva sus controles mientras finaliza la carga. */ }
   };
 
   cargarMateriales();
@@ -946,11 +926,11 @@ export default function NuevaCompraView({ onToast, usuario, onNav }: Props) {
         {/* Footer actions */}
         <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', paddingBottom: 24 }}>
           <button className="btn btn-ghost" onClick={() => onNav('mis-compras')}>Cancelar</button>
-          <button className="btn btn-ghost" style={{ borderColor: '#2563EB', color: '#2563EB', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => handleSave(true)}>
+          <button className="btn btn-ghost" disabled={saving} style={{ borderColor: '#2563EB', color: '#2563EB', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => void handleSave(true)}>
             <svg width="14" height="14" viewBox="0 0 15 15" fill="none"><path d="M2 2h9l2 2v9a1 1 0 01-1 1H3a1 1 0 01-1-1V2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M5 2v4h5V2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><rect x="4" y="8.5" width="7" height="4.5" rx="0.5" stroke="currentColor" strokeWidth="1.3"/></svg>
             Guardar borrador
           </button>
-          <button className="btn btn-primary" style={{ padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => handleSave(false)}>
+          <button className="btn btn-primary" disabled={saving} style={{ padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => void handleSave(false)}>
             <svg width="14" height="14" viewBox="0 0 15 15" fill="none"><path d="M1 1l13 6.5L1 14V9l8-1.5L1 6V1z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg>
             Enviar al coordinador
           </button>

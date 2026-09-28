@@ -19,10 +19,12 @@ import ProyectosView from './views/shared/ProyectosView';
 import EntregasView from './views/shared/EntregasView';
 import UsuariosView from './views/admin/UsuariosView';
 import ProfileView from './views/shared/ProfileView';
+import ManualUsuarioView from './views/shared/ManualUsuarioView';
 import NotificationsPanel, { useNotifications } from './components/NotificationsPanel';
 import NuevaCompraView from './views/analista/NuevaCompraView';
 import MisComprasView from './views/analista/MisComprasView';
 import ComprasView from './views/coordinador/ComprasView';
+import DevolucionesView from './views/shared/DevolucionesView';
 
 
 const VIEW_TITLES: Record<string, Record<string, { title: string; subtitle?: string }>> = {
@@ -32,6 +34,7 @@ const VIEW_TITLES: Record<string, Record<string, { title: string; subtitle?: str
     inventario: { title: 'Inventario', subtitle: 'Stock por sede — solo lectura' },
     reportes:   { title: 'Reportes', subtitle: 'Análisis de requerimientos, stock e indicadores operativos' },
     proyectos:  { title: 'Proyectos', subtitle: 'Todos los proyectos registrados' },
+    manual:     { title: 'Manual de Usuario', subtitle: 'Funciones disponibles para el rol gerente' },
   },
   analista: {
     dashboard:         { title: 'Mi Panel', subtitle: 'Resumen de mis solicitudes' },
@@ -43,7 +46,7 @@ const VIEW_TITLES: Record<string, Record<string, { title: string; subtitle?: str
     inventario:        { title: 'Inventario', subtitle: 'Consulta de existencias por sede' },
     'nueva-compra':    { title: 'Nueva Solicitud de Compra', subtitle: 'Solicitar compra de materiales faltantes' },
     'mis-compras':     { title: 'Mis Órdenes de Compra', subtitle: 'Seguimiento de solicitudes de compra' },
-    devoluciones:      { title: 'Devoluciones', subtitle: 'Registrar devoluciones de materiales entregados' },
+    manual:            { title: 'Manual de Usuario', subtitle: 'Funciones disponibles para el rol analista' },
   },
   coordinador: {
     dashboard:      { title: 'Panel de Coordinación', subtitle: 'Gestión de requerimientos e inventario' },
@@ -54,7 +57,7 @@ const VIEW_TITLES: Record<string, Record<string, { title: string; subtitle?: str
     inventario:     { title: 'Inventario', subtitle: 'Catálogo de materiales — edición habilitada' },
     usuarios:       { title: 'Gestión de Usuarios', subtitle: 'Crear, activar y desactivar cuentas' },
     compras:        { title: 'Órdenes de Compra', subtitle: 'Aprobar solicitudes y confirmar ingresos de stock' },
-    devoluciones:   { title: 'Devoluciones', subtitle: 'Validar devoluciones y registrar ingresos de stock' },
+    manual:         { title: 'Manual de Usuario', subtitle: 'Funciones disponibles para el rol coordinador' },
   },
 };
 
@@ -79,10 +82,6 @@ function LoginScreen({ onLogin }: { onLogin: (role: Role, name: string, email: s
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const handleSsoUnavailable = (provider: string) => {
-    setError(`El acceso con ${provider} aún no está habilitado. Usa tu correo institucional.`);
-  };
 
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
@@ -116,8 +115,6 @@ const handleSubmit = async (e: React.FormEvent) => {
       return;
     }
 
-    console.log('USUARIO AUTH:', user);
-
     // 2. Obtener perfil
     const { data: perfil, error: perfilError } =
       await supabase
@@ -134,8 +131,6 @@ const handleSubmit = async (e: React.FormEvent) => {
 
       return;
     }
-
-    console.log('PERFIL:', perfil);
 
     // 3. Comprobar que esté activo
     if (perfil.estado !== 'ACTIVO') {
@@ -240,34 +235,33 @@ const handleSubmit = async (e: React.FormEvent) => {
 /* ─── View router ─── */
 function renderView(role: Role, view: string, onToast: (m: string) => void, onNav: (v: string) => void, usuario: string, userEmail: string) {
   if (view === 'perfil') return <ProfileView role={role} userName={usuario} userEmail={userEmail} onToast={onToast} />;
+  if (view === 'manual') return <ManualUsuarioView role={role} onNav={onNav} />;
   if (role === 'gerente') {
-    if (view === 'dashboard' || !view) return <GerenteDashboard />;
+    if (view === 'dashboard' || !view) return <GerenteDashboard onNav={onNav} />;
     if (view === 'inventario') return <InventarioView role={role} onToast={onToast} />;
     if (view === 'reportes') return <ReportesView />;
     if (view === 'proyectos') return <ProyectosView role={role} onToast={onToast} />;
   }
   if (role === 'analista') {
     if (view === 'dashboard' || !view) return <AnalistaDashboard usuario={usuario} onNav={onNav} />;
-    if (view === 'nueva-solicitud') return <NuevaSolicitudView onToast={onToast} usuario={usuario} onNav={onNav} />;
+    if (view === 'nueva-solicitud') return <NuevaSolicitudView onToast={onToast} onNav={onNav} />;
     if (view === 'mis-solicitudes') return <MisSolicitudesView usuario={usuario} onToast={onToast} onNav={onNav} />;
     if (view === 'proyectos') return <ProyectosView role={role} onToast={onToast} />;
     if (view === 'entregas') return <EntregasView onToast={onToast} usuario={usuario} />;
-    if (view === 'devoluciones') return <DevolucionesView onToast={onToast} usuario={usuario} />;
+    if (view === 'devoluciones') return <DevolucionesView onToast={onToast} />;
     if (view === 'inventario') return <InventarioView role={role} onToast={onToast} />;
-    if (view === 'nueva-compra') return <NuevaCompraView onToast={onToast} usuario={usuario} onNav={onNav} />;
+    if (view === 'nueva-compra') return <NuevaCompraView onToast={onToast} onNav={onNav} />;
     if (view === 'mis-compras') return <MisComprasView usuario={usuario} onNav={onNav} />;
-    if (view === 'devoluciones') return <DevolucionesView role="analista" onToast={onToast} />;
   }
   if (role === 'coordinador') {
     if (view === 'dashboard' || !view) return <CoordinadorDashboard onNav={onNav} />;
-    if (view === 'requerimientos') return <RequerimientosView onToast={onToast} usuario={usuario} />;
+    if (view === 'requerimientos') return <RequerimientosView onToast={onToast} />;
     if (view === 'proyectos') return <ProyectosView role={role} onToast={onToast} />;
     if (view === 'entregas') return <EntregasView onToast={onToast} usuario={usuario} />;
-    if (view === 'devoluciones') return <DevolucionesView onToast={onToast} usuario={usuario} />;
+    if (view === 'devoluciones') return <DevolucionesView onToast={onToast} />;
     if (view === 'inventario') return <InventarioView role={role} onToast={onToast} />;
     if (view === 'usuarios') return <UsuariosView onToast={onToast} />;
-    if (view === 'compras') return <ComprasView onToast={onToast} usuario={usuario} />;
-    if (view === 'devoluciones') return <DevolucionesView role="coordinador" onToast={onToast} />;
+    if (view === 'compras') return <ComprasView onToast={onToast} />;
   }
   return <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#71717A' }}>Vista en construcción</div>;
 }
@@ -331,52 +325,32 @@ function ConfigurationErrorScreen() {
 
 export default function App() {
   const [session, setSession] = useState<{ role: Role; name: string; email: string } | null>(null);
-  const [restoring, setRestoring] = useState(true);
   const [sessionError, setSessionError] = useState('');
 
   useEffect(() => {
-    if (supabaseConfigError) { setRestoring(false); return; }
-    let active = true;
-    let version = 0;
-    const restore = async () => {
-      const current = ++version;
-      try {
-        const { data, error } = await supabase.auth.getSession();
-        if (error) throw error;
-        if (!data.session) { if (active && version === current) setSession(null); return; }
-        const { data: perfil, error: profileError } = await supabase.from('perfiles')
-          .select('nombre,email,rol,estado').eq('id', data.session.user.id).single();
-        if (profileError) throw profileError;
-        if (!active || version !== current) return;
-        if (perfil.estado !== 'ACTIVO' || !['analista', 'coordinador', 'gerente'].includes(perfil.rol)) {
-          setSession(null); setSessionError('Tu perfil no tiene acceso activo.'); return;
-        }
-        setSession({ role: perfil.rol as Role, name: perfil.nombre, email: perfil.email });
-        setSessionError('');
-      } catch {
-        if (active && version === current) { setSession(null); setSessionError('No se pudo recuperar tu sesión. Vuelve a iniciar sesión.'); }
-      } finally { if (active && version === current) setRestoring(false); }
-    };
-    void restore();
+    if (supabaseConfigError) return;
     const { data: { subscription } } = supabase.auth.onAuthStateChange(event => {
-      if (event === 'SIGNED_OUT') { version++; setSession(null); setRestoring(false); }
-      // Defer Supabase calls until the auth callback has released its lock.
-      else if (event === 'SIGNED_IN' || event === 'USER_UPDATED') { queueMicrotask(() => { if (active) void restore(); }); }
+      if (event === 'SIGNED_OUT') {
+        setSession(null);
+      }
     });
-    return () => { active = false; version++; subscription.unsubscribe(); };
+    return () => subscription.unsubscribe();
   }, []);
 
-  if (supabaseConfigError) return <ConfigurationErrorScreen />;
-
-  const handleLogin = (role: Role, name: string, email: string) => setSession({ role, name, email });
+  const handleLogin = (role: Role, name: string, email: string) => {
+    setSession({ role, name, email });
+    setSessionError('');
+  };
 
   const logout = async () => {
     const { error } = await supabase.auth.signOut({ scope: 'local' });
     if (error) { setSessionError('No se pudo cerrar la sesión. Inténtalo nuevamente.'); return; }
-    setSession(null); setSessionError('');
+    setSession(null);
+    setSessionError('');
   };
 
-  if (restoring) return <div role="status" style={{ padding: 32 }}>Recuperando sesión…</div>;
+  if (supabaseConfigError) return <ConfigurationErrorScreen />;
+
   return <>
     {sessionError && <div role="alert" style={{ padding: 12, background: '#FEF2F2', color: '#B91C1C' }}>{sessionError}</div>}
     {session ? <AppProvider key={session.email}><WorkspaceGate onLogout={() => void logout()}><AppShell session={session} onLogout={() => void logout()} /></WorkspaceGate></AppProvider>

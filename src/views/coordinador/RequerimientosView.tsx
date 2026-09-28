@@ -7,9 +7,9 @@ import { revisarSolicitud } from '../../service/requerimientoService';
 
 const BADGE: Record<string, string> = { BORRADOR: 'gray', ENVIADO: 'amber', CONFIRMADO: 'green', RECHAZADO: 'red' };
 
-interface Props { onToast: (msg: string) => void; usuario: string; }
+interface Props { onToast: (msg: string) => void; }
 
-export default function RequerimientosView({ onToast, usuario }: Props) {
+export default function RequerimientosView({ onToast }: Props) {
   const { state, refreshRemoteData } = useAppStore();
   const [estadoFilter, setEstadoFilter] = useState('ENVIADO');
   const [sedeFilter, setSedeFilter] = useState('');

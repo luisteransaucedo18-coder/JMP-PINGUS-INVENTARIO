@@ -127,7 +127,9 @@ function SectionHead({ title, action, actionLabel = 'Ver todo' }: { title: strin
   );
 }
 
-export default function GerenteDashboard() {
+interface Props { onNav: (v: string) => void; }
+
+export default function GerenteDashboard({ onNav }: Props) {
   const { state } = useAppStore();
   const { materials, requerimientos } = state;
 
@@ -136,7 +138,6 @@ export default function GerenteDashboard() {
   const rechazados  = requerimientos.filter(r => r.estado === 'RECHAZADO').length;
   const borradores  = requerimientos.filter(r => r.estado === 'BORRADOR').length;
   const criticos    = materials.filter(m => m.estado === 'CRÍTICO' || m.estado === 'AGOTADO').length;
-  const totalStock  = materials.reduce((s, m) => s + Object.values(m.stockSedes).reduce((a, b) => a + b, 0), 0);
   const recentReqs  = [...requerimientos].sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 7);
 
   /* Bar chart data: reqs by sede (confirmed vs pending) */
@@ -363,6 +364,32 @@ export default function GerenteDashboard() {
             </tbody>
           </table>
           </div>
+        </div>
+      </Card>
+
+      <Card style={{ padding: '22px 24px', marginTop: 22, border: '1px solid #DDD6FE' }}>
+        <SectionHead title="Accesos rápidos" />
+        <div className="dashboard-status-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12 }}>
+          {[
+            { label: 'Manual de Usuario', view: 'manual', primary: true },
+            { label: 'Ver reportes', view: 'reportes' },
+            { label: 'Consultar proyectos', view: 'proyectos' },
+            { label: 'Consultar inventario', view: 'inventario' },
+          ].map((item) => (
+            <button
+              key={item.label}
+              className={`btn ${item.primary ? 'btn-primary' : 'btn-ghost'}`}
+              style={{
+                width: '100%',
+                justifyContent: 'center',
+                borderColor: item.primary ? undefined : '#DDD6FE',
+                color: item.primary ? undefined : '#6D28D9',
+              }}
+              onClick={() => onNav(item.view)}
+            >
+              {item.label}
+            </button>
+          ))}
         </div>
       </Card>
     </div>
