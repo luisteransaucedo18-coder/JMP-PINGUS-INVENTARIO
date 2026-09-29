@@ -9,8 +9,14 @@ const navByRole: Record<Role, NavItem[]> = {
   gerente: [
     { id: 'dashboard',  label: 'Dashboard',   icon: <GridIcon /> },
     { id: 'reportes',   label: 'Reportes',    icon: <ChartIcon /> },
+    { id: 'requerimientos', label: 'Requerimientos', icon: <DocIcon /> },
+    { id: 'compras', label: 'Compras', icon: <CartIcon /> },
+    { id: 'entregas', label: 'Entregas', icon: <InIcon /> },
+    { id: 'devoluciones', label: 'Devoluciones', icon: <ReturnIcon /> },
+    { id: 'transporte', label: 'Transporte interno', icon: <TransferIcon /> },
     { id: 'proyectos',  label: 'Proyectos',   icon: <MapIcon /> },
     { id: 'inventario', label: 'Inventario',  icon: <BoxIcon /> },
+    { id: 'usuarios', label: 'Usuarios', icon: <UsersIcon /> },
   ],
   analista: [
     { id: 'dashboard',        label: 'Dashboard',         icon: <GridIcon /> },
@@ -23,13 +29,13 @@ const navByRole: Record<Role, NavItem[]> = {
     { id: 'inventario',       label: 'Inventario',       icon: <BoxIcon /> },
   ],
   coordinador: [
-    { id: 'transporte', label: 'Transporte interno', icon: <ReturnIcon /> },
     { id: 'dashboard',       label: 'Dashboard',        icon: <GridIcon /> },
     { id: 'requerimientos',  label: 'Requerimientos',   icon: <DocIcon /> },
     { id: 'compras',         label: 'Compras',          icon: <CartIcon /> },
-    { id: 'devoluciones',    label: 'Devoluciones',     icon: <InIcon /> },
-    { id: 'proyectos',       label: 'Proyectos',        icon: <MapIcon /> },
     { id: 'entregas',        label: 'Entregas',         icon: <InIcon /> },
+    { id: 'devoluciones',    label: 'Devoluciones',     icon: <ReturnIcon /> },
+    { id: 'transporte',      label: 'Transporte interno', icon: <TransferIcon /> },
+    { id: 'proyectos',       label: 'Proyectos',        icon: <MapIcon /> },
     { id: 'inventario',      label: 'Inventario',       icon: <BoxIcon /> },
     { id: 'usuarios',        label: 'Usuarios',         icon: <UsersIcon /> },
   ],
@@ -214,6 +220,9 @@ function CartIcon() {
 }
 function ReturnIcon() {
   return <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M6 4H3V1M3.4 4a5.5 5.5 0 1 1-.7 5.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="m3 4 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>;
+}
+function TransferIcon() {
+  return <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M3 4h8.5M9 1.5 11.5 4 9 6.5M12 11H3.5M6 8.5 3.5 11 6 13.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>;
 }
 function LogoutIcon() {
   return <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M6 2H2v11h4M10 10l3-2.5L10 5M13 7.5H6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>;

@@ -9,6 +9,7 @@ import WorkspaceGate from './components/WorkspaceTransition';
 
 import GerenteDashboard from './views/gerente/GerenteDashboard';
 import ReportesView from './views/gerente/ReportesView';
+import ConsultaGerenteView, { type ConsultaGerente } from './views/gerente/ConsultaGerenteView';
 import AnalistaDashboard from './views/analista/AnalistaDashboard';
 import NuevaSolicitudView from './views/analista/NuevaSolicitudView';
 import MisSolicitudesView from './views/analista/MisSolicitudesView';
@@ -35,6 +36,12 @@ const VIEW_TITLES: Record<string, Record<string, { title: string; subtitle?: str
     inventario: { title: 'Inventario', subtitle: 'Stock por sede — solo lectura' },
     reportes:   { title: 'Reportes', subtitle: 'Análisis de requerimientos, stock e indicadores operativos' },
     proyectos:  { title: 'Proyectos', subtitle: 'Todos los proyectos registrados' },
+    requerimientos: { title: 'Requerimientos', subtitle: 'Consulta general de solicitudes — solo lectura' },
+    compras: { title: 'Órdenes de Compra', subtitle: 'Seguimiento de compras — solo lectura' },
+    entregas: { title: 'Entregas', subtitle: 'Historial de entregas — solo lectura' },
+    devoluciones: { title: 'Devoluciones', subtitle: 'Historial de devoluciones — solo lectura' },
+    transporte: { title: 'Transporte interno', subtitle: 'Movimientos entre sedes — solo lectura' },
+    usuarios: { title: 'Usuarios', subtitle: 'Directorio del sistema — solo lectura' },
     manual:     { title: 'Manual de Usuario', subtitle: 'Funciones disponibles para el rol gerente' },
   },
   analista: {
@@ -243,6 +250,9 @@ function renderView(role: Role, view: string, onToast: (m: string) => void, onNa
     if (view === 'inventario') return <InventarioView role={role} onToast={onToast} />;
     if (view === 'reportes') return <ReportesView />;
     if (view === 'proyectos') return <ProyectosView role={role} onToast={onToast} />;
+    if (['requerimientos', 'compras', 'entregas', 'devoluciones', 'transporte', 'usuarios'].includes(view)) {
+      return <ConsultaGerenteView type={view as ConsultaGerente} />;
+    }
   }
   if (role === 'analista') {
     if (view === 'dashboard' || !view) return <AnalistaDashboard usuario={usuario} onNav={onNav} />;

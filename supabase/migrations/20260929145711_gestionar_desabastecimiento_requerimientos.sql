@@ -173,8 +173,10 @@ begin
     end if;
   else
     insert into public.ordenes_compra(
-      sede, analista_id, motivo, estado, requerimiento_id
+      codigo, sede, analista_id, motivo, estado, requerimiento_id
     ) values (
+      'OC-' || extract(year from current_date)::text || '-' ||
+        lpad(nextval('public.orden_compra_codigo_seq')::text, 4, '0'),
       v_req.sede,
       v_req.analista_id,
       'Abastecimiento automático para ' || v_req.codigo,
@@ -186,7 +188,7 @@ begin
     returning id into v_orden_id;
 
     insert into public.orden_compra_items(
-      orden_compra_id, material_sku, material_nombre,
+      orden_id, material_sku, material_nombre,
       cantidad_solicitada, precio_unitario
     )
     select
@@ -201,7 +203,12 @@ begin
       on inv.material_sku = ri.material_sku and inv.sede = v_req.sede
     where ri.requerimiento_id = p_requerimiento_id
       and ri.cantidad > coalesce(inv.stock, 0)
-    on conflict (orden_compra_id, material_sku) do nothing;
+      and not exists (
+        select 1
+        from public.orden_compra_items existing
+        where existing.orden_id = v_orden_id
+          and existing.material_sku = ri.material_sku
+      );
   end if;
 
   update public.requerimiento_abastecimiento
