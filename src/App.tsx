@@ -13,6 +13,7 @@ import AnalistaDashboard from './views/analista/AnalistaDashboard';
 import NuevaSolicitudView from './views/analista/NuevaSolicitudView';
 import MisSolicitudesView from './views/analista/MisSolicitudesView';
 import CoordinadorDashboard from './views/coordinador/CoordinadorDashboard';
+import TransporteInternoView from './views/coordinador/TransporteInternoView';
 import RequerimientosView from './views/coordinador/RequerimientosView';
 import InventarioView from './views/shared/InventarioView';
 import ProyectosView from './views/shared/ProyectosView';
@@ -49,6 +50,7 @@ const VIEW_TITLES: Record<string, Record<string, { title: string; subtitle?: str
     manual:            { title: 'Manual de Usuario', subtitle: 'Funciones disponibles para el rol analista' },
   },
   coordinador: {
+    transporte: { title: 'Transporte interno', subtitle: 'Control de mercadería entre sedes' },
     dashboard:      { title: 'Panel de Coordinación', subtitle: 'Gestión de requerimientos e inventario' },
     requerimientos: { title: 'Requerimientos', subtitle: 'Validar y confirmar solicitudes de analistas' },
     proyectos:      { title: 'Proyectos', subtitle: 'Administrar proyectos y requerimientos' },
@@ -254,6 +256,7 @@ function renderView(role: Role, view: string, onToast: (m: string) => void, onNa
     if (view === 'mis-compras') return <MisComprasView usuario={usuario} onNav={onNav} />;
   }
   if (role === 'coordinador') {
+    if (view === 'transporte') return <TransporteInternoView onToast={onToast} />;
     if (view === 'dashboard' || !view) return <CoordinadorDashboard onNav={onNav} />;
     if (view === 'requerimientos') return <RequerimientosView onToast={onToast} />;
     if (view === 'proyectos') return <ProyectosView role={role} onToast={onToast} />;

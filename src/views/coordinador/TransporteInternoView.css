@@ -1,0 +1,33 @@
+.transporte-view { padding:24px; color:#18181b; }
+.transporte-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
+.transporte-heading h2 { font-size:22px; font-weight:700; }
+.transporte-view h3 { font-size:17px; font-weight:650; margin:18px 0 12px; }
+.transporte-view p { font-size:13px; line-height:1.6; margin:10px 0; }
+.transporte-panel { padding:22px; }
+.transporte-fields { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin:16px 0; }
+.transporte-view fieldset { border:0; padding:0; margin:18px 0; min-width:0; }
+.transporte-view legend { font-weight:650; margin-bottom:12px; }
+.transporte-view label { display:flex; flex-direction:column; gap:7px; font-size:13px; font-weight:550; }
+.transporte-view input,.transporte-view select,.transporte-view textarea { background:white; color:#18181b; border:1px solid #d4d4d8; border-radius:8px; padding:10px 12px; min-width:0; width:100%; font:inherit; }
+.transporte-view textarea { min-height:85px; }
+.transporte-view :focus-visible { outline:2px solid #2563eb; outline-offset:3px; }
+.transporte-view input[readonly] { background:#f4f4f5; }
+.transporte-view button:disabled { opacity:.55; cursor:not-allowed; }
+.transporte-actions { display:flex; gap:10px; flex-wrap:wrap; margin:14px 0; }
+.transporte-table { overflow-x:auto; margin:16px 0; }
+.transporte-table table { width:100%; border-collapse:collapse; text-align:left; font-size:13px; }
+.transporte-table th { background:#f8fafc; color:#52525b; font-weight:550; }
+.transporte-table th,.transporte-table td { padding:12px; border-bottom:1px solid #e4e4e7; }
+.transporte-table input { min-width:100px; max-width:140px; }
+.transporte-view small { display:block; color:#52525b; font-size:12px; font-weight:400; overflow-wrap:anywhere; }
+.transporte-status { border-radius:99px; padding:5px 10px; font-size:11px; font-weight:650; white-space:nowrap; background:#f4f4f5; color:#52525b; }
+.estado-EN_TRANSITO { background:#dbeafe; color:#1d4ed8; }.estado-RECIBIDO { background:#d1fae5; color:#065f46; }.estado-INCIDENCIA { background:#fef3c7; color:#92400e; }
+.transporte-error { padding:14px; border-radius:8px; background:#fef2f2; color:#991b1b; overflow-wrap:anywhere; }
+.transporte-success { color:#065f46; }.transporte-empty { padding:30px; text-align:center; color:#52525b; }
+.transporte-results { max-height:240px; overflow:auto; list-style:none; padding:0; border:1px solid #e4e4e7; }
+.transporte-results button { text-align:left; width:100%; padding:12px; background:#fff; border:0; border-bottom:1px solid #e4e4e7; cursor:pointer; }.transporte-results button:hover { background:#eff6ff; }
+.transporte-view dt { color:#52525b; font-size:12px; }.transporte-view dd { margin:5px 0; font-size:14px; }
+.transporte-incidencia { background:#fffbeb; border-left:3px solid #d97706; padding:12px; margin:14px 0; }
+.transporte-files { padding:0; list-style:none; }.transporte-files li { display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin:10px 0; overflow-wrap:anywhere; }
+.transporte-timeline { margin:16px 0; padding-left:24px; }.transporte-timeline li { padding:0 0 20px 10px; border-left:2px solid #bfdbfe; }.transporte-timeline span { display:block; color:#52525b; font-size:12px; margin-top:4px; }
+@media(max-width:640px) { .transporte-view { padding:14px; }.transporte-panel { padding:14px; }.transporte-fields { grid-template-columns:1fr; }.transporte-view input,.transporte-view select,.transporte-view textarea { font-size:16px; }.transporte-heading h2 { font-size:20px; } }

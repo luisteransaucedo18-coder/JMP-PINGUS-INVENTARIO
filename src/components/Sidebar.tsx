@@ -23,6 +23,7 @@ const navByRole: Record<Role, NavItem[]> = {
     { id: 'inventario',       label: 'Inventario',       icon: <BoxIcon /> },
   ],
   coordinador: [
+    { id: 'transporte', label: 'Transporte interno', icon: <ReturnIcon /> },
     { id: 'dashboard',       label: 'Dashboard',        icon: <GridIcon /> },
     { id: 'requerimientos',  label: 'Requerimientos',   icon: <DocIcon /> },
     { id: 'compras',         label: 'Compras',          icon: <CartIcon /> },

@@ -12,6 +12,10 @@ export default function CoordinadorDashboard({ onNav }: Props) {
 
   return (
     <div className="coordinator-dashboard" style={{ padding: 24, overflowY: 'auto', flex: 1 }}>
+      <div className="panel" style={{ padding: 16, marginBottom: 20, display: 'flex', gap: 16, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+        <div><strong>Transporte interno de mercadería</strong><p style={{ fontSize: 13, color: '#52525B', marginTop: 4 }}>Envíos, recepciones y comprobantes entre sedes.</p></div>
+        <button className="btn btn-primary" onClick={() => onNav('transporte')}>Transporte interno →</button>
+      </div>
       {/* KPIs */}
       <div className="coordinator-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
         {[
