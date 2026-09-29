@@ -20,6 +20,7 @@ export default function NuevaSolicitudView({ onToast, onNav }: Props) {
   const [lineas, setLineas] = useState<LineaMat[]>([{ skuId: '', nombre: '', cantidad: '', query: '', showDrop: false }]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [submittedWithShortage, setSubmittedWithShortage] = useState(false);
   const [previewMat, setPreviewMat] = useState<Material | null>(null);
   const [materiales, setMateriales] = useState<Material[]>([]);
 const [loadingMateriales, setLoadingMateriales] = useState(true);
@@ -241,6 +242,18 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
 
   const getMatchingMats = (query: string) => searchMaterials(materiales, query, 10);
 
+  const faltantes = lineas.flatMap(linea => {
+    const material = materiales.find(item => item.id === linea.skuId);
+    const cantidad = Number(linea.cantidad) || 0;
+    if (!material || cantidad <= material.stockSedes[form.sede]) return [];
+    return [{
+      sku: material.id,
+      nombre: material.nombre,
+      unidad: material.unidad,
+      faltante: cantidad - material.stockSedes[form.sede],
+    }];
+  });
+
   const validate = (draft: boolean) => {
     const e: Record<string, string> = {};
     if (!selectedProject && !proyectoQuery.trim()) e.proyecto = 'Selecciona o crea un proyecto';
@@ -271,8 +284,15 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
           return { skuId: l.skuId, nombre: l.nombre, cantidad: parseFloat(l.cantidad), unidad: material?.unidad, marca: material?.marca };
         }), borrador: draft });
       await refreshRemoteData();
+      setSubmittedWithShortage(!draft && faltantes.length > 0);
       setSubmitted(true);
-      onToast(draft ? 'Borrador guardado correctamente' : 'Solicitud enviada al coordinador');
+      onToast(
+        draft
+          ? 'Borrador guardado correctamente'
+          : faltantes.length > 0
+            ? 'Solicitud enviada con alerta de stock para coordinación'
+            : 'Solicitud enviada al coordinador',
+      );
       setTimeout(() => onNav('mis-solicitudes'), 1200);
     } catch (error) {
       onToast(error instanceof Error ? error.message : 'No se pudo guardar la solicitud');
@@ -284,7 +304,11 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
         <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#CCFBF1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#059669' }}><svg width="26" height="26" viewBox="0 0 15 15" fill="none"><path d="M2 7.5l3.5 3.5 7-7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
         <div style={{ fontSize: 16, fontWeight: 700, color: '#18181B' }}>Solicitud enviada</div>
-        <div style={{ fontSize: 13, color: '#71717A' }}>Redirigiendo...</div>
+        <div style={{ fontSize: 13, color: '#71717A', maxWidth: 460, textAlign: 'center' }}>
+          {submittedWithShortage
+            ? 'Se registró aunque falta stock. Coordinación recibirá la alerta y podrá gestionar una compra o un traslado entre sedes.'
+            : 'El coordinador ya puede revisar el requerimiento.'}
+        </div>
       </div>
     );
   }
@@ -807,7 +831,7 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
                 whiteSpace: 'nowrap',
               }}
             >
-              UND
+              {mat?.unidad ?? 'UND'}
             </span>
           </div>
 
@@ -836,7 +860,7 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
             <span>
               {stockSede === null
                 ? '—'
-                : `${stockSede} UND`}
+                : `${stockSede} ${mat?.unidad ?? 'UND'}`}
             </span>
 
             {overStock && (
@@ -907,6 +931,26 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
         </div>
       );
     })}
+
+    {faltantes.length > 0 && (
+      <div
+        role="status"
+        style={{
+          marginTop: 12,
+          padding: '12px 14px',
+          borderRadius: 10,
+          border: '1px solid #FCD34D',
+          background: '#FFFBEB',
+          color: '#92400E',
+          fontSize: 12.5,
+          lineHeight: 1.55,
+        }}
+      >
+        <strong>Puedes enviar el requerimiento.</strong> Falta stock para{' '}
+        {faltantes.map(item => `${item.nombre}: ${item.faltante} ${item.unidad}`).join(' · ')}.
+        El coordinador recibirá una alerta y decidirá si abastecer mediante compra o traslado interno.
+      </div>
+    )}
 
     <button
       className="btn btn-ghost"

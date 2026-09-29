@@ -7,14 +7,22 @@ type DbRequirement = {
   proyecto: { id: string; nombre: string } | null;
   analista: { nombre: string } | null;
   coordinador: { nombre: string } | null;
-  items: Array<{ material_sku: string; material_nombre: string; cantidad: number; unidad: string | null; marca: string | null }> | null;
+  items: Array<{ material_sku: string; material_nombre: string; cantidad: number; unidad: string | null; marca: string | null; stock_al_envio: number | null; faltante_al_envio: number | null }> | null;
+  abastecimiento: {
+    estado: 'PENDIENTE' | 'EN_GESTION' | 'RESUELTO';
+    tipo: 'COMPRA' | 'TRASLADO' | null;
+    origen_sugerido: Sede | null;
+    observaciones: string | null;
+    orden_compra_id: string | null;
+  } | null;
 };
 
 const REQUIREMENT_SELECT = `id,codigo,sede,ubicacion,descripcion,tecnico,fecha,estado,observaciones,fecha_confirmacion,
   proyecto:proyectos!requerimientos_proyecto_id_fkey(id,nombre),
   analista:perfiles!requerimientos_analista_id_fkey(nombre),
   coordinador:perfiles!requerimientos_confirmado_por_fkey(nombre),
-  items:requerimiento_items(material_sku,material_nombre,cantidad,unidad,marca)`;
+  items:requerimiento_items(material_sku,material_nombre,cantidad,unidad,marca,stock_al_envio,faltante_al_envio),
+  abastecimiento:requerimiento_abastecimiento(estado,tipo,origen_sugerido,observaciones,orden_compra_id)`;
 
 function mapRequirement(row: DbRequirement): Requerimiento {
   return {
@@ -24,7 +32,16 @@ function mapRequirement(row: DbRequirement): Requerimiento {
     observaciones: row.observaciones ?? undefined, confirmadoPor: row.coordinador?.nombre ?? undefined,
     fechaConfirmacion: row.fecha_confirmacion ?? undefined,
     materiales: (row.items ?? []).map(item => ({ skuId: item.material_sku, nombre: item.material_nombre,
-      cantidad: Number(item.cantidad), unidad: item.unidad ?? undefined, marca: item.marca ?? undefined })),
+      cantidad: Number(item.cantidad), unidad: item.unidad ?? undefined, marca: item.marca ?? undefined,
+      stockAlEnvio: item.stock_al_envio == null ? undefined : Number(item.stock_al_envio),
+      faltanteAlEnvio: item.faltante_al_envio == null ? undefined : Number(item.faltante_al_envio) })),
+    abastecimiento: row.abastecimiento ? {
+      estado: row.abastecimiento.estado,
+      tipo: row.abastecimiento.tipo ?? undefined,
+      origenSugerido: row.abastecimiento.origen_sugerido ?? undefined,
+      observaciones: row.abastecimiento.observaciones ?? undefined,
+      ordenCompraId: row.abastecimiento.orden_compra_id ?? undefined,
+    } : undefined,
   };
 }
 
@@ -68,4 +85,20 @@ export async function enviarSolicitud(id: string) {
 export async function revisarSolicitud(id: string, confirmar: boolean, observaciones?: string) {
   const { error } = await supabase.rpc('revisar_requerimiento', { p_requerimiento_id: id, p_confirmar: confirmar, p_observaciones: observaciones?.trim() || null });
   if (error) throw error;
+}
+
+export async function planificarAbastecimiento(
+  id: string,
+  tipo: 'COMPRA' | 'TRASLADO',
+  origenSugerido?: Sede,
+  observaciones?: string,
+) {
+  const { data, error } = await supabase.rpc('planificar_abastecimiento_requerimiento', {
+    p_requerimiento_id: id,
+    p_tipo: tipo,
+    p_origen_sugerido: origenSugerido ?? null,
+    p_observaciones: observaciones?.trim() || null,
+  });
+  if (error) throw error;
+  return data as string | null;
 }

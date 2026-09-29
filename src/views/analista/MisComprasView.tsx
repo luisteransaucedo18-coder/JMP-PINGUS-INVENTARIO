@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { useAppStore } from '../../store/AppContext';
 import { EstadoCompra } from '../../data/mockData';
+import { cancelarCompra } from '../../service/compraService';
 
-interface Props { usuario: string; onNav: (v: string) => void; }
+interface Props { usuario: string; onNav: (v: string) => void; onToast: (m: string) => void; }
 
 const E_COLOR: Record<EstadoCompra, string> = { BORRADOR: '#8B8FA8', ENVIADO: '#D97706', APROBADO: '#2563EB', COMPRADO: '#059669', RECHAZADO: '#DC2626' };
 const E_BG:    Record<EstadoCompra, string> = { BORRADOR: '#F4F4F5', ENVIADO: '#FEF3C7', APROBADO: '#DBEAFE', COMPRADO: '#CCFBF1', RECHAZADO: '#FEE2E2' };
-const E_LABEL: Record<EstadoCompra, string> = { BORRADOR: 'Borrador', ENVIADO: 'Enviado', APROBADO: 'Aprobado', COMPRADO: 'Comprado', RECHAZADO: 'Rechazado' };
+const E_LABEL: Record<EstadoCompra, string> = { BORRADOR: 'Borrador', ENVIADO: 'Enviado', APROBADO: 'Aprobado', COMPRADO: 'Comprado', RECHAZADO: 'Cancelada' };
 
-export default function MisComprasView({ usuario, onNav }: Props) {
-  const { state } = useAppStore();
+export default function MisComprasView({ usuario, onNav, onToast }: Props) {
+  const { state, refreshRemoteData } = useAppStore();
   const [filter, setFilter] = useState<EstadoCompra | ''>('');
 
   const mis = state.compras
@@ -17,10 +18,27 @@ export default function MisComprasView({ usuario, onNav }: Props) {
     .sort((a, b) => b.fecha.localeCompare(a.fecha));
 
   const [selected, setSelected] = useState<string | null>(null);
+  const [cancelando, setCancelando] = useState(false);
   const det = state.compras.find(c => c.id === selected);
 
   const totalEst = (items: typeof mis[0]['items']) =>
     items.reduce((s, it) => s + it.cantidadSolicitada * (it.precioUnitario ?? 0), 0);
+
+  const cancelar = async () => {
+    if (!det?.uuid || cancelando) return;
+    const motivo = window.prompt('¿Por qué deseas cancelar esta orden?');
+    if (motivo === null) return;
+    if (!motivo.trim()) { onToast('⚠ Indica el motivo de la cancelación'); return; }
+    setCancelando(true);
+    try {
+      await cancelarCompra(det.uuid, motivo);
+      await refreshRemoteData();
+      setSelected(null);
+      onToast(`✓ Orden ${det.id} cancelada`);
+    } catch (error) {
+      onToast(error instanceof Error ? error.message : 'No se pudo cancelar la orden');
+    } finally { setCancelando(false); }
+  };
 
   return (
     <div style={{ padding: 24, overflowY: 'auto', flex: 1, background: '#EEF0FF' }}>
@@ -125,6 +143,14 @@ export default function MisComprasView({ usuario, onNav }: Props) {
             {det.notaCompra && (
               <div style={{ padding: '12px 20px', background: '#F0FDF4', borderTop: '1px solid #F0F2FF', fontSize: 12.5, color: '#15803D' }}>
                 <strong>Nota de compra:</strong> {det.notaCompra}
+              </div>
+            )}
+            {(det.estado === 'BORRADOR' || det.estado === 'ENVIADO') && (
+              <div style={{ padding: '14px 20px', borderTop: '1px solid #F0F2FF', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                <span style={{ fontSize: 12, color: '#8B8FA8' }}>Si la creaste por error, puedes cancelarla mientras no haya sido aprobada.</span>
+                <button className="btn btn-danger" disabled={cancelando} onClick={cancelar}>
+                  {cancelando ? 'Cancelando…' : 'Cancelar orden'}
+                </button>
               </div>
             )}
           </div>

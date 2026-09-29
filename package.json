@@ -6,6 +6,7 @@
   "packageManager": "pnpm@10.12.4",
   "scripts": {
     "test:transporte": "node --test tests/transporte.test.mjs",
+    "test:requerimientos": "node --test tests/requerimiento-stock.test.mjs",
     "dev": "vite",
     "build": "tsc --noEmit --noUnusedLocals --noUnusedParameters && vite build",
     "typecheck": "tsc --noEmit --noUnusedLocals --noUnusedParameters",

@@ -108,6 +108,10 @@ export interface ReqMaterial {
   unidad?: string
 
   marca?: string
+
+  stockAlEnvio?: number
+
+  faltanteAlEnvio?: number
 }
 
 export interface Requerimiento {
@@ -142,6 +146,14 @@ export interface Requerimiento {
   confirmadoPor?: string
 
   fechaConfirmacion?: string
+
+  abastecimiento?: {
+    estado: "PENDIENTE" | "EN_GESTION" | "RESUELTO"
+    tipo?: "COMPRA" | "TRASLADO"
+    origenSugerido?: Sede
+    observaciones?: string
+    ordenCompraId?: string
+  }
 }
 
 // ======================================================

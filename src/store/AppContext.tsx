@@ -88,6 +88,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const channel = supabase.channel('datos-compartidos')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'requerimientos' }, () => { void refresh(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'requerimiento_items' }, () => { void refresh(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'requerimiento_abastecimiento' }, () => { void refresh(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'proyectos' }, () => { void refresh(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'materiales' }, () => { void refresh(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'inventario_sedes' }, () => { void refresh(); })

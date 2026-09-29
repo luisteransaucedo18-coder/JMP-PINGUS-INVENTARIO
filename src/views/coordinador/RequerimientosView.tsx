@@ -1,15 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAppStore } from '../../store/AppContext';
 import { Requerimiento, SEDES, Material } from '../../data/mockData';
 import MaterialPreviewModal, { PreviewBtn } from '../../components/MaterialPreviewModal';
 import RequirementStatusTimeline from '../../components/RequirementStatusTimeline';
-import { revisarSolicitud } from '../../service/requerimientoService';
+import { planificarAbastecimiento, revisarSolicitud } from '../../service/requerimientoService';
+import { obtenerFaltantesRequerimiento, sedesConStockParaTraslado, sugerirSedeOrigen } from '../../utils/requirementStock';
 
 const BADGE: Record<string, string> = { BORRADOR: 'gray', ENVIADO: 'amber', CONFIRMADO: 'green', RECHAZADO: 'red' };
 
-interface Props { onToast: (msg: string) => void; }
+interface Props { onToast: (msg: string) => void; onNav: (view: string) => void; }
 
-export default function RequerimientosView({ onToast }: Props) {
+export default function RequerimientosView({ onToast, onNav }: Props) {
   const { state, refreshRemoteData } = useAppStore();
   const [estadoFilter, setEstadoFilter] = useState('ENVIADO');
   const [sedeFilter, setSedeFilter] = useState('');
@@ -19,6 +20,8 @@ export default function RequerimientosView({ onToast }: Props) {
   const [action, setAction] = useState<'confirm' | 'reject' | null>(null);
   const [previewMat, setPreviewMat] = useState<Material | null>(null);
   const [reviewing, setReviewing] = useState(false);
+  const [planning, setPlanning] = useState(false);
+  const [sourceSede, setSourceSede] = useState('');
 
   const filtered = state.requerimientos
     .filter(r =>
@@ -56,6 +59,51 @@ export default function RequerimientosView({ onToast }: Props) {
   };
 
   const pendingCount = state.requerimientos.filter(r => r.estado === 'ENVIADO').length;
+  const pendingShortages = state.requerimientos.filter(
+    r => r.estado === 'ENVIADO' && obtenerFaltantesRequerimiento(r, state.materials).length > 0,
+  );
+  const selectedShortages = selected
+    ? obtenerFaltantesRequerimiento(selected, state.materials)
+    : [];
+  const suggestedSource = selected
+    ? sugerirSedeOrigen(selectedShortages, selected.sede)
+    : undefined;
+  const availableSources = selected
+    ? sedesConStockParaTraslado(selectedShortages, selected.sede)
+    : [];
+
+  useEffect(() => {
+    setSourceSede(suggestedSource ?? '');
+  }, [selected?.id, suggestedSource]);
+
+  const handleSupplyPlan = async (type: 'COMPRA' | 'TRASLADO') => {
+    if (!selected) return;
+    if (type === 'TRASLADO' && !sourceSede) {
+      onToast('Selecciona una sede con existencias disponibles');
+      return;
+    }
+    setPlanning(true);
+    try {
+      await planificarAbastecimiento(
+        selected.id,
+        type,
+        type === 'TRASLADO' ? sourceSede as Requerimiento['sede'] : undefined,
+        obsModal || undefined,
+      );
+      await refreshRemoteData();
+      onToast(
+        type === 'COMPRA'
+          ? 'Orden de compra creada con las cantidades faltantes'
+          : `Traslado planificado desde ${sourceSede}`,
+      );
+      setSelected(null);
+      onNav(type === 'COMPRA' ? 'compras' : 'transporte');
+    } catch (error) {
+      onToast(error instanceof Error ? error.message : 'No se pudo registrar el abastecimiento');
+    } finally {
+      setPlanning(false);
+    }
+  };
 
   return (
     <div style={{ padding: 24, overflowY: 'auto', flex: 1 }}>
@@ -78,6 +126,23 @@ export default function RequerimientosView({ onToast }: Props) {
           <svg width="16" height="16" viewBox="0 0 15 15" fill="none"><path d="M7.5 1L14 13H1L7.5 1z" stroke="#D97706" strokeWidth="1.3" strokeLinejoin="round"/><path d="M7.5 6v3M7.5 11v.5" stroke="#D97706" strokeWidth="1.3" strokeLinecap="round"/></svg>
           <span style={{ fontSize: 13, color: '#92400E' }}><strong>{pendingCount} solicitudes</strong> esperan tu confirmación.</span>
           <button className="btn btn-ghost" style={{ marginLeft: 'auto', fontSize: 12, borderColor: '#FDE68A' }} onClick={() => setEstadoFilter('ENVIADO')}>Ver pendientes →</button>
+        </div>
+      )}
+
+      {pendingShortages.length > 0 && (
+        <div style={{ marginBottom: 16, background: '#FFF7ED', border: '1px solid #FDBA74', borderRadius: 10, padding: '13px 16px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: '#FFEDD5', color: '#C2410C', display: 'grid', placeItems: 'center', fontWeight: 800 }}>!</div>
+          <div style={{ flex: 1, minWidth: 220 }}>
+            <strong style={{ color: '#9A3412', fontSize: 13.5 }}>
+              {pendingShortages.length} requerimiento{pendingShortages.length === 1 ? '' : 's'} necesita{pendingShortages.length === 1 ? '' : 'n'} abastecimiento
+            </strong>
+            <div style={{ color: '#9A3412', fontSize: 12, marginTop: 3 }}>
+              Revisa los faltantes y elige compra o traslado interno antes de confirmar.
+            </div>
+          </div>
+          <button className="btn btn-ghost" style={{ borderColor: '#FDBA74', color: '#9A3412' }} onClick={() => { setEstadoFilter('ENVIADO'); setSelected(pendingShortages[0]); }}>
+            Gestionar faltantes
+          </button>
         </div>
       )}
 
@@ -106,7 +171,9 @@ export default function RequerimientosView({ onToast }: Props) {
             <tbody>
               {filtered.length === 0
                 ? <tr className="empty-state-row"><td colSpan={9} style={{ textAlign: 'center', color: '#71717A', padding: 32 }}>Sin solicitudes para este filtro</td></tr>
-                : filtered.map(r => (
+                : filtered.map(r => {
+                  const shortages = obtenerFaltantesRequerimiento(r, state.materials);
+                  return (
                   <tr key={r.id} style={{ cursor: 'pointer' }} onClick={() => { setSelected(r); setAction(null); }}>
                     <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#2563EB' }}>{r.codigo ?? r.id}</td>
                     <td style={{ fontWeight: 500, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.proyecto}</td>
@@ -114,18 +181,28 @@ export default function RequerimientosView({ onToast }: Props) {
                     <td style={{ fontSize: 12, color: '#71717A' }}>{r.analista}</td>
                     <td style={{ fontSize: 12, color: '#71717A', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.tecnico}</td>
                     <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#71717A' }}>{r.fecha}</td>
-                    <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{r.materiales.length}</td>
+                    <td style={{ fontFamily: 'monospace', fontSize: 12 }}>
+                      {r.materiales.length}
+                      {shortages.length > 0 && (
+                        <span style={{ display: 'block', marginTop: 3, color: '#C2410C', fontFamily: 'inherit', fontSize: 10, fontWeight: 700 }}>
+                          {shortages.length} con faltante
+                        </span>
+                      )}
+                    </td>
                     <td><span className={`badge status-badge badge-${BADGE[r.estado]}`}>{r.estado}</span></td>
                     <td onClick={e => e.stopPropagation()}>
                       {r.estado === 'ENVIADO' && (
                         <div style={{ display: 'flex', gap: 5 }}>
-                          <button className="btn btn-primary" style={{ padding: '3px 10px', fontSize: 11 }} onClick={() => openAction(r, 'confirm')}>Confirmar</button>
+                          <button className="btn btn-primary" style={{ padding: '3px 10px', fontSize: 11, background: shortages.length > 0 ? '#C2410C' : undefined }} onClick={() => shortages.length > 0 ? (setSelected(r), setAction(null)) : openAction(r, 'confirm')}>
+                            {shortages.length > 0 ? 'Abastecer' : 'Confirmar'}
+                          </button>
                           <button className="btn btn-danger" style={{ padding: '3px 10px', fontSize: 11 }} onClick={() => openAction(r, 'reject')}>Rechazar</button>
                         </div>
                       )}
                     </td>
                   </tr>
-                ))
+                  );
+                })
               }
             </tbody>
           </table>
@@ -135,7 +212,7 @@ export default function RequerimientosView({ onToast }: Props) {
       {/* Detail / Action modal */}
       {selected && (
         <div className="modal-overlay" onClick={() => { setSelected(null); setAction(null); }}>
-          <div className="modal" style={{ width: 640 }} onClick={e => e.stopPropagation()}>
+          <div className="modal" style={{ width: 720, maxHeight: '92vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div>
                 <div style={{ fontSize: 11, color: '#71717A', fontFamily: 'monospace', marginBottom: 3 }}>{selected.codigo ?? selected.id}</div>
@@ -180,7 +257,11 @@ export default function RequerimientosView({ onToast }: Props) {
                         <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{m.cantidad} UND</td>
                         <td style={{ fontFamily: 'monospace', fontWeight: 600, color: stock === null ? '#A1A1AA' : ok ? '#059669' : '#DC2626' }}>
                           {stock === null ? '—' : `${stock} UND`}
-                          {!ok && stock !== null && <span style={{ fontSize: 10, display: 'block', color: '#DC2626' }}>insuficiente</span>}
+                          {!ok && stock !== null && (
+                            <span style={{ fontSize: 10, display: 'block', color: '#DC2626' }}>
+                              faltan {Math.max(m.cantidad - stock, 0)} {m.unidad ?? mat?.unidad ?? 'UND'}
+                            </span>
+                          )}
                         </td>
                       </tr>
                     );
@@ -189,6 +270,78 @@ export default function RequerimientosView({ onToast }: Props) {
               </table>
             </div>
 
+            {selected.estado === 'ENVIADO' && selectedShortages.length > 0 && (
+              <section style={{ margin: '0 22px 16px', padding: 16, borderRadius: 12, border: '1px solid #FDBA74', background: '#FFF7ED' }} aria-label="Gestión de abastecimiento">
+                <div style={{ color: '#9A3412', fontSize: 14, fontWeight: 750 }}>Stock insuficiente para confirmar</div>
+                <p style={{ margin: '5px 0 12px', color: '#9A3412', fontSize: 12.5, lineHeight: 1.55 }}>
+                  El requerimiento permanece enviado. Registra cómo se cubrirá el faltante y confírmalo cuando el stock ya esté disponible en {selected.sede}.
+                </p>
+                <ul style={{ margin: '0 0 12px', paddingLeft: 20, color: '#7C2D12', fontSize: 12 }}>
+                  {selectedShortages.map(item => (
+                    <li key={item.sku} style={{ marginBottom: 5 }}>
+                      <strong>{item.nombre}</strong>: faltan {item.faltante} {item.unidad}.
+                      {Object.keys(item.stockAlternativo).length > 0
+                        ? ` Otras sedes: ${Object.entries(item.stockAlternativo).map(([branch, stock]) => `${branch} ${stock}`).join(' · ')}.`
+                        : ' Sin existencias en otras sedes.'}
+                    </li>
+                  ))}
+                </ul>
+
+                {selected.abastecimiento?.estado === 'EN_GESTION' ? (
+                  <div style={{ padding: 12, borderRadius: 9, background: '#FFFFFF', border: '1px solid #FED7AA', color: '#7C2D12', fontSize: 12.5 }}>
+                    <strong>
+                      {selected.abastecimiento.tipo === 'COMPRA'
+                        ? 'Compra en gestión'
+                        : `Traslado en gestión desde ${selected.abastecimiento.origenSugerido}`}
+                    </strong>
+                    <div style={{ marginTop: 4 }}>
+                      Cuando el ingreso aparezca en el inventario, vuelve a este requerimiento para confirmarlo.
+                    </div>
+                    <button className="btn btn-ghost" style={{ marginTop: 10 }} onClick={() => { setSelected(null); onNav(selected.abastecimiento?.tipo === 'COMPRA' ? 'compras' : 'transporte'); }}>
+                      Abrir {selected.abastecimiento.tipo === 'COMPRA' ? 'Compras' : 'Transporte interno'}
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 650, color: '#7C2D12', marginBottom: 6 }}>
+                      Sede sugerida para traslado
+                    </label>
+                    <select className="select-field" value={sourceSede} onChange={event => setSourceSede(event.target.value)} style={{ width: '100%', marginBottom: 10 }}>
+                      <option value="">No hay una sede seleccionada</option>
+                      {availableSources.map(branch => (
+                        <option key={branch} value={branch}>
+                          {branch}{branch === suggestedSource ? ' · mayor cobertura disponible' : ''}
+                        </option>
+                      ))}
+                    </select>
+                    {availableSources.length === 0 && (
+                      <div role="status" style={{ margin: '-2px 0 10px', padding: '10px 12px', borderRadius: 8, background: '#FEF2F2', border: '1px solid #FECACA', color: '#991B1B', fontSize: 12 }}>
+                        Ninguna sede tiene existencias de estos materiales. En este momento corresponde crear una orden de compra.
+                      </div>
+                    )}
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 650, color: '#7C2D12', marginBottom: 6 }}>
+                      Nota para coordinación (opcional)
+                    </label>
+                    <textarea className="input-field" rows={2} value={obsModal} onChange={event => setObsModal(event.target.value)} placeholder="Ej. Priorizar por fecha de instalación…" style={{ resize: 'vertical', fontFamily: 'inherit' }} />
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
+                      <button className="btn btn-primary" disabled={planning} onClick={() => void handleSupplyPlan('COMPRA')}>
+                        {planning ? 'Registrando…' : 'Crear orden de compra'}
+                      </button>
+                      <button className="btn btn-ghost" disabled={planning || !sourceSede || availableSources.length === 0} title={availableSources.length === 0 ? 'No hay stock disponible en otra sede' : undefined} onClick={() => void handleSupplyPlan('TRASLADO')}>
+                        Gestionar por traslado
+                      </button>
+                    </div>
+                  </>
+                )}
+              </section>
+            )}
+
+            {selected.estado === 'ENVIADO' && selectedShortages.length === 0 && selected.abastecimiento && (
+              <div role="status" style={{ margin: '0 22px 16px', padding: '12px 14px', borderRadius: 10, background: '#ECFDF5', border: '1px solid #A7F3D0', color: '#065F46', fontSize: 12.5 }}>
+                El stock ya cubre todo el requerimiento. Puedes confirmarlo; el movimiento volverá a validar las existencias de forma atómica.
+              </div>
+            )}
+
             {/* Action zone */}
             {selected.estado === 'ENVIADO' && (
               <div style={{ padding: '14px 22px', borderTop: '1px solid #E4E4E7', background: action ? (action === 'confirm' ? '#F0FDF4' : '#FFF5F5') : '#FAFAFA' }}>
@@ -196,7 +349,9 @@ export default function RequerimientosView({ onToast }: Props) {
                   <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                     <button className="btn btn-ghost" onClick={() => { setSelected(null); }}>Cerrar</button>
                     <button className="btn btn-danger" style={{ padding: '8px 20px' }} onClick={() => setAction('reject')}>Rechazar solicitud</button>
-                    <button className="btn btn-primary" style={{ padding: '8px 20px', background: '#059669', border: 'none' }} onClick={() => setAction('confirm')}>Confirmar solicitud</button>
+                    <button className="btn btn-primary" disabled={selectedShortages.length > 0} title={selectedShortages.length > 0 ? 'Gestiona los faltantes antes de confirmar' : undefined} style={{ padding: '8px 20px', background: '#059669', border: 'none' }} onClick={() => setAction('confirm')}>
+                      {selectedShortages.length > 0 ? 'Pendiente de abastecimiento' : 'Confirmar solicitud'}
+                    </button>
                   </div>
                 ) : (
                   <div>

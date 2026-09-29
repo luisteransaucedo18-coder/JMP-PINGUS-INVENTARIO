@@ -1,5 +1,6 @@
 import { useAppStore } from '../../store/AppContext';
 import { SEDES } from '../../data/mockData';
+import { obtenerFaltantesRequerimiento } from '../../utils/requirementStock';
 
 const SEDE_COLOR: Record<string, string> = { Chiclayo: '#2563EB', Chimbote: '#059669', Trujillo: '#7C3AED' };
 
@@ -9,6 +10,9 @@ export default function CoordinadorDashboard({ onNav }: Props) {
   const { state } = useAppStore();
   const pendientes = state.requerimientos.filter(r => r.estado === 'ENVIADO');
   const alertas = state.materials.filter(m => m.estado !== 'OK');
+  const requerimientosSinStock = pendientes.filter(
+    requirement => obtenerFaltantesRequerimiento(requirement, state.materials).length > 0,
+  );
 
   return (
     <div className="coordinator-dashboard" style={{ padding: 24, overflowY: 'auto', flex: 1 }}>
@@ -20,7 +24,7 @@ export default function CoordinadorDashboard({ onNav }: Props) {
       <div className="coordinator-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
         {[
           { label: 'Por confirmar', value: pendientes.length, sub: 'solicitudes enviadas', color: '#D97706', bg: '#FEF3C7', nav: 'requerimientos' },
-          { label: 'Confirmadas hoy', value: state.requerimientos.filter(r => r.estado === 'CONFIRMADO' && r.fechaConfirmacion === new Date().toISOString().split('T')[0]).length, sub: 'aprobadas', color: '#059669', bg: '#CCFBF1', nav: null },
+          { label: 'Necesitan abastecimiento', value: requerimientosSinStock.length, sub: 'compra o traslado', color: '#C2410C', bg: '#FFEDD5', nav: 'requerimientos' },
           { label: 'SKU en catálogo', value: state.materials.length, sub: 'materiales registrados', color: '#2563EB', bg: '#DBEAFE', nav: 'inventario' },
           { label: 'Alertas de stock', value: alertas.length, sub: 'bajo / crítico / agotado', color: '#DC2626', bg: '#FEE2E2', nav: 'inventario' },
         ].map(({ label, value, sub, color, bg, nav }) => (

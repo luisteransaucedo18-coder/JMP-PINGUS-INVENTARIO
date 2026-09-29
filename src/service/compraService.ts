@@ -63,3 +63,11 @@ export async function confirmarCompra(id: string, notaCompra?: string) {
   });
   if (error) throw error;
 }
+
+export async function cancelarCompra(id: string, motivo: string) {
+  const { error } = await supabase.rpc('cancelar_orden_compra', {
+    p_id: id,
+    p_motivo: motivo.trim(),
+  });
+  if (error) throw error;
+}

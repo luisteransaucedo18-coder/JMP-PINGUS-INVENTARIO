@@ -253,12 +253,12 @@ function renderView(role: Role, view: string, onToast: (m: string) => void, onNa
     if (view === 'devoluciones') return <DevolucionesView onToast={onToast} />;
     if (view === 'inventario') return <InventarioView role={role} onToast={onToast} />;
     if (view === 'nueva-compra') return <NuevaCompraView onToast={onToast} onNav={onNav} />;
-    if (view === 'mis-compras') return <MisComprasView usuario={usuario} onNav={onNav} />;
+    if (view === 'mis-compras') return <MisComprasView usuario={usuario} onNav={onNav} onToast={onToast} />;
   }
   if (role === 'coordinador') {
     if (view === 'transporte') return <TransporteInternoView onToast={onToast} />;
     if (view === 'dashboard' || !view) return <CoordinadorDashboard onNav={onNav} />;
-    if (view === 'requerimientos') return <RequerimientosView onToast={onToast} />;
+    if (view === 'requerimientos') return <RequerimientosView onToast={onToast} onNav={onNav} />;
     if (view === 'proyectos') return <ProyectosView role={role} onToast={onToast} />;
     if (view === 'entregas') return <EntregasView onToast={onToast} usuario={usuario} />;
     if (view === 'devoluciones') return <DevolucionesView onToast={onToast} />;

@@ -9,7 +9,7 @@ interface Props { onToast: (m: string) => void; }
 
 const E_COLOR: Record<EstadoCompra, string> = { BORRADOR: '#8B8FA8', ENVIADO: '#D97706', APROBADO: '#2563EB', COMPRADO: '#059669', RECHAZADO: '#DC2626' };
 const E_BG:    Record<EstadoCompra, string> = { BORRADOR: '#F4F4F5', ENVIADO: '#FEF3C7', APROBADO: '#DBEAFE', COMPRADO: '#CCFBF1', RECHAZADO: '#FEE2E2' };
-const E_LABEL: Record<EstadoCompra, string> = { BORRADOR: 'Borrador', ENVIADO: 'Pendiente aprobación', APROBADO: 'Aprobado — por comprar', COMPRADO: 'Comprado e ingresado', RECHAZADO: 'Rechazado' };
+const E_LABEL: Record<EstadoCompra, string> = { BORRADOR: 'Borrador', ENVIADO: 'Pendiente aprobación', APROBADO: 'Aprobado — por comprar', COMPRADO: 'Comprado e ingresado', RECHAZADO: 'Cancelada' };
 
 type ModalMode = 'detail' | 'approve' | 'reject' | 'confirm';
 
@@ -47,15 +47,15 @@ export default function ComprasView({ onToast }: Props) {
     }
   };
   const doReject = async (c: RequerimientoCompra) => {
-    if (!obs.trim()) { onToast('⚠ Indica el motivo del rechazo'); return; }
+    if (!obs.trim()) { onToast('⚠ Indica el motivo de la cancelación'); return; }
     if (!c.uuid) return onToast('La orden no tiene un identificador persistido. Actualiza la lista.');
     try {
       await revisarCompra(c.uuid, false, obs);
       await refreshRemoteData();
-      onToast(`Orden ${c.id} rechazada`);
+      onToast(`Orden ${c.id} cancelada`);
       closeModal();
     } catch (error) {
-      onToast(error instanceof Error ? error.message : 'No se pudo rechazar la orden');
+      onToast(error instanceof Error ? error.message : 'No se pudo cancelar la orden');
     }
   };
   const doConfirm = async (c: RequerimientoCompra) => {
@@ -88,7 +88,7 @@ export default function ComprasView({ onToast }: Props) {
           ['ENVIADO',  'Pendientes',    '#D97706', '#FEF3C7'],
           ['APROBADO', 'Aprobadas',     '#2563EB', '#DBEAFE'],
           ['COMPRADO', 'Completadas',   '#059669', '#CCFBF1'],
-          ['RECHAZADO','Rechazadas',    '#DC2626', '#FEE2E2'],
+          ['RECHAZADO','Canceladas',    '#DC2626', '#FEE2E2'],
           ['',         'Total órdenes', '#8B8FA8', '#F8F9FF'],
         ] as [EstadoCompra | '', string, string, string][]).map(([est, label, color, bg]) => {
           const cnt = est ? state.compras.filter(c => c.estado === est).length : state.compras.length;
@@ -166,13 +166,14 @@ export default function ComprasView({ onToast }: Props) {
                     <div style={{ display: 'flex', gap: 5 }}>
                       {c.estado === 'ENVIADO' && <>
                         <button className="btn btn-primary" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => openModal(c, 'approve')}>Aprobar</button>
-                        <button className="btn btn-danger" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => openModal(c, 'reject')}>Rechazar</button>
+                        <button className="btn btn-danger" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => openModal(c, 'reject')}>Cancelar</button>
                       </>}
-                      {c.estado === 'APROBADO' && (
+                      {c.estado === 'APROBADO' && (<>
+                        <button className="btn btn-danger" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => openModal(c, 'reject')}>Cancelar</button>
                         <button className="btn btn-primary" style={{ padding: '4px 12px', fontSize: 11, background: '#059669', boxShadow: '0 2px 8px rgba(5,150,105,0.3)', display: 'flex', alignItems: 'center', gap: 4 }} onClick={() => openModal(c, 'confirm')}>
                           <svg width="11" height="11" viewBox="0 0 15 15" fill="none"><path d="M2 7.5l3.5 3.5 7-7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg> Confirmar compra
                         </button>
-                      )}
+                      </>)}
                     </div>
                   </td>
                 </tr>
@@ -306,14 +307,14 @@ export default function ComprasView({ onToast }: Props) {
                 )}
                 {mode === 'reject' && (
                   <>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#DC2626', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}><svg width="12" height="12" viewBox="0 0 15 15" fill="none"><path d="M2.5 2.5l10 10M12.5 2.5l-10 10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg> Rechazar orden de compra</div>
-                    <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#8B8FA8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Motivo del rechazo <span style={{ color: '#DC2626' }}>*</span></label>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#DC2626', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}><svg width="12" height="12" viewBox="0 0 15 15" fill="none"><path d="M2.5 2.5l10 10M12.5 2.5l-10 10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg> Cancelar orden de compra</div>
+                    <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#8B8FA8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Motivo de la cancelación <span style={{ color: '#DC2626' }}>*</span></label>
                     <textarea className="input-field" rows={2} style={{ resize: 'none', fontFamily: 'inherit', borderColor: '#FECACA' }}
-                      placeholder="Explica el motivo del rechazo…"
+                      placeholder="Explica el motivo de la cancelación…"
                       value={obs} onChange={e => setObs(e.target.value)} />
                     <div style={{ display: 'flex', gap: 10, marginTop: 12, justifyContent: 'flex-end' }}>
                       <button className="btn btn-ghost" onClick={() => setMode('detail')}>← Volver</button>
-                      <button className="btn btn-danger" style={{ padding: '9px 22px', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => doReject(selected)}><svg width="12" height="12" viewBox="0 0 15 15" fill="none"><path d="M2.5 2.5l10 10M12.5 2.5l-10 10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg> Rechazar</button>
+                      <button className="btn btn-danger" style={{ padding: '9px 22px', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => doReject(selected)}><svg width="12" height="12" viewBox="0 0 15 15" fill="none"><path d="M2.5 2.5l10 10M12.5 2.5l-10 10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg> Cancelar orden</button>
                     </div>
                   </>
                 )}
@@ -365,11 +366,14 @@ export default function ComprasView({ onToast }: Props) {
               <div style={{ padding: '14px 24px', borderTop: '1px solid #F0F2FF', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
                 <button className="btn btn-ghost" onClick={closeModal}>Cerrar</button>
                 {selected.estado === 'ENVIADO' && <>
-                  <button className="btn btn-danger" style={{ padding: '8px 18px' }} onClick={() => setMode('reject')}>Rechazar</button>
+                  <button className="btn btn-danger" style={{ padding: '8px 18px' }} onClick={() => setMode('reject')}>Cancelar</button>
                   <button className="btn btn-primary" style={{ padding: '8px 18px', background: '#059669', boxShadow: '0 2px 8px rgba(5,150,105,0.28)' }} onClick={() => setMode('approve')}>Aprobar</button>
                 </>}
                 {selected.estado === 'APROBADO' && (
-                  <button className="btn btn-primary" style={{ padding: '8px 20px', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => setMode('confirm')}><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 2L22 7.5V16.5L12 22L2 16.5V7.5L12 2z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><path d="M12 2v20M2 7.5l10 5 10-5" stroke="currentColor" strokeWidth="1.5"/></svg> Confirmar compra</button>
+                  <>
+                    <button className="btn btn-danger" style={{ padding: '8px 18px' }} onClick={() => setMode('reject')}>Cancelar</button>
+                    <button className="btn btn-primary" style={{ padding: '8px 20px', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => setMode('confirm')}><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 2L22 7.5V16.5L12 22L2 16.5V7.5L12 2z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><path d="M12 2v20M2 7.5l10 5 10-5" stroke="currentColor" strokeWidth="1.5"/></svg> Confirmar compra</button>
+                  </>
                 )}
               </div>
             )}

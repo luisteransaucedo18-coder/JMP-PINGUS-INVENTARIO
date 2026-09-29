@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '../store/AppContext';
 import { Role } from '../data/mockData';
+import { obtenerFaltantesRequerimiento } from '../utils/requirementStock';
 
 /* ── Notification shape ── */
 export interface Notif {
@@ -40,6 +41,23 @@ export function useNotifications(role: Role, userName: string): Notif[] {
   const notifs: Notif[] = [];
 
   if (role === 'coordinador') {
+    const shortageReqs = state.requerimientos.filter(
+      r => r.estado === 'ENVIADO' && obtenerFaltantesRequerimiento(r, state.materials).length > 0,
+    );
+    if (shortageReqs.length > 0) {
+      const totalItems = shortageReqs.reduce(
+        (total, requirement) => total + obtenerFaltantesRequerimiento(requirement, state.materials).length,
+        0,
+      );
+      notifs.push({
+        id: `coord-shortage-${shortageReqs.map(r => `${r.id}:${r.abastecimiento?.estado ?? 'PENDIENTE'}`).join('|')}`,
+        type: 'danger',
+        title: `${shortageReqs.length} requerimiento${shortageReqs.length === 1 ? '' : 's'} sin stock suficiente`,
+        body: `${totalItems} material${totalItems === 1 ? '' : 'es'} requieren compra o traslado interno antes de confirmar.`,
+        date: shortageReqs[0]?.fecha ?? '',
+        ref: shortageReqs.map(r => r.codigo ?? r.id).join(', '),
+      });
+    }
     /* Pending reqs */
     const pendingReqs = state.requerimientos.filter(r => r.estado === 'ENVIADO');
     if (pendingReqs.length > 0) {
@@ -175,8 +193,8 @@ export function useNotifications(role: Role, userName: string): Notif[] {
       notifs.push({
         id: `ana-compra-rej-${c.id}`,
         type: 'danger',
-        title: 'Orden de compra rechazada',
-        body: `${c.id}${c.observaciones ? ': ' + c.observaciones : ' — fue rechazada por el coordinador.'}.`,
+        title: 'Orden de compra cancelada',
+        body: `${c.id}${c.observaciones ? ': ' + c.observaciones : ' — fue cancelada.'}.`,
         date: c.fecha,
         ref: c.id,
       });
