@@ -1,5 +1,5 @@
 import { useAppStore } from '../../store/AppContext';
-import { SEDES } from '../../data/mockData';
+import { SEDES } from '../../domain/types';
 import { obtenerFaltantesRequerimiento } from '../../utils/requirementStock';
 
 const SEDE_COLOR: Record<string, string> = { Chiclayo: '#2563EB', Chimbote: '#059669', Trujillo: '#7C3AED' };

@@ -1,4 +1,4 @@
-import type { Material, Requerimiento, Sede } from '../data/mockData';
+import type { Material, Requerimiento, Sede } from '../domain/types';
 
 export interface FaltanteRequerimiento {
   sku: string;

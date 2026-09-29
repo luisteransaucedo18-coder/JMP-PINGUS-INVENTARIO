@@ -1,5 +1,5 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage, type RGB } from 'pdf-lib';
-import type { Entrega, Material, Requerimiento } from '../data/mockData';
+import type { Entrega, Material, Requerimiento } from '../domain/types';
 
 export const REQUIREMENT_PDF_LOGO = '/templates/pedido-materiales-logo.jpg';
 const COMPANY = 'JM-PINGUS SAC';

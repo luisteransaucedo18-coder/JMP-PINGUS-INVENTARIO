@@ -1,5 +1,5 @@
 import { useAppStore } from '../../store/AppContext';
-import { SEDES, Sede } from '../../data/mockData';
+import { SEDES, Sede } from '../../domain/types';
 
 const SEDE_COLOR: Record<Sede, string> = { Chiclayo: '#2563EB', Chimbote: '#059669', Trujillo: '#7C3AED' };
 const SEDE_BG: Record<Sede, string>    = { Chiclayo: '#DBEAFE', Chimbote: '#CCFBF1', Trujillo: '#F3E8FF' };

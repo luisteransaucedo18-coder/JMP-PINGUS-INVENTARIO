@@ -1,4 +1,4 @@
-import { Material, Sede, SEDES } from '../data/mockData';
+import { Material, Sede, SEDES } from '../domain/types';
 
 const CATEGORIA_COLORS: Record<string, { bg: string; accent: string; icon: string }> = {
   'Gas Natural': { bg: 'linear-gradient(135deg, #1D4ED8 0%, #2563EB 50%, #3B82F6 100%)', accent: '#93C5FD', icon: '⬟' },

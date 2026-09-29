@@ -1,4 +1,4 @@
-import type { Material } from '../data/mockData';
+import type { Material } from '../domain/types';
 
 export function searchMaterials(materials: Material[], query: string, limit: number, minLength = 0) {
   const normalized = query.trim().toLowerCase();

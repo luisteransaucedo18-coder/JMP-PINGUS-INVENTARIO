@@ -75,8 +75,8 @@ Pendiente operativo: comprobar el flujo de extremo a extremo en el navegador con
 - `src/components/Sidebar.tsx`: entrada del menú de coordinador.
 - `src/views/coordinador/CoordinadorDashboard.tsx`: acceso desde el panel.
 - `src/views/coordinador/TransporteInternoView.tsx` y `.css`: listado, filtros, formulario, detalle, recepción, archivos, incidencias y línea de tiempo, con adaptación móvil.
-- `src/service/transporteService.ts`: consultas reales, RPC y Storage.
-- `src/service/transporteValidation.ts`: validaciones de cantidad y archivo.
+- `src/services/transporteService.ts`: consultas reales, RPC y Storage.
+- `src/services/transporteValidation.ts`: validaciones de cantidad y archivo.
 - `supabase/migrations/20260929141950_transporte_interno.sql`: tablas, permisos, RPC atómicas, Storage y protección de perfiles.
 - `tests/transporte.test.mjs`: suite SQL, archivos y concurrencia.
 - `package.json`, `package-lock.json`, `pnpm-lock.yaml`: comando de pruebas y dependencia de desarrollo PGlite fijada a 0.5.8.

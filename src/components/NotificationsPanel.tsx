@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '../store/AppContext';
-import { Role } from '../data/mockData';
+import { Role } from '../domain/types';
 import { obtenerFaltantesRequerimiento } from '../utils/requirementStock';
 
 /* ── Notification shape ── */

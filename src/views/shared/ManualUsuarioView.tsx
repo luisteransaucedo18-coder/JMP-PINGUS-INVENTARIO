@@ -1,4 +1,4 @@
-import { Role } from '../../data/mockData';
+import { Role } from '../../domain/types';
 
 type ManualSection = {
   title: string;

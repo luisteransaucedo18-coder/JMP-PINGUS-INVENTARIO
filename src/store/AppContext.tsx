@@ -1,10 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useReducer, useState, type ReactNode } from 'react';
-import type { Entrega, Material, Proyecto, Requerimiento, RequerimientoCompra } from '../data/mockData';
-import { obtenerCompras } from '../service/compraService';
-import { obtenerEntregas } from '../service/devolucionService';
-import { obtenerMateriales } from '../service/materialService';
-import { obtenerProyectos, obtenerRequerimientos } from '../service/requerimientoService';
-import { supabase } from '../service/supabase';
+import type { Entrega, Material, Proyecto, Requerimiento, RequerimientoCompra } from '../domain/types';
+import { obtenerCompras } from '../services/compraService';
+import { obtenerEntregas } from '../services/devolucionService';
+import { obtenerMateriales } from '../services/materialService';
+import { obtenerProyectos, obtenerRequerimientos } from '../services/requerimientoService';
+import { supabase } from '../services/supabase';
 
 interface AppState {
   materials: Material[];

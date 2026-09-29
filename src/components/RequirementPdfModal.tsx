@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Entrega, Material, Requerimiento } from '../data/mockData';
+import type { Entrega, Material, Requerimiento } from '../domain/types';
 import PdfDocumentViewer from './PdfDocumentViewer';
 import { createRequirementPdf, REQUIREMENT_PDF_LOGO } from '../utils/requirementPdf';
 

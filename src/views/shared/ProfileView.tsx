@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAppStore } from '../../store/AppContext';
-import { Role, SEDES, Sede } from '../../data/mockData';
+import { Role, SEDES, Sede } from '../../domain/types';
 
 const ROLE_LABEL: Record<Role, string> = { gerente: 'Gerente General', analista: 'Analista de Campo', coordinador: 'Coordinador de Almacén' };
 const ROLE_COLOR: Record<Role, { bg: string; text: string; grad: string }> = {

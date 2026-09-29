@@ -1,4 +1,4 @@
-import { supabase } from '../service/supabase';
+import { supabase } from '../services/supabase';
 
 const { data: logo } = supabase.storage
   .from('JMP')

@@ -1,4 +1,4 @@
-import { Requerimiento } from "../data/mockData"
+import { Requerimiento } from "../domain/types"
 
 interface Props {
   requirement: Pick<Requerimiento, "estado" | "fecha" | "fechaConfirmacion">

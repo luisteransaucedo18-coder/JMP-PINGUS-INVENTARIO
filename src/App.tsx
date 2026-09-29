@@ -1,74 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Role } from './data/mockData';
+import type { Role } from './domain/types';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
-import { supabase, supabaseConfigError } from './service/supabase';
+import { supabase, supabaseConfigError } from './services/supabase';
 import { ASSETS } from './config/assets';
 import { AppProvider } from './store/AppContext';
 import WorkspaceGate from './components/WorkspaceTransition';
-
-import GerenteDashboard from './views/gerente/GerenteDashboard';
-import ReportesView from './views/gerente/ReportesView';
-import ConsultaGerenteView, { type ConsultaGerente } from './views/gerente/ConsultaGerenteView';
-import AnalistaDashboard from './views/analista/AnalistaDashboard';
-import NuevaSolicitudView from './views/analista/NuevaSolicitudView';
-import MisSolicitudesView from './views/analista/MisSolicitudesView';
-import CoordinadorDashboard from './views/coordinador/CoordinadorDashboard';
-import TransporteInternoView from './views/coordinador/TransporteInternoView';
-import RequerimientosView from './views/coordinador/RequerimientosView';
-import InventarioView from './views/shared/InventarioView';
-import ProyectosView from './views/shared/ProyectosView';
-import EntregasView from './views/shared/EntregasView';
-import UsuariosView from './views/admin/UsuariosView';
-import ProfileView from './views/shared/ProfileView';
-import ManualUsuarioView from './views/shared/ManualUsuarioView';
 import NotificationsPanel, { useNotifications } from './components/NotificationsPanel';
-import NuevaCompraView from './views/analista/NuevaCompraView';
-import MisComprasView from './views/analista/MisComprasView';
-import ComprasView from './views/coordinador/ComprasView';
-import DevolucionesView from './views/shared/DevolucionesView';
-
-
-const VIEW_TITLES: Record<string, Record<string, { title: string; subtitle?: string }>> = {
-  perfil: { perfil: { title: 'Mi Perfil', subtitle: 'Información personal, seguridad y actividad reciente' } },
-  gerente: {
-    dashboard:  { title: 'Dashboard General', subtitle: 'Resumen ejecutivo del sistema' },
-    inventario: { title: 'Inventario', subtitle: 'Stock por sede — solo lectura' },
-    reportes:   { title: 'Reportes', subtitle: 'Análisis de requerimientos, stock e indicadores operativos' },
-    proyectos:  { title: 'Proyectos', subtitle: 'Todos los proyectos registrados' },
-    requerimientos: { title: 'Requerimientos', subtitle: 'Consulta general de solicitudes — solo lectura' },
-    compras: { title: 'Órdenes de Compra', subtitle: 'Seguimiento de compras — solo lectura' },
-    entregas: { title: 'Entregas', subtitle: 'Historial de entregas — solo lectura' },
-    devoluciones: { title: 'Devoluciones', subtitle: 'Historial de devoluciones — solo lectura' },
-    transporte: { title: 'Transporte interno', subtitle: 'Movimientos entre sedes — solo lectura' },
-    usuarios: { title: 'Usuarios', subtitle: 'Directorio del sistema — solo lectura' },
-    manual:     { title: 'Manual de Usuario', subtitle: 'Funciones disponibles para el rol gerente' },
-  },
-  analista: {
-    dashboard:         { title: 'Mi Panel', subtitle: 'Resumen de mis solicitudes' },
-    'nueva-solicitud': { title: 'Nueva Solicitud', subtitle: 'Registrar requerimiento de materiales' },
-    'mis-solicitudes': { title: 'Mis Solicitudes', subtitle: 'Historial de requerimientos enviados' },
-    proyectos:         { title: 'Proyectos', subtitle: 'Gestionar y buscar proyectos' },
-    entregas:          { title: 'Entregas al Técnico', subtitle: 'Registrar entrega de materiales aprobados' },
-    devoluciones:      { title: 'Devoluciones', subtitle: 'Registrar materiales devueltos por el técnico' },
-    inventario:        { title: 'Inventario', subtitle: 'Consulta de existencias por sede' },
-    'nueva-compra':    { title: 'Nueva Solicitud de Compra', subtitle: 'Solicitar compra de materiales faltantes' },
-    'mis-compras':     { title: 'Mis Órdenes de Compra', subtitle: 'Seguimiento de solicitudes de compra' },
-    manual:            { title: 'Manual de Usuario', subtitle: 'Funciones disponibles para el rol analista' },
-  },
-  coordinador: {
-    transporte: { title: 'Transporte interno', subtitle: 'Control de mercadería entre sedes' },
-    dashboard:      { title: 'Panel de Coordinación', subtitle: 'Gestión de requerimientos e inventario' },
-    requerimientos: { title: 'Requerimientos', subtitle: 'Validar y confirmar solicitudes de analistas' },
-    proyectos:      { title: 'Proyectos', subtitle: 'Administrar proyectos y requerimientos' },
-    entregas:       { title: 'Entregas al Técnico', subtitle: 'Preparar y registrar entregas de materiales' },
-    devoluciones:   { title: 'Devoluciones', subtitle: 'Registrar materiales devueltos por el técnico' },
-    inventario:     { title: 'Inventario', subtitle: 'Catálogo de materiales — edición habilitada' },
-    usuarios:       { title: 'Gestión de Usuarios', subtitle: 'Crear, activar y desactivar cuentas' },
-    compras:        { title: 'Órdenes de Compra', subtitle: 'Aprobar solicitudes y confirmar ingresos de stock' },
-    manual:         { title: 'Manual de Usuario', subtitle: 'Funciones disponibles para el rol coordinador' },
-  },
-};
+import { getViewMeta } from './app/navigation';
+import ViewRouter from './app/ViewRouter';
 
 /* ─── Toast ─── */
 function Toast({ msg, onDismiss }: { msg: string; onDismiss: () => void }) {
@@ -241,44 +181,6 @@ const handleSubmit = async (e: React.FormEvent) => {
   );
 }
 
-/* ─── View router ─── */
-function renderView(role: Role, view: string, onToast: (m: string) => void, onNav: (v: string) => void, usuario: string, userEmail: string) {
-  if (view === 'perfil') return <ProfileView role={role} userName={usuario} userEmail={userEmail} onToast={onToast} />;
-  if (view === 'manual') return <ManualUsuarioView role={role} onNav={onNav} />;
-  if (role === 'gerente') {
-    if (view === 'dashboard' || !view) return <GerenteDashboard onNav={onNav} />;
-    if (view === 'inventario') return <InventarioView role={role} onToast={onToast} />;
-    if (view === 'reportes') return <ReportesView />;
-    if (view === 'proyectos') return <ProyectosView role={role} onToast={onToast} />;
-    if (['requerimientos', 'compras', 'entregas', 'devoluciones', 'transporte', 'usuarios'].includes(view)) {
-      return <ConsultaGerenteView type={view as ConsultaGerente} />;
-    }
-  }
-  if (role === 'analista') {
-    if (view === 'dashboard' || !view) return <AnalistaDashboard usuario={usuario} onNav={onNav} />;
-    if (view === 'nueva-solicitud') return <NuevaSolicitudView onToast={onToast} onNav={onNav} />;
-    if (view === 'mis-solicitudes') return <MisSolicitudesView usuario={usuario} onToast={onToast} onNav={onNav} />;
-    if (view === 'proyectos') return <ProyectosView role={role} onToast={onToast} />;
-    if (view === 'entregas') return <EntregasView onToast={onToast} usuario={usuario} />;
-    if (view === 'devoluciones') return <DevolucionesView onToast={onToast} />;
-    if (view === 'inventario') return <InventarioView role={role} onToast={onToast} />;
-    if (view === 'nueva-compra') return <NuevaCompraView onToast={onToast} onNav={onNav} />;
-    if (view === 'mis-compras') return <MisComprasView usuario={usuario} onNav={onNav} onToast={onToast} />;
-  }
-  if (role === 'coordinador') {
-    if (view === 'transporte') return <TransporteInternoView onToast={onToast} />;
-    if (view === 'dashboard' || !view) return <CoordinadorDashboard onNav={onNav} />;
-    if (view === 'requerimientos') return <RequerimientosView onToast={onToast} onNav={onNav} />;
-    if (view === 'proyectos') return <ProyectosView role={role} onToast={onToast} />;
-    if (view === 'entregas') return <EntregasView onToast={onToast} usuario={usuario} />;
-    if (view === 'devoluciones') return <DevolucionesView onToast={onToast} />;
-    if (view === 'inventario') return <InventarioView role={role} onToast={onToast} />;
-    if (view === 'usuarios') return <UsuariosView onToast={onToast} />;
-    if (view === 'compras') return <ComprasView onToast={onToast} />;
-  }
-  return <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#71717A' }}>Vista en construcción</div>;
-}
-
 /* ─── Inner app (needs AppContext) ─── */
 function AppShell({ session, onLogout }: { session: { role: Role; name: string; email: string }; onLogout: () => void }) {
   const [view, setView] = useState('dashboard');
@@ -288,9 +190,7 @@ function AppShell({ session, onLogout }: { session: { role: Role; name: string; 
   const notifications = useNotifications(session.role, session.name);
   const unread = notifications.filter(n => !readIds.has(n.id)).length;
 
-  const titles = view === 'perfil'
-    ? { title: 'Mi Perfil', subtitle: 'Información personal, seguridad y actividad reciente' }
-    : (VIEW_TITLES as any)[session.role]?.[view];
+  const titles = getViewMeta(session.role, view);
 
   return (
     <div className="app-shell" style={{ display: 'flex', height: '100dvh', overflow: 'hidden', background: 'linear-gradient(180deg, #FFFFFF 0%, #EFF6FF 48%, #2563EB 100%)', position: 'relative' }}>
@@ -305,7 +205,7 @@ function AppShell({ session, onLogout }: { session: { role: Role; name: string; 
           onBellClick={() => setNotifOpen(open => !open)}
         />
         <div className="app-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-          {renderView(session.role, view, msg => setToast(msg), setView, session.name, session.email)}
+          <ViewRouter role={session.role} view={view} onToast={msg => setToast(msg)} onNav={setView} userName={session.name} userEmail={session.email} />
         </div>
       </div>
       <NotificationsPanel

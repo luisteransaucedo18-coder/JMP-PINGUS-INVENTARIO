@@ -468,7 +468,7 @@ test("Storage privado: acceso por sede, adjunto validado, costo no despacha sin 
 })
 test("cliente valida extensión real, tamaño, firma y cantidades", async () => {
   const source = readFileSync(
-    new URL("../src/service/transporteValidation.ts", import.meta.url),
+    new URL("../src/services/transporteValidation.ts", import.meta.url),
     "utf8",
   ).replace("import { supabase } from './supabase';", "const supabase = {};")
   const { outputText } = ts.transpileModule(source, {

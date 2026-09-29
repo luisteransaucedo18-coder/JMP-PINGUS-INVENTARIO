@@ -1,50 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Role } from '../data/mockData';
+import type { Role } from '../domain/types';
 import { useAppStore } from '../store/AppContext';
 import { ASSETS } from '../config/assets';
+import { NAVIGATION_BY_ROLE, ROLE_LABELS, type NavigationIcon } from '../app/navigation';
 
-interface NavItem { id: string; label: string; icon: React.ReactNode; badge?: number | (() => number); }
-
-const navByRole: Record<Role, NavItem[]> = {
-  gerente: [
-    { id: 'dashboard',  label: 'Dashboard',   icon: <GridIcon /> },
-    { id: 'reportes',   label: 'Reportes',    icon: <ChartIcon /> },
-    { id: 'requerimientos', label: 'Requerimientos', icon: <DocIcon /> },
-    { id: 'compras', label: 'Compras', icon: <CartIcon /> },
-    { id: 'entregas', label: 'Entregas', icon: <InIcon /> },
-    { id: 'devoluciones', label: 'Devoluciones', icon: <ReturnIcon /> },
-    { id: 'transporte', label: 'Transporte interno', icon: <TransferIcon /> },
-    { id: 'proyectos',  label: 'Proyectos',   icon: <MapIcon /> },
-    { id: 'inventario', label: 'Inventario',  icon: <BoxIcon /> },
-    { id: 'usuarios', label: 'Usuarios', icon: <UsersIcon /> },
-  ],
-  analista: [
-    { id: 'dashboard',        label: 'Dashboard',         icon: <GridIcon /> },
-    { id: 'nueva-solicitud',  label: 'Nueva Solicitud',  icon: <PlusIcon /> },
-    { id: 'mis-solicitudes',  label: 'Mis Solicitudes',  icon: <ClipboardIcon /> },
-    { id: 'proyectos',        label: 'Proyectos',        icon: <MapIcon /> },
-    { id: 'entregas',         label: 'Entregas',         icon: <InIcon /> },
-    { id: 'devoluciones',     label: 'Devoluciones',     icon: <ReturnIcon /> },
-    { id: 'mis-compras',      label: 'Órdenes de Compra', icon: <CartIcon /> },
-    { id: 'inventario',       label: 'Inventario',       icon: <BoxIcon /> },
-  ],
-  coordinador: [
-    { id: 'dashboard',       label: 'Dashboard',        icon: <GridIcon /> },
-    { id: 'requerimientos',  label: 'Requerimientos',   icon: <DocIcon /> },
-    { id: 'compras',         label: 'Compras',          icon: <CartIcon /> },
-    { id: 'entregas',        label: 'Entregas',         icon: <InIcon /> },
-    { id: 'devoluciones',    label: 'Devoluciones',     icon: <ReturnIcon /> },
-    { id: 'transporte',      label: 'Transporte interno', icon: <TransferIcon /> },
-    { id: 'proyectos',       label: 'Proyectos',        icon: <MapIcon /> },
-    { id: 'inventario',      label: 'Inventario',       icon: <BoxIcon /> },
-    { id: 'usuarios',        label: 'Usuarios',         icon: <UsersIcon /> },
-  ],
-};
-
-const roleLabels: Record<Role, string> = {
-  gerente:     'Gerente',
-  analista:    'Analista',
-  coordinador: 'Coordinador',
+const NAV_ICONS: Record<NavigationIcon, React.ReactNode> = {
+  grid: <GridIcon />, chart: <ChartIcon />, document: <DocIcon />, cart: <CartIcon />,
+  delivery: <InIcon />, return: <ReturnIcon />, transfer: <TransferIcon />, map: <MapIcon />,
+  box: <BoxIcon />, users: <UsersIcon />, plus: <PlusIcon />, clipboard: <ClipboardIcon />,
 };
 
 const roleBadgeColors: Record<Role, { bg: string; text: string }> = {
@@ -62,7 +25,7 @@ export default function Sidebar({ role, activeView, onNav, onLogout, userName, u
   const { state } = useAppStore();
   const [hovered, setHovered] = useState(false);
   const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 768px)').matches);
-  const nav = navByRole[role];
+  const nav = NAVIGATION_BY_ROLE[role];
   const badge = roleBadgeColors[role];
   const pendingReqs    = state.requerimientos.filter(r => r.estado === 'ENVIADO').length;
   const pendingCompras = state.compras.filter(c => c.estado === 'ENVIADO').length;
@@ -108,11 +71,11 @@ export default function Sidebar({ role, activeView, onNav, onLogout, userName, u
             <div className="sidebar-role-label">Rol activo</div>
             <span className="sidebar-role-chip" style={{ background: badge.bg, color: badge.text }}>
               <span className="sidebar-role-signal" style={{ background: badge.text }} />
-              {roleLabels[role]}
+              {ROLE_LABELS[role]}
             </span>
           </>
         ) : (
-          <div className="sidebar-role-orb" title={roleLabels[role]} style={{ color: badge.text }}>
+          <div className="sidebar-role-orb" title={ROLE_LABELS[role]} style={{ color: badge.text }}>
             <span style={{ background: badge.text }} />
           </div>
         )}
@@ -127,7 +90,7 @@ export default function Sidebar({ role, activeView, onNav, onLogout, userName, u
           const badgeCount =
             (item.id === 'requerimientos' && role === 'coordinador') ? pendingReqs :
             (item.id === 'compras'        && role === 'coordinador') ? pendingCompras :
-            (typeof item.badge === 'number' ? item.badge : 0);
+            0;
           const isActive = activeView === item.id;
           return (
             <button
@@ -138,7 +101,7 @@ export default function Sidebar({ role, activeView, onNav, onLogout, userName, u
               onClick={() => onNav(item.id)}
             >
               <span className="sidebar-link-icon">
-                {item.icon}
+                {NAV_ICONS[item.icon]}
               </span>
               {expanded && (
                 <>
