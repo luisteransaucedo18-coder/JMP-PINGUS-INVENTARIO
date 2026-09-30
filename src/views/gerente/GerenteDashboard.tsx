@@ -99,9 +99,9 @@ function LineChart({ values, color, height = 110 }: { values: number[]; color: s
 }
 
 /* ── Card wrapper ── */
-function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+function Card({ children, style, className }: { children: React.ReactNode; style?: React.CSSProperties; className?: string }) {
   return (
-    <div style={{
+    <div className={className} style={{
       background: '#fff',
       borderRadius: 20,
       boxShadow: '0 4px 24px rgba(99,102,241,0.07)',
@@ -136,7 +136,6 @@ export default function GerenteDashboard({ onNav }: Props) {
   const enviados    = requerimientos.filter(r => r.estado === 'ENVIADO').length;
   const confirmados = requerimientos.filter(r => r.estado === 'CONFIRMADO').length;
   const rechazados  = requerimientos.filter(r => r.estado === 'RECHAZADO').length;
-  const borradores  = requerimientos.filter(r => r.estado === 'BORRADOR').length;
   const criticos    = materials.filter(m => m.estado === 'CRÍTICO' || m.estado === 'AGOTADO').length;
   const recentReqs  = [...requerimientos].sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 7);
 
@@ -153,28 +152,28 @@ export default function GerenteDashboard({ onNav }: Props) {
   const alerts = materials.filter(m => m.estado !== 'OK');
 
   return (
-    <div className="gerente-dashboard" style={{ padding: 24, overflowY: 'auto', flex: 1, background: '#EEF0FF', minHeight: '100%' }}>
+    <div className="gerente-dashboard" style={{ padding: 24, overflowY: 'auto', flex: 1, background: 'transparent', minHeight: '100%' }}>
 
       {/* ── Row 1: KPI strip ── */}
-      <div className="dashboard-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 14, marginBottom: 22 }}>
+      <div className="dashboard-kpi-grid manager-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 14, marginBottom: 22 }}>
         {[
-          { label: 'Total solicitudes', value: requerimientos.length, color: '#2563EB', bg: '#DBEAFE', icon: <svg width="16" height="16" viewBox="0 0 15 15" fill="none"><rect x="2" y="3" width="11" height="11" rx="1.5" stroke="#2563EB" strokeWidth="1.3"/><path d="M5 3V2.5A1.5 1.5 0 016.5 1h2A1.5 1.5 0 0110 2.5V3" stroke="#2563EB" strokeWidth="1.3"/><path d="M4.5 8h6M4.5 10.5h4" stroke="#2563EB" strokeWidth="1.3" strokeLinecap="round"/></svg> },
+          { label: 'Solicitudes visibles', value: requerimientos.length, color: '#2563EB', bg: '#DBEAFE', icon: <svg width="16" height="16" viewBox="0 0 15 15" fill="none"><rect x="2" y="3" width="11" height="11" rx="1.5" stroke="#2563EB" strokeWidth="1.3"/><path d="M5 3V2.5A1.5 1.5 0 016.5 1h2A1.5 1.5 0 0110 2.5V3" stroke="#2563EB" strokeWidth="1.3"/><path d="M4.5 8h6M4.5 10.5h4" stroke="#2563EB" strokeWidth="1.3" strokeLinecap="round"/></svg> },
           { label: 'Pendientes',        value: enviados,              color: '#D97706', bg: '#FEF3C7', icon: <svg width="16" height="16" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6" stroke="#D97706" strokeWidth="1.3"/><path d="M7.5 4v4l2.5 2" stroke="#D97706" strokeWidth="1.3" strokeLinecap="round"/></svg> },
           { label: 'Confirmadas',       value: confirmados,           color: '#059669', bg: '#CCFBF1', icon: <svg width="16" height="16" viewBox="0 0 15 15" fill="none"><path d="M2 7.5l3.5 3.5 7-7" stroke="#059669" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg> },
           { label: 'Rechazadas',        value: rechazados,            color: '#DC2626', bg: '#FEE2E2', icon: <svg width="16" height="16" viewBox="0 0 15 15" fill="none"><path d="M3 3l9 9M12 3l-9 9" stroke="#DC2626" strokeWidth="1.6" strokeLinecap="round"/></svg> },
           { label: 'SKU con alertas',   value: criticos,              color: criticos > 0 ? '#DC2626' : '#71717A', bg: criticos > 0 ? '#FEE2E2' : '#F4F4F5', icon: <svg width="16" height="16" viewBox="0 0 15 15" fill="none"><path d="M7.5 1L14 13H1L7.5 1z" stroke={criticos > 0 ? '#DC2626' : '#71717A'} strokeWidth="1.3" strokeLinejoin="round"/><path d="M7.5 5.5V9M7.5 10.5v.5" stroke={criticos > 0 ? '#DC2626' : '#71717A'} strokeWidth="1.5" strokeLinecap="round"/></svg> },
         ].map(({ label, value, color, bg, icon }) => (
-          <Card key={label} style={{ padding: '18px 20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <div style={{ width: 38, height: 38, borderRadius: 12, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15 }}>
+          <Card key={label} style={{ padding: '16px 18px' }} className="manager-kpi-card">
+            <div className="manager-kpi-heading">
+              <div className="manager-kpi-icon" style={{ background: bg }}>
                 {icon}
               </div>
-              <svg width="28" height="14" viewBox="0 0 28 14" fill="none">
+              <svg className="manager-kpi-sparkline" width="28" height="14" viewBox="0 0 28 14" fill="none" aria-hidden="true">
                 <polyline points="0,12 8,6 16,9 28,2" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity="0.6"/>
               </svg>
             </div>
-            <div style={{ fontSize: 30, fontWeight: 800, color, letterSpacing: '-0.03em', lineHeight: 1 }}>{value}</div>
-            <div style={{ fontSize: 11.5, color: '#8B8FA8', marginTop: 5, fontWeight: 500 }}>{label}</div>
+            <div className="manager-kpi-value" style={{ color }}>{value}</div>
+            <div className="manager-kpi-label">{label}</div>
           </Card>
         ))}
       </div>
@@ -310,10 +309,9 @@ export default function GerenteDashboard({ onNav }: Props) {
 
       {/* ── Row 4: Solicitudes distribution ── */}
       <Card style={{ padding: '22px 24px' }}>
-        <SectionHead title="Distribución de solicitudes por estado" />
-        <div className="dashboard-status-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 16 }}>
+        <SectionHead title="Distribución de solicitudes visibles por estado" />
+        <div className="dashboard-status-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 16 }}>
           {[
-            { label: 'Borrador',    count: borradores,  color: '#A1A1AA', bg: '#F4F4F5' },
             { label: 'Enviado',     count: enviados,     color: '#D97706', bg: '#FEF3C7' },
             { label: 'Confirmado',  count: confirmados,  color: '#059669', bg: '#CCFBF1' },
             { label: 'Rechazado',   count: rechazados,   color: '#DC2626', bg: '#FEE2E2' },

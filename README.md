@@ -985,6 +985,27 @@ Cuando exista conflicto entre una acción disponible visualmente y los permisos 
 
 ---
 
+# 29. Excepciones vigentes de acceso
+
+Las siguientes diferencias entre el comportamiento actual de Supabase y la matriz de permisos quedan **documentadas y aceptadas temporalmente**. Esta sección no autoriza a corregirlas ni a ampliar o reducir permisos de forma implícita. No modificar políticas RLS, funciones RPC ni permisos relacionados sin una solicitud y aprobación explícitas.
+
+## 29.1. Entregas
+
+- Actualmente, las políticas de lectura permiten a un Analista consultar entregas e ítems de entrega que no pertenecen a sus requerimientos.
+- La función `registrar_entrega` permite actualmente a un Analista registrar una entrega asociada a un requerimiento confirmado de otro usuario.
+- Este comportamiento se conserva por decisión del proyecto. No cambiarlo como parte de otros trabajos ni asumir que la interfaz limita el acceso real.
+- Cualquier cambio futuro requiere revisar conjuntamente la función RPC, RLS de `entregas` y RLS de `entrega_items`, y probar los roles involucrados antes de aplicarlo.
+
+## 29.2. Transporte interno
+
+- La interfaz ofrece al Gerente una vista de consulta de transporte, pero la política actual de la base de datos no le muestra traslados.
+- Se conserva esta diferencia por decisión del proyecto. No ampliar la lectura del Gerente ni cambiar los permisos de escritura sin aprobación explícita.
+- Cualquier cambio futuro debe validar por separado la lectura del Gerente y los permisos operativos del Coordinador.
+
+Estas excepciones describen el estado vigente observado; no deben interpretarse como un modelo recomendado de seguridad. Al modificarlas, actualizar esta sección y la matriz de permisos para que reflejen la política aprobada.
+
+---
+
 ## Stack relacionado
 
 ```text

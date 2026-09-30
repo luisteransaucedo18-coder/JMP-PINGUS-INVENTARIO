@@ -68,6 +68,33 @@ function mapMaterialDBToMaterial(m: MaterialDB): Material {
   }
 }
 
+async function obtenerStockSedes(materialSku: string): Promise<Material["stockSedes"]> {
+  const { data, error } = await supabase
+    .from("inventario_sedes")
+    .select("sede,stock")
+    .eq("material_sku", materialSku)
+
+  if (error) throw error
+
+  const stockSedes: Material["stockSedes"] = {
+    Chiclayo: 0,
+    Chimbote: 0,
+    Trujillo: 0,
+  }
+
+  for (const row of data ?? []) {
+    if (
+      row.sede === "Chiclayo" ||
+      row.sede === "Chimbote" ||
+      row.sede === "Trujillo"
+    ) {
+      stockSedes[row.sede as Sede] = Number(row.stock ?? 0)
+    }
+  }
+
+  return stockSedes
+}
+
 // ======================================================
 
 // OBTENER TODOS LOS MATERIALES
@@ -127,43 +154,21 @@ export async function obtenerMateriales(): Promise<Material[]> {
 // ======================================================
 
 export async function crearMaterial(material: Material) {
-  const { data, error } = await supabase
-
-    .from("materiales")
-
-    .insert([
-      {
-        sku: material.id,
-
-        nombre: material.nombre,
-
-        descripcion: material.descripcion,
-
-        categoria: material.categoria,
-
-        unidad: material.unidad,
-
-        marca: material.marca ?? null,
-
-        stock_chiclayo: material.stockSedes.Chiclayo,
-
-        stock_chimbote: material.stockSedes.Chimbote,
-
-        stock_trujillo: material.stockSedes.Trujillo,
-
-        minimo: material.minimo,
-
-        precio_unitario: material.precioUnitario,
-
-        estado: material.estado,
-
-        imagen: material.imagen ?? null,
-      },
-    ])
-
-    .select()
-
-    .single()
+  const { data, error } = await supabase.rpc("crear_material_con_inventario", {
+    p_material: {
+      sku: material.id,
+      nombre: material.nombre,
+      descripcion: material.descripcion,
+      categoria_id: Number(material.categoria),
+      unidad: material.unidad,
+      marca: material.marca ?? null,
+      stock_minimo: material.minimo,
+      precio_unitario: material.precioUnitario,
+      estado: material.estado,
+      imagen_url: material.imagen ?? null,
+    },
+    p_stock_sedes: material.stockSedes,
+  })
 
   if (error) {
     console.error("Error creando material:", error)
@@ -171,7 +176,10 @@ export async function crearMaterial(material: Material) {
     throw error
   }
 
-  return mapMaterialDBToMaterial(data as MaterialDB)
+  return {
+    ...mapMaterialDBToMaterial(data as MaterialDB),
+    stockSedes: material.stockSedes,
+  }
 }
 
 // ======================================================
@@ -185,9 +193,7 @@ export async function actualizarMaterial(
 
   cambios: Partial<Material>,
 ) {
-  const payload: Record<string, unknown> = {
-    updated_at: new Date().toISOString(),
-  }
+  const payload: Record<string, unknown> = {}
 
   if (cambios.nombre !== undefined) {
     payload.nombre = cambios.nombre
@@ -198,7 +204,7 @@ export async function actualizarMaterial(
   }
 
   if (cambios.categoria !== undefined) {
-    payload.categoria = cambios.categoria
+    payload.categoria_id = Number(cambios.categoria)
   }
 
   if (cambios.unidad !== undefined) {
@@ -210,7 +216,7 @@ export async function actualizarMaterial(
   }
 
   if (cambios.minimo !== undefined) {
-    payload.minimo = cambios.minimo
+    payload.stock_minimo = cambios.minimo
   }
 
   if (cambios.estado !== undefined) {
@@ -218,28 +224,14 @@ export async function actualizarMaterial(
   }
 
   if (cambios.imagen !== undefined) {
-    payload.imagen = cambios.imagen
+    payload.imagen_url = cambios.imagen
   }
 
-  if (cambios.stockSedes !== undefined) {
-    payload.stock_chiclayo = cambios.stockSedes.Chiclayo
-
-    payload.stock_chimbote = cambios.stockSedes.Chimbote
-
-    payload.stock_trujillo = cambios.stockSedes.Trujillo
-  }
-
-  const { data, error } = await supabase
-
-    .from("materiales")
-
-    .update(payload)
-
-    .eq("sku", id)
-
-    .select()
-
-    .single()
+  const { data, error } = await supabase.rpc("actualizar_material_con_inventario", {
+    p_sku: id,
+    p_campos: payload,
+    p_stock_sedes: cambios.stockSedes ?? null,
+  })
 
   if (error) {
     console.error("Error actualizando material:", error)
@@ -247,5 +239,8 @@ export async function actualizarMaterial(
     throw error
   }
 
-  return mapMaterialDBToMaterial(data as MaterialDB)
+  return {
+    ...mapMaterialDBToMaterial(data as MaterialDB),
+    stockSedes: cambios.stockSedes ?? await obtenerStockSedes(id),
+  }
 }
