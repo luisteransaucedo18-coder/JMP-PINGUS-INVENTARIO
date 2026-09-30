@@ -1132,10 +1132,13 @@ body {
   }
 
   .auth-mascot {
-    right: 12%;
-    width: 290px;
+    right: auto;
+    left: 50%;
+    width: min(290px, calc(100% - 24px));
+    height: auto;
+    max-width: 100%;
     max-height: 94%;
-    transform: none;
+    transform: translateX(-50%);
   }
 
   .auth-visual-caption {
@@ -1158,7 +1161,12 @@ body {
   .auth-card { border-radius: 18px; }
   .auth-visual { min-height: 170px; }
   .auth-form-logo { width: 132px; height: 44px; margin-bottom: 16px; }
-  .auth-mascot { right: 2%; width: 220px; }
+  .auth-mascot {
+    right: auto;
+    left: 50%;
+    width: min(220px, calc(100% - 16px));
+    transform: translateX(-50%);
+  }
   .auth-visual-caption { top: 72px; left: 20px; width: 145px; }
   .auth-visual-caption span { font-size: 9.5px; }
   .auth-visual-caption strong { font-size: 14px; }
