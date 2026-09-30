@@ -115,7 +115,7 @@ export default function ReportesView() {
                 : filteredReqs;
 
   return (
-    <div style={{ padding: 24, overflowY: 'auto', flex: 1, background: 'transparent', minHeight: '100%' }}>
+    <div className="manager-view-surface manager-reports-view" style={{ padding: 24, overflowY: 'auto', flex: 1, minHeight: '100%' }}>
 
       {/* Period selector */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>

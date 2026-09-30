@@ -1818,7 +1818,23 @@ body {
   }
 }
 
-/* ── Gerente dashboard ── */
+/* ── Superficie principal de las vistas del gerente ── */
+.manager-view-surface {
+  width: calc(100% - 48px);
+  margin: 0 24px 14px;
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(99, 102, 241, 0.07);
+}
+
+.manager-consultation-panel {
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.045);
+}
+
 .gerente-dashboard > div,
 .gerente-dashboard > div > div {
   min-width: 0;
@@ -1919,8 +1935,16 @@ body {
   }
 }
 
+@media (max-width: 768px) {
+  .app-scroll > .manager-view-surface {
+    width: auto !important;
+    margin: 0 12px 12px;
+    padding: 18px !important;
+  }
+}
+
 @media (max-width: 640px) {
-  .gerente-dashboard {
+  .manager-view-surface {
     padding: 14px !important;
   }
 

@@ -605,6 +605,7 @@ export default function InventarioView({
 
     return (
       <div
+        className={role === 'gerente' ? 'manager-view-surface manager-inventory-view' : undefined}
         style={{
           padding: 24,
           flex: 1,
@@ -628,6 +629,7 @@ export default function InventarioView({
   return (
 
     <div
+      className={role === 'gerente' ? 'manager-view-surface manager-inventory-view' : undefined}
       style={{
         padding: 24,
         overflowY: 'auto',

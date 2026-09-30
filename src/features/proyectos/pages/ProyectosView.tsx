@@ -90,7 +90,7 @@ function NewProyectoModal({ onSave, onClose }: { onSave: (p: Omit<Proyecto, 'id'
   );
 }
 
-function ProjectDetail({ proyecto, onBack }: { proyecto: Proyecto; onBack: () => void }) {
+function ProjectDetail({ proyecto, onBack, managerSurface = false }: { proyecto: Proyecto; onBack: () => void; managerSurface?: boolean }) {
   const { state } = useAppStore();
   const [search, setSearch] = useState('');
   const [estadoFilter, setEstadoFilter] = useState('');
@@ -108,7 +108,7 @@ function ProjectDetail({ proyecto, onBack }: { proyecto: Proyecto; onBack: () =>
   const pendientes = reqs.filter(r => r.estado === 'ENVIADO').length;
 
   return (
-    <div style={{ padding: 24, overflowY: 'auto', flex: 1 }}>
+    <div className={managerSurface ? 'manager-view-surface manager-projects-view' : undefined} style={{ padding: 24, overflowY: 'auto', flex: 1 }}>
       <button className="btn btn-ghost" style={{ marginBottom: 18, fontSize: 12 }} onClick={onBack}>
         ← Volver a proyectos
       </button>
@@ -294,10 +294,10 @@ export default function ProyectosView({ role, onToast }: Props) {
     void refreshRemoteData().catch(() => onToast('El proyecto fue creado; la lista se actualizará al recargar.'));
   };
 
-  if (selected) return <ProjectDetail proyecto={selected} onBack={() => setSelected(null)} />;
+  if (selected) return <ProjectDetail proyecto={selected} onBack={() => setSelected(null)} managerSurface={role === 'gerente'} />;
 
   return (
-    <div style={{ padding: 24, overflowY: 'auto', flex: 1 }}>
+    <div className={role === 'gerente' ? 'manager-view-surface manager-projects-view' : undefined} style={{ padding: 24, overflowY: 'auto', flex: 1 }}>
       {/* KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 22 }}>
         {SEDES.map(s => {

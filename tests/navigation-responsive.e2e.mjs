@@ -1,7 +1,7 @@
 // Runs against the existing Vite server with mocked Supabase HTTP responses; no real accounts or data are changed.
 // Usage: node tests/navigation-responsive.e2e.mjs (requires Playwright and Microsoft Edge).
-import { createRequire } from 'node:module';
-import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
+import assert from 'node:assert/strict';
 // Install Playwright separately, or set PLAYWRIGHT_PACKAGE_JSON to its package.json.
 const require = createRequire(process.env.PLAYWRIGHT_PACKAGE_JSON || `${process.cwd()}/package.json`);
 const { chromium } = require('playwright');
@@ -34,10 +34,10 @@ for (const role of (process.env.QA_ROLE ? [process.env.QA_ROLE] : ['gerente','an
   const mobile=width<=768;
   const trigger=page.getByRole('button',{name:'Abrir menú'});
   const dialog=page.getByRole('dialog');
-  assert.equal(await trigger.isVisible(),mobile);
-  assert.equal(await page.locator('.desktop-sidebar').isVisible(),!mobile);
-  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
-  const sidebar=mobile?page.locator('.mobile-sidebar'):page.locator('.desktop-sidebar');
+  assert.equal(await trigger.isVisible(),mobile);
+  assert.equal(await page.locator('.desktop-sidebar').isVisible(),!mobile);
+  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  const sidebar=mobile?page.locator('.mobile-sidebar'):page.locator('.desktop-sidebar');
   if(mobile){
    await trigger.click(); await dialog.waitFor();
    if(process.env.QA_SCREENSHOT) await page.screenshot({path:process.env.QA_SCREENSHOT});
@@ -61,11 +61,11 @@ for (const role of (process.env.QA_ROLE ? [process.env.QA_ROLE] : ['gerente','an
   } else { await sidebar.hover(); }
   assert.equal(await sidebar.locator('.sidebar-link').count(),{gerente:10,analista:8,coordinador:9}[role]);
   const labels=await sidebar.locator('.sidebar-link').evaluateAll(els=>els.map(el=>el.getAttribute('aria-label')));
-  for(const label of labels){
-   await sidebar.getByRole('button',{name:label,exact:true}).click();
-   if(mobile){assert.equal(await dialog.isVisible(),false); await trigger.click();}
-   assert.equal(await sidebar.getByRole('button',{name:label,exact:true}).getAttribute('aria-current'),'page');
-  }
+  for(const label of labels){
+   await sidebar.getByRole('button',{name:label,exact:true}).click();
+   if(mobile){assert.equal(await dialog.isVisible(),false); await trigger.click();}
+   assert.equal(await sidebar.getByRole('button',{name:label,exact:true}).getAttribute('aria-current'),'page');
+  }
   failLogout=true;
   await sidebar.getByRole('button',{name:'Cerrar sesión',exact:true}).click();
   assert(await sidebar.getByRole('button',{name:'Cerrando sesión',exact:false}).isDisabled());
