@@ -10,9 +10,9 @@ const ESTADO_BG: Record<string, string>    = { ENVIADO: '#FEF3C7', CONFIRMADO: '
 type Period = '7d' | '30d' | 'all';
 
 /* ── Shared card ── */
-function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+function Card({ children, style, className }: { children: React.ReactNode; style?: React.CSSProperties; className?: string }) {
   return (
-    <div style={{ background: '#fff', borderRadius: 20, boxShadow: '0 4px 24px rgba(99,102,241,0.07)', overflow: 'hidden', ...style }}>
+    <div className={className} style={{ background: '#fff', borderRadius: 20, boxShadow: '0 4px 24px rgba(99,102,241,0.07)', overflow: 'hidden', ...style }}>
       {children}
     </div>
   );
@@ -133,7 +133,7 @@ export default function ReportesView() {
       </div>
 
       {/* ── Row 1: KPI strip ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 22 }}>
+      <div className="manager-kpi-grid report-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 14, marginBottom: 22 }}>
         {[
           { label: 'Total solicitudes', value: totalReqs,       color: '#2563EB', bg: '#DBEAFE' },
           { label: 'Confirmadas',       value: confirmados,      color: '#059669', bg: '#CCFBF1' },
@@ -141,12 +141,14 @@ export default function ReportesView() {
           { label: 'Pendientes',        value: pendientes,       color: '#D97706', bg: '#FEF3C7' },
           { label: 'Tasa aprobación',   value: `${tasaAprobacion}%`, color: tasaAprobacion >= 70 ? '#059669' : tasaAprobacion >= 40 ? '#D97706' : '#DC2626', bg: '#F8F9FF' },
         ].map(({ label, value, color, bg }) => (
-          <Card key={label} style={{ padding: '18px 20px' }}>
-            <div style={{ width: 38, height: 38, borderRadius: 12, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
-              <div style={{ width: 12, height: 12, borderRadius: '50%', background: color }} />
+          <Card key={label} style={{ padding: '16px 18px' }} className="manager-kpi-card">
+            <div className="manager-kpi-heading">
+              <div className="manager-kpi-icon" style={{ background: bg }}>
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: color }} />
+              </div>
             </div>
-            <div style={{ fontSize: 30, fontWeight: 800, color, letterSpacing: '-0.03em', lineHeight: 1 }}>{value}</div>
-            <div style={{ fontSize: 11.5, color: '#8B8FA8', marginTop: 5, fontWeight: 500 }}>{label}</div>
+            <div className="manager-kpi-value" style={{ color }}>{value}</div>
+            <div className="manager-kpi-label">{label}</div>
           </Card>
         ))}
       </div>
