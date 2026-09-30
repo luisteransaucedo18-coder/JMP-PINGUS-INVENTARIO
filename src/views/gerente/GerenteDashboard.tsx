@@ -152,7 +152,7 @@ export default function GerenteDashboard({ onNav }: Props) {
   const alerts = materials.filter(m => m.estado !== 'OK');
 
   return (
-    <div className="gerente-dashboard" style={{ padding: 24, overflowY: 'auto', flex: 1, background: '#EEF0FF', minHeight: '100%' }}>
+    <div className="gerente-dashboard" style={{ padding: 24, overflowY: 'auto', flex: 1, background: 'transparent', minHeight: '100%' }}>
 
       {/* ── Row 1: KPI strip ── */}
       <div className="dashboard-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 14, marginBottom: 22 }}>
