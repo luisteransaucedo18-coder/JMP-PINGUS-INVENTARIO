@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 interface HeaderProps {
+  menuButton?: React.ReactNode;
   title: string;
   subtitle?: string;
   actions?: React.ReactNode;
@@ -10,7 +11,7 @@ interface HeaderProps {
   unreadCount?: number;
 }
 
-export default function Header({ title, subtitle, actions, userName, userInitials, onBellClick, unreadCount = 0 }: HeaderProps) {
+export default function Header({ menuButton, title, subtitle, actions, userName, userInitials, onBellClick, unreadCount = 0 }: HeaderProps) {
   const [search, setSearch] = useState('');
 
   return (
@@ -29,6 +30,7 @@ export default function Header({ title, subtitle, actions, userName, userInitial
       position: 'relative',
       zIndex: 10,
     }}>
+      {menuButton}
       {/* Title */}
       <div className="header-title" style={{ minWidth: 0, flex: '0 1 auto' }}>
         <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#1A1D23', letterSpacing: 0, lineHeight: 1.2 }}>{title}</h1>
@@ -64,14 +66,14 @@ export default function Header({ title, subtitle, actions, userName, userInitial
         />
       </div>
 
-      <div style={{ flex: 1 }} />
+      <div className="header-spacer" style={{ flex: 1 }} />
 
       {/* Action slot */}
       {actions && <div style={{ display: 'flex', alignItems: 'center' }}>{actions}</div>}
 
       {/* Notification bell */}
       <div style={{ position: 'relative', flexShrink: 0 }}>
-        <button onClick={onBellClick} style={{ width: 38, height: 38, borderRadius: 12, border: '1.5px solid #E8EAFF', background: '#F8F9FF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.1s' }}
+        <button aria-label="Notificaciones" onClick={onBellClick} style={{ width: 44, height: 44, borderRadius: 12, border: '1.5px solid #E8EAFF', background: '#F8F9FF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.1s' }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#EEF0FF'; (e.currentTarget as HTMLElement).style.borderColor = '#BFDBFE'; }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#F8F9FF'; (e.currentTarget as HTMLElement).style.borderColor = '#E8EAFF'; }}>
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1.5A4 4 0 0111.5 5.5V9l1.5 2H2L3.5 9V5.5A4 4 0 017.5 1.5z" stroke="#8B8FA8" strokeWidth="1.3"/><path d="M6 11a1.5 1.5 0 003 0" stroke="#8B8FA8" strokeWidth="1.3"/></svg>

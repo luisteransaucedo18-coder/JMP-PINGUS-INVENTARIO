@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Role } from './domain/types';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
+import MobileNavigation from './components/MobileNavigation';
 import { supabase, supabaseConfigError } from './services/supabase';
 import { ASSETS } from './config/assets';
 import { AppProvider } from './store/AppContext';
@@ -182,8 +183,20 @@ const handleSubmit = async (e: React.FormEvent) => {
 }
 
 /* ─── Inner app (needs AppContext) ─── */
-function AppShell({ session, onLogout }: { session: { role: Role; name: string; email: string }; onLogout: () => void }) {
+function AppShell({ session, onLogout, loggingOut, logoutError }: { loggingOut: boolean; logoutError: string; session: { role: Role; name: string; email: string }; onLogout: () => void }) {
   const [view, setView] = useState('dashboard');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuTrigger = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 768px)');
+    const sync = () => { if (!media.matches) setMenuOpen(false); };
+    media.addEventListener('change', sync);
+    return () => media.removeEventListener('change', sync);
+  }, []);
+  const navigate = (next: string) => { setView(next); setMenuOpen(false); };
+  const sidebarProps = { role: session.role, activeView: view, onNav: navigate, onLogout,
+    userName: session.name, userEmail: session.email, loggingOut, logoutError };
+
   const [toast, setToast] = useState<string | null>(null);
   const [notifOpen, setNotifOpen] = useState(false);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
@@ -194,9 +207,16 @@ function AppShell({ session, onLogout }: { session: { role: Role; name: string; 
 
   return (
     <div className="app-shell" style={{ display: 'flex', height: '100dvh', overflow: 'hidden', background: 'linear-gradient(180deg, #FFFFFF 0%, #EFF6FF 48%, #2563EB 100%)', position: 'relative' }}>
-      <Sidebar role={session.role} activeView={view} onNav={setView} onLogout={onLogout} userName={session.name} userEmail={session.email} />
+      <Sidebar {...sidebarProps} />
+      <MobileNavigation open={menuOpen} onClose={() => setMenuOpen(false)} triggerRef={menuTrigger}>
+        <Sidebar {...sidebarProps} mobile onClose={() => setMenuOpen(false)} />
+      </MobileNavigation>
       <div className="app-main" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '14px 0 0', gap: 12 }}>
         <Header
+          menuButton={<button ref={menuTrigger} className="mobile-menu-trigger" aria-label="Abrir menú"
+            aria-expanded={menuOpen} aria-controls="mobile-navigation" onClick={() => { setNotifOpen(false); setMenuOpen(true); }}>
+            <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+          </button>}
           title={titles?.title || 'Sistema de Gestión'}
           subtitle={titles?.subtitle}
           userName={session.name}
@@ -239,6 +259,8 @@ function ConfigurationErrorScreen() {
 export default function App() {
   const [session, setSession] = useState<{ role: Role; name: string; email: string } | null>(null);
   const [sessionError, setSessionError] = useState('');
+  const [loggingOut, setLoggingOut] = useState(false);
+  const logoutPending = useRef(false);
 
   useEffect(() => {
     if (supabaseConfigError) return;
@@ -256,17 +278,28 @@ export default function App() {
   };
 
   const logout = async () => {
-    const { error } = await supabase.auth.signOut({ scope: 'local' });
-    if (error) { setSessionError('No se pudo cerrar la sesión. Inténtalo nuevamente.'); return; }
-    setSession(null);
+    if (logoutPending.current) return;
+    logoutPending.current = true;
+    setLoggingOut(true);
     setSessionError('');
+    try {
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
+      if (error) throw error;
+      // Unmounting AppProvider clears inventory, notifications and view state.
+      setSession(null);
+    } catch {
+      setSessionError('No se pudo cerrar la sesión. Inténtalo nuevamente.');
+    } finally {
+      logoutPending.current = false;
+      setLoggingOut(false);
+    }
   };
 
   if (supabaseConfigError) return <ConfigurationErrorScreen />;
 
   return <>
-    {sessionError && <div role="alert" style={{ padding: 12, background: '#FEF2F2', color: '#B91C1C' }}>{sessionError}</div>}
-    {session ? <AppProvider key={session.email}><WorkspaceGate onLogout={() => void logout()}><AppShell session={session} onLogout={() => void logout()} /></WorkspaceGate></AppProvider>
+    {!session && sessionError && <div role="alert" className="sidebar-session-error">{sessionError} Si la sesión local ya se cerró, inicia sesión para reintentar.</div>}
+    {session ? <AppProvider key={session.email}><WorkspaceGate loggingOut={loggingOut} logoutError={sessionError} onLogout={() => void logout()}><AppShell loggingOut={loggingOut} logoutError={sessionError} session={session} onLogout={() => void logout()} /></WorkspaceGate></AppProvider>
       : <LoginScreen onLogin={handleLogin} />}
   </>;
 }

@@ -2,8 +2,8 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ASSETS } from '../config/assets';
 import { useAppStore } from '../store/AppContext';
 
-export function WorkspaceTransition({ ready, error = false, onRetry, onLogout, onComplete }: {
-  ready: boolean; error?: boolean; onRetry?: () => void; onLogout?: () => void; onComplete: () => void;
+export function WorkspaceTransition({ ready, error = false, onRetry, onLogout, loggingOut, logoutError, onComplete }: {
+  loggingOut?: boolean; logoutError?: string; ready: boolean; error?: boolean; onRetry?: () => void; onLogout?: () => void; onComplete: () => void;
 }) {
   const [progress, setProgress] = useState(8);
   const [minimumElapsed, setMinimumElapsed] = useState(false);
@@ -59,18 +59,19 @@ export function WorkspaceTransition({ ready, error = false, onRetry, onLogout, o
             <span style={{ transform: `scaleX(${progress / 100})` }} />
           </div>
           <p className="workspace-status" role="status">{error ? 'No pudimos cargar los datos. Inténtalo nuevamente.' : progress === 100 ? 'Todo listo. Bienvenido a JIP.' : 'Preparando tu espacio de trabajo…'}</p>
-          {error && <div className="workspace-actions"><button onClick={onRetry}>Reintentar</button><button onClick={onLogout}>Volver al acceso</button></div>}
+          {error && <div className="workspace-actions"><button onClick={onRetry}>Reintentar</button><button disabled={loggingOut} onClick={onLogout}>{loggingOut ? "Cerrando sesión…" : "Volver al acceso"}</button></div>}
+          {logoutError && <p role="alert">{logoutError}</p>}
         </div>
       </section>
     </main>
   );
 }
 
-export default function WorkspaceGate({ children, onLogout }: { children: ReactNode; onLogout: () => void }) {
+export default function WorkspaceGate({ children, onLogout, loggingOut, logoutError }: { children: ReactNode; onLogout: () => void; loggingOut?: boolean; logoutError?: string }) {
   const { initialLoad, retryInitialLoad } = useAppStore();
   const [complete, setComplete] = useState(false);
   if (complete) return children;
-  return <WorkspaceTransition ready={initialLoad === 'ready'} error={initialLoad === 'error'}
+  return <WorkspaceTransition loggingOut={loggingOut} logoutError={logoutError} ready={initialLoad === 'ready'} error={initialLoad === 'error'}
     onRetry={retryInitialLoad} onLogout={onLogout} onComplete={() => setComplete(true)} />;
 }
 

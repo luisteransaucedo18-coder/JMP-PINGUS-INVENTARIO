@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { Role } from '../domain/types';
 import { useAppStore } from '../store/AppContext';
 import { ASSETS } from '../config/assets';
@@ -16,43 +16,38 @@ const roleBadgeColors: Record<Role, { bg: string; text: string }> = {
   coordinador: { bg: '#CCFBF1', text: '#0F766E' },
 };
 
-interface Props { role: Role; activeView: string; onNav: (v: string) => void; onLogout: () => void; userName: string; userEmail: string; onProfile?: () => void; }
+interface Props { role: Role; activeView: string; onNav: (v: string) => void; onLogout: () => void; userName: string; userEmail: string; onProfile?: () => void; mobile?: boolean; onClose?: () => void; loggingOut?: boolean; logoutError?: string; }
 
 const COLLAPSED_W = 62;
 const EXPANDED_W  = 225;
 
-export default function Sidebar({ role, activeView, onNav, onLogout, userName, userEmail }: Props) {
+export default function Sidebar({ role, activeView, onNav, onLogout, userName, userEmail, mobile = false, onClose, loggingOut = false, logoutError }: Props) {
   const { state } = useAppStore();
   const [hovered, setHovered] = useState(false);
-  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 768px)').matches);
+
   const nav = NAVIGATION_BY_ROLE[role];
   const badge = roleBadgeColors[role];
   const pendingReqs    = state.requerimientos.filter(r => r.estado === 'ENVIADO').length;
   const pendingCompras = state.compras.filter(c => c.estado === 'ENVIADO').length;
   const initials = userName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
 
-  useEffect(() => {
-    const media = window.matchMedia('(max-width: 768px)');
-    const sync = () => setIsMobile(media.matches);
-    sync();
-    media.addEventListener('change', sync);
-    return () => media.removeEventListener('change', sync);
-  }, []);
-
-  const expanded = isMobile || hovered;
+  const expanded = mobile || hovered;
   const W = expanded ? EXPANDED_W : COLLAPSED_W;
 
   return (
     <aside
-      className="app-sidebar"
+      className={`app-sidebar${mobile ? " mobile-sidebar" : " desktop-sidebar"}`}
       data-expanded={expanded}
-      onMouseEnter={() => { if (!isMobile) setHovered(true); }}
-      onMouseLeave={() => { if (!isMobile) setHovered(false); }}
+      onFocus={() => setHovered(true)}
+      onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setHovered(false); }}
+      onMouseEnter={() => { if (!mobile) setHovered(true); }}
+      onMouseLeave={() => { if (!mobile) setHovered(false); }}
       style={{
         width: W,
         minWidth: W,
       }}
     >
+      {mobile && <button className="mobile-menu-close" aria-label="Cerrar menú" onClick={onClose}>×</button>}
       {/* Logo */}
       <div className="sidebar-logo">
         {expanded ? (
@@ -95,6 +90,7 @@ export default function Sidebar({ role, activeView, onNav, onLogout, userName, u
           return (
             <button
               key={item.id}
+              aria-label={item.label}
               title={!expanded ? item.label : undefined}
               className={`sidebar-link${isActive ? ' active' : ''}`}
               aria-current={isActive ? 'page' : undefined}
@@ -121,10 +117,11 @@ export default function Sidebar({ role, activeView, onNav, onLogout, userName, u
         })}
       </nav>
 
+      {logoutError && <p className="sidebar-session-error" role="alert">{logoutError}</p>}
       {/* Footer user */}
       <div className="sidebar-footer">
         <div className="sidebar-user">
-          <button className={`sidebar-user-avatar${activeView === 'perfil' ? ' active' : ''}`} title={!expanded ? userName : undefined} onClick={() => onNav('perfil')} style={{ background: badge.bg, color: badge.text }}>
+          <button aria-label={`Ver perfil de ${userName}`} className={`sidebar-user-avatar${activeView === 'perfil' ? ' active' : ''}`} title={!expanded ? userName : undefined} onClick={() => onNav('perfil')} style={{ background: badge.bg, color: badge.text }}>
             {initials}
           </button>
           {expanded && (
@@ -135,13 +132,13 @@ export default function Sidebar({ role, activeView, onNav, onLogout, userName, u
           )}
         </div>
         {expanded && (
-          <button className="sidebar-logout" onClick={onLogout}>
+          <button className="sidebar-logout" onClick={onLogout} disabled={loggingOut} aria-busy={loggingOut}>
             <LogoutIcon />
-            <span>Cerrar sesión</span>
+            <span>{loggingOut ? "Cerrando sesión…" : "Cerrar sesión"}</span>
           </button>
         )}
         {!expanded && (
-          <button className="sidebar-logout-compact" title="Cerrar sesión" onClick={onLogout}>
+          <button className="sidebar-logout-compact" aria-label={loggingOut ? "Cerrando sesión" : "Cerrar sesión"} title="Cerrar sesión" onClick={onLogout} disabled={loggingOut} aria-busy={loggingOut}>
             <LogoutIcon />
           </button>
         )}
