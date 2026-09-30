@@ -136,7 +136,6 @@ export default function GerenteDashboard({ onNav }: Props) {
   const enviados    = requerimientos.filter(r => r.estado === 'ENVIADO').length;
   const confirmados = requerimientos.filter(r => r.estado === 'CONFIRMADO').length;
   const rechazados  = requerimientos.filter(r => r.estado === 'RECHAZADO').length;
-  const borradores  = requerimientos.filter(r => r.estado === 'BORRADOR').length;
   const criticos    = materials.filter(m => m.estado === 'CRÍTICO' || m.estado === 'AGOTADO').length;
   const recentReqs  = [...requerimientos].sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 7);
 
@@ -158,7 +157,7 @@ export default function GerenteDashboard({ onNav }: Props) {
       {/* ── Row 1: KPI strip ── */}
       <div className="dashboard-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 14, marginBottom: 22 }}>
         {[
-          { label: 'Total solicitudes', value: requerimientos.length, color: '#2563EB', bg: '#DBEAFE', icon: <svg width="16" height="16" viewBox="0 0 15 15" fill="none"><rect x="2" y="3" width="11" height="11" rx="1.5" stroke="#2563EB" strokeWidth="1.3"/><path d="M5 3V2.5A1.5 1.5 0 016.5 1h2A1.5 1.5 0 0110 2.5V3" stroke="#2563EB" strokeWidth="1.3"/><path d="M4.5 8h6M4.5 10.5h4" stroke="#2563EB" strokeWidth="1.3" strokeLinecap="round"/></svg> },
+          { label: 'Solicitudes visibles', value: requerimientos.length, color: '#2563EB', bg: '#DBEAFE', icon: <svg width="16" height="16" viewBox="0 0 15 15" fill="none"><rect x="2" y="3" width="11" height="11" rx="1.5" stroke="#2563EB" strokeWidth="1.3"/><path d="M5 3V2.5A1.5 1.5 0 016.5 1h2A1.5 1.5 0 0110 2.5V3" stroke="#2563EB" strokeWidth="1.3"/><path d="M4.5 8h6M4.5 10.5h4" stroke="#2563EB" strokeWidth="1.3" strokeLinecap="round"/></svg> },
           { label: 'Pendientes',        value: enviados,              color: '#D97706', bg: '#FEF3C7', icon: <svg width="16" height="16" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6" stroke="#D97706" strokeWidth="1.3"/><path d="M7.5 4v4l2.5 2" stroke="#D97706" strokeWidth="1.3" strokeLinecap="round"/></svg> },
           { label: 'Confirmadas',       value: confirmados,           color: '#059669', bg: '#CCFBF1', icon: <svg width="16" height="16" viewBox="0 0 15 15" fill="none"><path d="M2 7.5l3.5 3.5 7-7" stroke="#059669" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg> },
           { label: 'Rechazadas',        value: rechazados,            color: '#DC2626', bg: '#FEE2E2', icon: <svg width="16" height="16" viewBox="0 0 15 15" fill="none"><path d="M3 3l9 9M12 3l-9 9" stroke="#DC2626" strokeWidth="1.6" strokeLinecap="round"/></svg> },
@@ -310,10 +309,9 @@ export default function GerenteDashboard({ onNav }: Props) {
 
       {/* ── Row 4: Solicitudes distribution ── */}
       <Card style={{ padding: '22px 24px' }}>
-        <SectionHead title="Distribución de solicitudes por estado" />
-        <div className="dashboard-status-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 16 }}>
+        <SectionHead title="Distribución de solicitudes visibles por estado" />
+        <div className="dashboard-status-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 16 }}>
           {[
-            { label: 'Borrador',    count: borradores,  color: '#A1A1AA', bg: '#F4F4F5' },
             { label: 'Enviado',     count: enviados,     color: '#D97706', bg: '#FEF3C7' },
             { label: 'Confirmado',  count: confirmados,  color: '#059669', bg: '#CCFBF1' },
             { label: 'Rechazado',   count: rechazados,   color: '#DC2626', bg: '#FEE2E2' },

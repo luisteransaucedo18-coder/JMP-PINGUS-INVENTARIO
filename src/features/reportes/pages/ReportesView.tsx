@@ -71,12 +71,15 @@ export default function ReportesView() {
   const [period, setPeriod] = useState<Period>('30d');
   const [activeTab, setActiveTab] = useState<'todos' | 'confirmados' | 'pendientes'>('todos');
 
-  const now = new Date('2026-09-22');
-  const cutoff = period === '7d'  ? new Date(now.getTime() - 7 * 86400000)
-               : period === '30d' ? new Date(now.getTime() - 30 * 86400000)
-               : new Date(0);
+  const today = new Date();
+  const cutoff = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  if (period === '7d') cutoff.setDate(cutoff.getDate() - 6);
+  if (period === '30d') cutoff.setDate(cutoff.getDate() - 29);
+  const cutoffDate = `${cutoff.getFullYear()}-${String(cutoff.getMonth() + 1).padStart(2, '0')}-${String(cutoff.getDate()).padStart(2, '0')}`;
 
-  const filteredReqs = requerimientos.filter(r => new Date(r.fecha) >= cutoff);
+  const filteredReqs = period === 'all'
+    ? requerimientos
+    : requerimientos.filter(r => r.fecha >= cutoffDate);
 
   const totalReqs    = filteredReqs.length;
   const confirmados  = filteredReqs.filter(r => r.estado === 'CONFIRMADO').length;
