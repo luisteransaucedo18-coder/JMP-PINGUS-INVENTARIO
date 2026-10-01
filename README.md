@@ -1,4 +1,99 @@
 # JMP-PINGUS-INVENTARIO
+
+Aplicación interna para inventario por sede, proyectos, requerimientos, compras, entregas, devoluciones y transporte entre Chiclayo, Chimbote y Trujillo. Utiliza React, TypeScript, Vite, Tailwind CSS y Supabase.
+
+## Guía del repositorio
+
+- [Configuración y ejecución](#configuración-y-ejecución).
+- [Estructura técnica](#estructura-técnica).
+- [Cambios implementados y verificables](#cambios-implementados-y-verificables).
+- [Estado actual y auditoría](#estado-actual-y-auditoría).
+- [Políticas y reglas de negocio](#políticas-y-reglas-de-negocio).
+- [Excepciones vigentes de acceso](#29-excepciones-vigentes-de-acceso).
+
+## Configuración y ejecución
+
+El proyecto declara Node.js 22 y pnpm. Existe una diferencia pendiente entre la versión pnpm de `package.json` (10.12.4) y `.mise.toml` (10.34.3); la auditoría se ejecutó con Node.js 22.15.0 y pnpm 11.25.0. Conservar `pnpm-lock.yaml` y utilizar instalación congelada para evitar resoluciones distintas.
+
+```sh
+pnpm install --frozen-lockfile
+pnpm typecheck
+pnpm build
+node --test tests/*.test.mjs
+```
+
+Para desarrollo fuera de una sesión que ya tiene el servidor activo, usar `pnpm dev`. Vite usa `PORT` o 8443 y puede elegir otro puerto si está ocupado. En Figma Make el servidor ya está iniciado y la vista previa refleja los cambios automáticamente. `pnpm preview` sirve el build generado y `pnpm format` aplica el formateador.
+
+Configurar en un archivo local `.env.local` o en el proveedor de despliegue:
+
+```dotenv
+VITE_SUPABASE_URL=https://<referencia-del-proyecto>.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=<clave-publicable>
+```
+
+Se admite `VITE_SUPABASE_ANON_KEY` como alternativa y variables `NEXT_PUBLIC_` por compatibilidad. La configuración Vite expone ambos prefijos al cliente: utilizar únicamente valores públicos. No colocar claves secretas, `service_role` ni contraseñas de base de datos en esas variables. Los archivos `.env*` están excluidos de Git.
+
+La autenticación utiliza Supabase Auth y consulta `perfiles` para rol y estado. La configuración actual mantiene la sesión en memoria (`persistSession: false`); recargar la página requiere iniciar sesión nuevamente. Los recursos de marca provienen del bucket `JMP`; la plantilla PDF y los videos de transición están en `public`.
+
+**Base de datos:** las migraciones locales dependen de un esquema previo y su historial difiere del remoto. No constituyen todavía una instalación completa sobre una base vacía. Antes de crear otro entorno, revisar [A13 del informe](docs/auditoria-2026-10-01.md#a13--media-migraciones-locales-y-remotas-no-se-pueden-reconciliar-por-versión).
+
+## Estructura técnica
+
+| Ruta | Responsabilidad |
+|---|---|
+| `src/main.tsx`, `src/App.tsx` | Entrada, autenticación y composición general. |
+| `src/app` | Navegación por rol, títulos y resolución de vistas. |
+| `src/domain/types.ts` | Contratos de materiales, sedes, roles y operaciones. |
+| `src/features` | Inventario, compras, requerimientos, proyectos, entregas, devoluciones, transporte, usuarios, reportes y consultas. |
+| `src/views` | Dashboards por rol, perfil y manual. |
+| `src/services` | Acceso remoto y funciones RPC. |
+| `src/store/AppContext.tsx` | Datos compartidos y suscripciones Realtime. |
+| `src/components`, `src/utils` | Componentes compartidos, reglas de stock, búsqueda y PDF. |
+| `supabase/migrations` | Evolución SQL versionada; requiere reconciliación con el esquema remoto. |
+| `tests` | Pruebas de inventario, materiales atómicos, faltantes, transporte y navegación. |
+| `public` | Plantilla PDF y videos de transición. |
+
+Más información: [arquitectura frontend](docs/arquitectura-frontend.md), [requerimientos con faltantes](docs/flujo-requerimientos-stock.md), [transporte interno](docs/transporte-interno.md) y [recursos de transición](public/media/README.md).
+
+## Cambios implementados y verificables
+
+Este registro se reconstruye a partir del código, las migraciones y el historial disponible. Describe cambios existentes antes de esta auditoría; no implica que todas sus reglas estén completas ni que todas las migraciones tengan una entrada equivalente en la base remota.
+
+| Fecha o periodo | Cambio existente | Referencia |
+|---|---|---|
+| 25/09/2026 | Persistencia y sincronización de requerimientos; revisión de stock al confirmar y restricciones de ejecución de RPC. | Migraciones `sync_requerimientos_analista_coordinador`, `preservar_stock_al_revisar_requerimiento` y `proteger_ejecucion_rpc_requerimientos`. |
+| 25/09/2026 | Registro de entregas, saldos de devolución, evidencias, historial y protección concurrente del saldo. | Migraciones de entregas y devoluciones; `devolucionService.ts`. |
+| 28/09/2026 | Devolución directa al inventario: Analista o Coordinador registra, se guarda como `VALIDADA` y aumenta stock en la sede receptora. | `20260928120000_devoluciones_inventario_directo.sql`; comportamiento también observado remotamente. |
+| 28/09/2026 | Órdenes de compra persistidas; aprobación y confirmación con ingreso de stock. | `20260928134743_persistir_ordenes_compra.sql`, `compraService.ts`. |
+| 29/09/2026 | Transporte interno: borrador, despacho, recepción, incidencias, retorno controlado y comprobantes privados. | Migración `transporte_interno`, servicios, pantalla y pruebas correspondientes. |
+| 29/09/2026 | Gestión de requerimientos con faltantes por compra o traslado; selección de sedes con stock disponible. | Migraciones de abastecimiento y `requirementStock.ts`. |
+| 29/09/2026 | Cancelación de compras antes del ingreso de stock; representación visual `CANCELADA` usando el estado persistido `RECHAZADO`. | Migraciones de cancelación y corrección del tipo de estado. |
+| 30/09/2026 | Vistas con permisos del invocador, restricciones de ejecución anónima e índices de claves foráneas. | `20260930133705_auditoria_estructura_seguridad_indices.sql`. |
+| 30/09/2026 | Creación/actualización atómica de material y existencias por sede mediante RPC. | `20260930133738_guardar_material_atomico.sql`, `tests/material-atomic.test.mjs`. |
+| 30/09–01/10/2026 | Navegación centralizada por rol, menú móvil, dashboard Gerente, transición con video y estados de inventario calculados por sede. | Código vigente, pruebas de inventario y merges recientes del historial Git. |
+| 01/10/2026 | Auditoría estática y remota de solo lectura; estructura técnica, guía de ejecución, cambios y pendientes incorporados a la documentación. | [Informe completo](docs/auditoria-2026-10-01.md). Únicamente documentación modificada en esta revisión. |
+
+El estado de inventario por sede se calcula así: `stock <= 0`: `AGOTADO`; `0 < stock < mínimo`: `CRÍTICO`; `mínimo <= stock <= 1,5 × mínimo`: `BAJO`; por encima: `OK`. El mínimo inicial de nuevos materiales en la interfaz es 30 y se conserva el mínimo configurado de cada material. `material.estado` persistido no debe confundirse con el estado calculado para una sede específica.
+
+Los PDF de requerimientos confirmados se generan con `pdf-lib` a partir del diseño definido en código y datos de la operación; la vista previa utiliza PDF.js. No hay actualmente una plantilla JSON externa implementada.
+
+## Estado actual y auditoría
+
+**Última revisión: 01/10/2026.** TypeScript y build correctos; 27 pruebas aprobadas, 0 fallidas y 1 omitida. El build advierte sobre el tamaño del paquete principal. La auditoría de dependencias devuelve 9 avisos en herramientas de desarrollo: 6 altos y 3 moderados.
+
+Pendientes prioritarios:
+
+- El formulario de perfil y cambio de contraseña muestra éxito sin guardar en el backend.
+- La función remota `rol_actual()` no filtra usuarios inactivos; varias operaciones conservan esa autorización durante una sesión.
+- Las entregas no validan el saldo acumulado; se observó una línea con entregas superiores a lo solicitado.
+- La creación de usuarios no crea una cuenta Auth ni aporta su UUID; los permisos remotos de administración corresponden al Gerente, mientras la interfaz los ofrece al Coordinador.
+- La carga inicial puede declararse completa con consultas fallidas; hay diferencias entre suscripciones y publicación Realtime.
+- El historial de migraciones local/remoto y varias reglas heredadas necesitan reconciliación.
+
+El [informe de auditoría](docs/auditoria-2026-10-01.md) contiene evidencia, prioridades, verificaciones y acciones propuestas. **Los problemas están documentados, no corregidos por esta revisión.** No se modificaron permisos ni datos reales.
+
+**Diferencias con las políticas heredadas:** las secciones 13–14 y la matriz describen validación posterior de devoluciones y registro exclusivo del Analista; el código y la base actual aplican ingreso directo y permiten también al Coordinador. La sección 20 menciona una posible plantilla JSON, mientras la implementación usa diseño en código. Las secciones de usuarios atribuyen administración al Coordinador, aunque las políticas remotas observadas no la permiten. Estas diferencias se registran para decidir y alinear el comportamiento; no se consideran nuevas excepciones aprobadas.
+
 ## Políticas y Reglas de Negocio
 
 Este documento define las **políticas, restricciones, permisos y reglas de negocio** que deben cumplirse dentro del sistema **JMP-PINGUS-INVENTARIO**.
@@ -1029,5 +1124,8 @@ Supabase Storage
 
 **Proyecto:** JMP-PINGUS-INVENTARIO  
 **Documento:** Políticas y Reglas de Negocio  
-**Versión:** 1.1  
-**Última actualización:** 29/09/2026
+**Versión:** 1.2
+
+**Última actualización documental:** 01/10/2026
+
+**Auditoría:** [Código, configuración y Supabase](docs/auditoria-2026-10-01.md)
