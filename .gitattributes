@@ -17,6 +17,9 @@
 *.ai                 filter=lfs diff=lfs merge=lfs -text
 *.sketch             filter=lfs diff=lfs merge=lfs -text
 
+# Required by PDF generation; Vercel must receive the JPEG, not an LFS pointer.
+/public/templates/pedido-materiales-logo.jpg -filter -diff -merge -text
+
 # ---------------------------------------------------------------------------
 # Video
 # ---------------------------------------------------------------------------
