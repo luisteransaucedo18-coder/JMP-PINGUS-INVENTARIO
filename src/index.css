@@ -2427,3 +2427,42 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .mobile-navigation, .mobile-navigation .mobile-sidebar, .mobile-navigation::backdrop { transition: none; }
 }
+
+/* Inventory status: compact table control and a focused comparison by sede. */
+.inventory-state-cell { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.inventory-state-trigger { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-width: 36px; min-height: 36px; padding: 6px 10px; border: 1px solid #DBEAFE; border-radius: 7px; background: #EFF6FF; color: #2563EB; cursor: pointer; font: inherit; font-size: 12px; font-weight: 600; }
+.inventory-state-trigger:hover { background: #DBEAFE; border-color: #93C5FD; }
+.inventory-state-trigger:focus-visible, .stock-state-close:focus-visible { outline: 2px solid #2563EB; outline-offset: 3px; }
+.stock-state-dialog { margin: auto; width: min(520px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); box-sizing: border-box; padding: 0; border: 1px solid #E4E4E7; border-radius: 16px; color: #18181B; background: #fff; box-shadow: 0 24px 70px #18181B33; overflow-y: auto; }
+.stock-state-dialog::backdrop { background: #18181B70; }
+.stock-state-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 24px 24px 18px; }
+.stock-state-heading h2 { margin: 0; font-size: 19px; font-weight: 700; }
+.stock-state-heading p { margin: 6px 0 0; color: #71717A; font-size: 12px; overflow-wrap: anywhere; }
+.stock-state-close { display: grid; place-items: center; flex-shrink: 0; width: 36px; height: 36px; border: 1px solid #E4E4E7; border-radius: 8px; background: #fff; color: #52525B; cursor: pointer; }
+.stock-state-reference { display: flex; align-items: center; justify-content: space-between; margin: 0 24px; padding: 12px 14px; background: #EFF6FF; border-radius: 8px; color: #1D4ED8; font-size: 12px; }
+.stock-state-reference strong { font-size: 20px; font-variant-numeric: tabular-nums; }
+.stock-state-reference small { font-size: 11px; font-weight: 500; }
+.stock-state-list { padding: 4px 24px 0; }
+.stock-state-row { padding: 18px 0; border-bottom: 1px solid #E4E4E7; }
+.stock-state-row:last-child { border-bottom: 0; }
+.stock-state-row-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.stock-state-row h3 { margin: 0; font-size: 14px; font-weight: 600; }
+.stock-state-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; }
+.stock-state-label i { width: 6px; height: 6px; border-radius: 50%; }
+.stock-state-quantity { display: flex; align-items: baseline; gap: 8px; margin: 8px 0; }
+.stock-state-quantity strong { font-size: 26px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.stock-state-quantity span, .stock-state-row p { color: #71717A; font-size: 11px; }
+.stock-state-row p { margin: 7px 0 0; }
+.stock-state-track { height: 5px; background: #F4F4F5; border-radius: 5px; overflow: hidden; }
+.stock-state-track > div { height: 100%; border-radius: inherit; }
+.stock-state-ranges { padding: 16px 24px 22px; background: #FAFAFA; border-top: 1px solid #E4E4E7; }
+.stock-state-ranges h3 { margin: 0 0 10px; color: #52525B; font-size: 12px; font-weight: 600; }
+.stock-state-ranges dl { display: grid; gap: 7px; margin: 0; font-size: 11px; }
+.stock-state-ranges dl > div { display: flex; justify-content: space-between; gap: 16px; }
+.stock-state-ranges dt { color: #52525B; }
+.stock-state-ranges dd { margin: 0; color: #71717A; text-align: right; }
+@media (max-width: 480px) {
+  .stock-state-heading { padding: 20px 18px 16px; }
+  .stock-state-reference { margin-inline: 18px; }
+  .stock-state-list, .stock-state-ranges { padding-inline: 18px; }
+}

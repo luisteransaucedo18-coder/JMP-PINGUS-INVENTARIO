@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { calcularEstado, estadoPorSede, coincideEstadoSedes, MINIMO_INICIAL_INVENTARIO } from '../../../utils/inventoryStatus';
 
 
 import {
@@ -12,8 +13,9 @@ import {
   SEDES,
   Sede,
   Material,
-  EstadoMaterial,
 } from '../../../domain/types';
+
+import StockStatusDialog from './StockStatusDialog';
 
 import MaterialPreviewModal from '../../../components/MaterialPreviewModal';
 
@@ -38,7 +40,7 @@ const BLANK_FORM = {
   stockChiclayo: '',
   stockChimbote: '',
   stockTrujillo: '',
-  minimo: '',
+  minimo: String(MINIMO_INICIAL_INVENTARIO),
 };
 
 const BLANK_STOCK = {
@@ -80,13 +82,23 @@ function ModalActions({ primaryLabel, onPrimary, onCancel }: { primaryLabel: str
   </div>;
 }
 
+function EstadosSedes({ material, sedes }: { material: Material; sedes: readonly Sede[] }) {
+  return <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
+    {sedes.map(sede => {
+      const estado = estadoPorSede(material, sede);
+      return <span key={sede} className={`badge status-badge badge-${ESTADO_BADGE[estado]}`}>
+        {sedes.length > 1 ? `${sede}: ` : ''}{estado}
+      </span>;
+    })}
+  </div>;
+}
+
 function MaterialModalHeader({ material, editing = false }: { material: Material; editing?: boolean }) {
   return <div className="modal-header">
     <div>
       <div style={{ fontSize: 11, color: '#2563EB', fontFamily: 'monospace', marginBottom: 3 }}>{material.id}</div>
       <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#18181B' }}>{editing ? 'Editar stock — ' : ''}{material.nombre}</h2>
     </div>
-    {!editing && <span className={`badge status-badge badge-${ESTADO_BADGE[material.estado]}`}>{material.estado}</span>}
   </div>;
 }
 
@@ -176,6 +188,8 @@ export default function InventarioView({
   // CARGAR MATERIALES
   // ====================================================
 
+  const [statusMaterial, setStatusMaterial] = useState<Material | null>(null);
+
   const cargarMateriales = async () => {
     try {
       setLoading(true);
@@ -224,6 +238,8 @@ export default function InventarioView({
   // FILTROS
   // ====================================================
 
+  const sedesVisibles = sedeView === 'todas' ? SEDES : [sedeView];
+
   const filtered =
     materiales.filter((m) => {
 
@@ -252,8 +268,7 @@ export default function InventarioView({
         ) &&
 
         (
-          !estadoFilter ||
-          m.estado === estadoFilter
+          coincideEstadoSedes(m, sedesVisibles, estadoFilter)
         )
       );
     });
@@ -335,30 +350,6 @@ export default function InventarioView({
     }
 
     return e;
-  };
-
-  // ====================================================
-  // CALCULAR ESTADO
-  // ====================================================
-
-  const calcularEstado = (
-    stockTotal: number,
-    minimo: number
-  ): EstadoMaterial => {
-
-    if (stockTotal === 0) {
-      return 'AGOTADO';
-    }
-
-    if (stockTotal < minimo) {
-      return 'CRÍTICO';
-    }
-
-    if (stockTotal <= minimo * 1.5) {
-      return 'BAJO';
-    }
-
-    return 'OK';
   };
 
   // ====================================================
@@ -590,10 +581,7 @@ export default function InventarioView({
   const totalStock =
     materiales.reduce(
       (total, material) =>
-        total +
-        obtenerStockTotal(
-          material
-        ),
+        total + sedesVisibles.reduce((sum, sede) => sum + obtenerStockSede(material, sede), 0),
       0
     );
 
@@ -687,7 +675,7 @@ export default function InventarioView({
               marginBottom: 8,
             }}
           >
-            Stock total
+            {sedeView === 'todas' ? 'Stock total' : `Stock en ${sedeView}`}
           </div>
 
           <div
@@ -744,7 +732,7 @@ export default function InventarioView({
                   marginBottom: 8,
                 }}
               >
-                {s}
+                {s} {sedeView === 'todas' ? '(SKU por sede)' : `(${sedeView})`}
               </div>
 
               <div
@@ -755,10 +743,7 @@ export default function InventarioView({
                 }}
               >
                 {
-                  materiales.filter(
-                    (m) =>
-                      m.estado === s
-                  ).length
+                  materiales.reduce((count, m) => count + sedesVisibles.filter(sede => estadoPorSede(m, sede) === s).length, 0)
                 }
               </div>
 
@@ -1082,7 +1067,7 @@ export default function InventarioView({
 
 
                 <th>
-                  Mínimo
+                  Mínimo por sede
                 </th>
 
                 <th>
@@ -1414,16 +1399,14 @@ export default function InventarioView({
 
                         <td>
 
-                          <span
-                            className={`badge status-badge badge-${
-                              ESTADO_BADGE[
-                                m.estado
-                              ] ||
-                              'gray'
-                            }`}
-                          >
-                            {m.estado}
-                          </span>
+                          <div className="inventory-state-cell">
+                            {sedeView !== 'todas' && <EstadosSedes material={m} sedes={sedesVisibles} />}
+                            <button type="button" className="inventory-state-trigger" aria-label={`Ver estados por sede de ${m.id}`} aria-haspopup="dialog"
+                              onClick={event => { event.stopPropagation(); setStatusMaterial(m); }}>
+                              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 20V10m7 10V4m7 16v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><circle cx="19" cy="7" r="2" stroke="currentColor" strokeWidth="1.6"/></svg>
+                              {sedeView === 'todas' && <span>Ver estados</span>}
+                            </button>
+                          </div>
 
                         </td>
 
@@ -1636,7 +1619,7 @@ export default function InventarioView({
                         4,
                     }}
                   >
-                    Stock mínimo
+                    Stock mínimo por sede
                   </div>
 
                   <div
@@ -1829,6 +1812,7 @@ export default function InventarioView({
                         >
                           {s}
                         </span>
+                        <EstadosSedes material={selected} sedes={[s]} />
 
 
                         <span
@@ -2101,7 +2085,7 @@ export default function InventarioView({
                   }}
                 >
                   Stock mínimo
-                  {' (total)'}
+                  {' (por sede)'}
                 </label>
 
 
@@ -2414,7 +2398,7 @@ export default function InventarioView({
               <div>
 
                 <label>
-                  Stock mínimo
+                  Stock mínimo por sede
                 </label>
 
                 <input
@@ -2567,6 +2551,8 @@ export default function InventarioView({
 
       )}
 
+
+      {statusMaterial && <StockStatusDialog material={statusMaterial} onClose={() => setStatusMaterial(null)} />}
 
       {/* ===============================================
           PREVIEW

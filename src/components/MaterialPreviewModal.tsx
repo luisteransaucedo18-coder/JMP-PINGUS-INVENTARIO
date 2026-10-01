@@ -1,3 +1,4 @@
+import { estadoPorSede } from '../utils/inventoryStatus';
 import { Material, Sede, SEDES } from '../domain/types';
 
 const CATEGORIA_COLORS: Record<string, { bg: string; accent: string; icon: string }> = {
@@ -103,7 +104,6 @@ interface Props {
 export default function MaterialPreviewModal({ material, onClose }: Props) {
   if (!material) return null;
 
-  const est = ESTADO_STYLE[material.estado] || ESTADO_STYLE.OK;
   const totalStock = Object.values(material.stockSedes).reduce((a, b) => a + b, 0);
 
   return (
@@ -146,9 +146,6 @@ export default function MaterialPreviewModal({ material, onClose }: Props) {
                 <span style={{ fontFamily: 'monospace', fontSize: 11, background: '#DBEAFE', color: '#1D4ED8', padding: '2px 8px', borderRadius: 4, fontWeight: 700 }}>
                   {material.id}
                 </span>
-                <span style={{ fontSize: 11, background: est.bg, color: est.color, padding: '2px 8px', borderRadius: 4, fontWeight: 700 }}>
-                  {material.estado}
-                </span>
               </div>
               <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#18181B', lineHeight: 1.3 }}>{material.nombre}</h2>
             </div>
@@ -164,7 +161,7 @@ export default function MaterialPreviewModal({ material, onClose }: Props) {
             ['Categoría', material.categoria],
             ['Unidad de medida', material.unidad],
             ['Marca / Especificación', material.marca || '—'],
-            ['Stock mínimo', `${material.minimo} UND`],
+            ['Mínimo por sede', `${material.minimo} UND`],
             ['Precio unitario', formatPrecio(material.precioUnitario)],
           ].map(([label, value]) => (
             <div key={label} style={{ background: '#F9FAFB', borderRadius: 8, padding: '10px 12px' }}>
@@ -191,7 +188,9 @@ export default function MaterialPreviewModal({ material, onClose }: Props) {
             {SEDES.map(s => {
               const qty = material.stockSedes[s];
               const pct = totalStock > 0 ? (qty / totalStock) * 100 : 0;
-              const underMin = qty < Math.ceil(material.minimo / SEDES.length);
+              const estado = estadoPorSede(material, s);
+              const est = ESTADO_STYLE[estado];
+              const underMin = estado === 'AGOTADO' || estado === 'CRÍTICO';
               return (
                 <div key={s} style={{ flex: 1, background: underMin ? '#FFF5F5' : '#F9FAFB', border: `1px solid ${underMin ? '#FECACA' : '#E4E4E7'}`, borderRadius: 10, padding: '12px', textAlign: 'center' }}>
                   <div style={{ fontSize: 11, color: SEDE_COLOR[s], fontWeight: 700, marginBottom: 8 }}>{s}</div>
@@ -200,8 +199,7 @@ export default function MaterialPreviewModal({ material, onClose }: Props) {
                   <div style={{ height: 4, background: '#E4E4E7', borderRadius: 4, overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${pct}%`, background: qty === 0 ? '#DC2626' : SEDE_COLOR[s], borderRadius: 4 }} />
                   </div>
-                  {qty === 0 && <div style={{ fontSize: 9.5, color: '#DC2626', marginTop: 4, fontWeight: 600 }}>AGOTADO</div>}
-                  {qty > 0 && underMin && <div style={{ fontSize: 9.5, color: '#D97706', marginTop: 4, fontWeight: 600 }}>BAJO MÍNIMO</div>}
+                  <div style={{ fontSize: 9.5, background: est.bg, color: est.color, marginTop: 4, fontWeight: 600, borderRadius: 4 }}>{estado}</div>
                 </div>
               );
             })}

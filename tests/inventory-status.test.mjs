@@ -1,0 +1,103 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { test } from 'node:test';
+import ts from 'typescript';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+
+const compile = source => ts.transpileModule(source, {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
+}).outputText;
+const load = (source, require) => {
+  const exports = {};
+  new Function('exports', 'require', compile(source))(exports, require);
+  return exports;
+};
+const status = load(readFileSync(new URL('../src/utils/inventoryStatus.ts', import.meta.url), 'utf8'), () => { throw new Error('Unexpected import'); });
+const material = {
+  id: 'SKU-001', nombre: 'Cable', categoria: 'Herramientas', descripcion: 'Cable', unidad: 'UND',
+  minimo: 10, precioUnitario: 0, estado: 'OK',
+  stockSedes: { Chiclayo: 0, Chimbote: 5, Trujillo: 100 },
+};
+const source = readFileSync(new URL('../src/features/inventario/pages/InventarioView.tsx', import.meta.url), 'utf8');
+function render(sede, filtro = '') {
+  const states = [[material], false, '', '', filtro, sede, null, false, false, null];
+  let index = 0;
+  const { default: Inventory } = load(source, name => {
+    if (name === 'react') return { ...React, useEffect: () => {}, useState: initial => [index < states.length ? states[index++] : initial, () => {}] };
+    if (name === 'react/jsx-runtime') return jsxRuntime;
+    if (name.endsWith('/inventoryStatus')) return status;
+    if (name.endsWith('/domain/types')) return { SEDES: ['Chiclayo', 'Chimbote', 'Trujillo'] };
+    if (name.endsWith('/materialService')) return {};
+    if (name === './StockStatusDialog') return { default: () => null };
+    if (name.endsWith('/MaterialPreviewModal')) return { default: () => null };
+    throw new Error(`Unexpected import ${name}`);
+  });
+  return renderToStaticMarkup(Inventory({ role: 'analista', onToast: () => {} }));
+}
+const jsxRuntime = await import('react/jsx-runtime');
+
+test('la sede agotada sigue agotada aunque otra tenga mucho stock', () => {
+  assert.equal(status.estadoPorSede(material, 'Chiclayo'), 'AGOTADO');
+  assert.equal(status.estadoPorSede(material, 'Chimbote'), 'CRÍTICO');
+  assert.equal(status.estadoPorSede(material, 'Trujillo'), 'OK');
+});
+
+test('respeta los límites del mínimo y stock decimal', () => {
+  for (const [stock, expected] of [[0, 'AGOTADO'], [9.5, 'CRÍTICO'], [10, 'BAJO'], [15, 'BAJO'], [15.1, 'OK']]) {
+    assert.equal(status.calcularEstado(stock, 10), expected);
+  }
+  assert.equal(status.calcularEstado(0, 0), 'AGOTADO');
+  assert.equal(status.calcularEstado(1, 0), 'OK');
+});
+
+test('tabla y filtro respetan la sede seleccionada', () => {
+  assert.match(render('Chiclayo', 'AGOTADO'), /SKU-001/);
+  assert.match(render('Chiclayo', 'AGOTADO'), /badge-red">AGOTADO/);
+  assert.doesNotMatch(render('Chiclayo', 'OK'), /SKU-001/);
+  assert.match(render('Trujillo', 'OK'), /badge-green">OK/);
+  assert.doesNotMatch(render('Trujillo', 'AGOTADO'), /SKU-001/);
+});
+
+test('todas las sedes abre el detalle sin apilar estados en la tabla', () => {
+  const html = render('todas', 'AGOTADO');
+  assert.match(html, /SKU-001/);
+  assert.match(html, /Ver estados por sede de SKU-001/);
+  assert.match(html, /aria-haspopup="dialog"/);
+  assert.doesNotMatch(html, /Chiclayo: AGOTADO/);
+  assert.doesNotMatch(html, /Chimbote: CRÍTICO/);
+});
+
+test('contadores y stock corresponden a la sede seleccionada', () => {
+  const html = render('Chiclayo');
+  assert.match(html, /Stock en Chiclayo/);
+  assert.match(html, /AGOTADO \(Chiclayo\)<\/div><div[^>]*>1<\/div>/);
+  assert.match(render('todas'), /AGOTADO \(SKU por sede\)<\/div><div[^>]*>1<\/div>/);
+});
+
+test('el panel separa las sedes y explica el rango de referencia 30', () => {
+  const dialogSource = readFileSync(new URL('../src/features/inventario/pages/StockStatusDialog.tsx', import.meta.url), 'utf8');
+  const { default: Dialog } = load(dialogSource, name => {
+    if (name === 'react') return { ...React, useEffect: () => {}, useRef: () => ({ current: null }), useId: () => 'status-title' };
+    if (name === 'react-dom') return { createPortal: content => content };
+    if (name === 'react/jsx-runtime') return jsxRuntime;
+    if (name.endsWith('/inventoryStatus')) return status;
+    if (name.endsWith('/domain/types')) return { SEDES: ['Chiclayo', 'Chimbote', 'Trujillo'] };
+    throw new Error(`Unexpected import ${name}`);
+  });
+  const originalDocument = globalThis.document;
+  globalThis.document = { body: {} };
+  try {
+    const html = renderToStaticMarkup(Dialog({ material: { ...material, minimo: 30 }, onClose: () => {} }));
+    assert.match(html, /<dialog[^>]*aria-labelledby="status-title"/);
+    assert.match(html, /Chiclayo: Agotado, 0 UND/);
+    assert.match(html, /Chimbote: Crítico, 5 UND/);
+    assert.match(html, /Trujillo: Disponible, 100 UND/);
+    assert.match(html, /Faltan 25 UND para el mínimo/);
+    assert.match(html, /30 a 45 UND/);
+    assert.equal(status.MINIMO_INICIAL_INVENTARIO, 30);
+  } finally {
+    if (originalDocument === undefined) delete globalThis.document;
+    else globalThis.document = originalDocument;
+  }
+});
