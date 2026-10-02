@@ -1437,6 +1437,11 @@ body {
 
   .profile-identity-copy {
     flex-basis: calc(100% - 110px) !important;
+    padding-top: 44px;
+  }
+
+  .app-scroll .profile-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 
   .profile-identity-meta {

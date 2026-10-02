@@ -196,7 +196,7 @@ export default function ProfileView({ role, userName, userEmail, onToast }: Prop
         {avatarError && <p className="profile-feedback profile-feedback-error" role="alert">{avatarError} <button type="button" onClick={reloadAvatar}>Volver a cargar foto</button></p>}
 
         {/* ── Stats row ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+        <div className="profile-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
           <StatCard label="Requerimientos enviados"   value={sent}  color="#2563EB" />
           <StatCard label="Confirmados"                value={conf}  color="#059669" />
           <StatCard label="Borradores activos"         value={drafts} color="#D97706" />
