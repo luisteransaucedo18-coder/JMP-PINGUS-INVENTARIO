@@ -96,10 +96,10 @@ test('PDF comercial paginado sin costos internos ni utilidad',async()=>{
   const {buildQuotationPdf}=await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
   const {getDocument}=await import('pdfjs-dist/legacy/build/pdf.mjs');
   const q={codigo:'COT-000001',version:1,proyecto_snapshot:{nombre:'Proyecto prueba',cliente:'Cliente',ubicacion:'Dirección'},presupuesto:{...budget,alcance:'Alcance '.repeat(1500),gastos:[...budget.gastos,{id:id(50),rubro:'BONO',descripcion:'BONO SECRETO',cantidad:1,costoUnitario:12},{id:id(51),rubro:'FIJOS',descripcion:'COSTO INTERNO',cantidad:1,costoUnitario:55}]},totales:calculateQuote(budget),importe_presentado:354};
-  const loadingTask=getDocument({data:new Uint8Array(await buildQuotationPdf(q)),useSystemFonts:true});
+  const loadingTask=getDocument({data:new Uint8Array(await buildQuotationPdf(q,new Uint8Array(readFileSync(new URL('../public/templates/pedido-materiales-logo.jpg',import.meta.url))))),useSystemFonts:true});
   const pdf=await loadingTask.promise;
   try { assert.ok(pdf.numPages>1); let text=''; for(let i=1;i<=pdf.numPages;i++){ const page=await pdf.getPage(i); const content=await page.getTextContent(); text+=content.items.map(x=>x.str??'').join(' '); }
-  assert.ok(text.includes('354.00')); assert.ok(text.includes('Construcción')); assert.ok(!text.includes('BONO SECRETO')); assert.ok(!text.includes('COSTO INTERNO')); assert.ok(!text.includes('Utilidad')); }
+  assert.ok(text.includes('354.00')); assert.ok(text.includes('Construcción')); assert.ok(text.includes('DATOS DEL PROYECTO Y CLIENTE')); assert.ok(text.includes('JM-PINGUS SAC')); assert.equal(text.split('COTIZACIÓN DE PROYECTO').length-1,pdf.numPages); assert.ok(!text.includes('BONO SECRETO')); assert.ok(!text.includes('COSTO INTERNO')); assert.ok(!text.includes('Utilidad')); }
   finally{await loadingTask.destroy();}
 });
 
