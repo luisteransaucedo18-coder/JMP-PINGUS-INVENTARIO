@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useAppStore } from '../../../store/AppContext';
 import { SEDES, Sede } from '../../../domain/types';
 import MaterialPreviewModal, { PreviewBtn } from '../../../components/MaterialPreviewModal';
 import { Material, CompraItem } from '../../../domain/types';
-import { obtenerMateriales } from '../../../services/materialService';
+import { tieneMaterialesRepetidos } from '../../../utils/uniqueMaterials';
 import { crearCompra } from '../../../services/compraService';
 import { searchMaterials } from '../../../utils/materialSearch';
 
@@ -14,7 +14,8 @@ const ESTADO_COLOR: Record<string, string> = { OK: '#059669', BAJO: '#D97706', C
 const ESTADO_BG:    Record<string, string> = { OK: '#CCFBF1', BAJO: '#FEF3C7', CRÍTICO: '#FEE2E2', AGOTADO: '#FEE2E2' };
 
 export default function NuevaCompraView({ onToast, onNav }: Props) {
-  const { refreshRemoteData } = useAppStore();
+  const { state, refreshRemoteData } = useAppStore();
+  const materiales = state.materials;
 
   const [sede, setSede] = useState<Sede>('Chiclayo');
   const [motivo, setMotivo] = useState('');
@@ -25,8 +26,8 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
   const [previewMat, setPreviewMat] = useState<Material | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [activeTab, setActiveTab] = useState<'form' | 'criticos'>('form');
-  const [materiales, setMateriales] = useState<Material[]>([]);
   const [saving, setSaving] = useState(false);
+  const savePending = useRef(false);
 
   /* Materials by estado for quick add */
     const criticos = materiales.filter((m) => {
@@ -50,6 +51,10 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
     const getMatches = (query: string) => searchMaterials(materiales, query, 8, 2);
 
     const selectMat = (idx: number, mat: Material) => {
+      if (items.some((item, index) => index !== idx && item.skuId === mat.id)) {
+        onToast('El material ya está en la lista. Edita su cantidad en la línea existente.');
+        return;
+      }
       const stockActual = mat.stockSedes[sede] ?? 0;
       const deficit = Math.max(0, mat.minimo - stockActual);
 
@@ -114,13 +119,17 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
     if (!motivo.trim()) e.motivo = 'Describe el motivo de compra';
     const valid = items.filter(it => (it.skuId || it.nombre) && it.cantidadSolicitada > 0);
     if (!draft && valid.length === 0) e.items = 'Agrega al menos un material con cantidad';
+    if (tieneMaterialesRepetidos(valid)) e.items = 'Cada material debe aparecer una sola vez. Revisa las líneas repetidas.';
     return e;
   };
 
   const handleSave = async (draft: boolean) => {
+    if (savePending.current || submitted) return;
     const e = validate(draft);
     if (Object.keys(e).length) { setErrors(e); return; }
     const valid = items.filter(it => (it.skuId || it.nombre) && it.cantidadSolicitada > 0);
+    savePending.current = true;
+    let stored = false;
     setSaving(true);
     try {
       await crearCompra({
@@ -129,6 +138,7 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
         borrador: draft,
         items: valid.map(({ skuId, nombre, cantidadSolicitada, precioUnitario }) => ({ skuId, nombre, cantidadSolicitada, precioUnitario })),
       });
+      stored = true;
       await refreshRemoteData();
       setSubmitted(true);
       onToast(draft ? 'Borrador guardado' : 'Solicitud de compra enviada al coordinador');
@@ -136,24 +146,10 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
     } catch (error) {
       onToast(error instanceof Error ? error.message : 'No se pudo guardar la solicitud de compra');
     } finally {
+      if (!stored) savePending.current = false;
       setSaving(false);
     }
   };
-
-  useEffect(() => {
-  const cargarMateriales = async () => {
-    try {
-      const data = await obtenerMateriales();
-
-      setMateriales(data ?? []);
-    } catch (error) {
-      console.error('Error cargando materiales:', error);
-      onToast('Error al cargar los materiales');
-    } finally { /* La vista conserva sus controles mientras finaliza la carga. */ }
-  };
-
-  cargarMateriales();
-}, []);
 
   if (submitted) return (
     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 14 }}>

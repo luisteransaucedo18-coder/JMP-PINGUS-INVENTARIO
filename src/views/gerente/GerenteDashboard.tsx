@@ -1,12 +1,9 @@
+import { SEDE_COLOR, SEDE_BG, REQUERIMIENTO_COLOR as ESTADO_COLOR, REQUERIMIENTO_BG as ESTADO_BG } from '../../config/visualTokens';
 import { Card, SectionHead, BarChart } from '../../components/DashboardPrimitives';
 import { useAppStore } from '../../store/AppContext';
-import { SEDES, Sede } from '../../domain/types';
+import { SEDES } from '../../domain/types';
 import { ChartTooltip } from '../../components/ChartTooltip';
 
-const SEDE_COLOR: Record<Sede, string> = { Chiclayo: '#2563EB', Chimbote: '#059669', Trujillo: '#7C3AED' };
-const SEDE_BG: Record<Sede, string>    = { Chiclayo: '#DBEAFE', Chimbote: '#CCFBF1', Trujillo: '#F3E8FF' };
-const ESTADO_COLOR: Record<string, string> = { BORRADOR: '#A1A1AA', ENVIADO: '#D97706', CONFIRMADO: '#059669', RECHAZADO: '#DC2626' };
-const ESTADO_BG: Record<string, string>    = { BORRADOR: '#F4F4F5', ENVIADO: '#FEF3C7', CONFIRMADO: '#CCFBF1', RECHAZADO: '#FEE2E2' };
 
 /* ── SVG Line/Area Chart ── */
 function LineChart({ values, color, height = 110 }: { values: number[]; color: string; height?: number }) {

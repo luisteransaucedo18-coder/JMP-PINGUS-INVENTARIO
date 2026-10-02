@@ -3,7 +3,7 @@ import { useAppStore } from '../../../store/AppContext';
 import { SEDES, Sede, Proyecto } from '../../../domain/types';
 import MaterialPreviewModal, { PreviewBtn } from '../../../components/MaterialPreviewModal';
 import { Material } from '../../../domain/types';
-import { obtenerMateriales } from '../../../services/materialService';
+import { tieneMaterialesRepetidos } from '../../../utils/uniqueMaterials';
 import { crearProyecto, crearSolicitud } from '../../../services/requerimientoService';
 import { searchMaterials } from '../../../utils/materialSearch';
 
@@ -22,9 +22,9 @@ export default function NuevaSolicitudView({ onToast, onNav }: Props) {
   const [submitted, setSubmitted] = useState(false);
   const [submittedWithShortage, setSubmittedWithShortage] = useState(false);
   const [previewMat, setPreviewMat] = useState<Material | null>(null);
-  const [materiales, setMateriales] = useState<Material[]>([]);
-const [loadingMateriales, setLoadingMateriales] = useState(true);
+  const materiales = state.materials;
   const [saving, setSaving] = useState(false);
+  const mutationPending = useRef(false);
 
   /* ─── Project selector state ─── */
   const [proyectoQuery, setProyectoQuery] = useState('');
@@ -40,25 +40,6 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
     (p.nombre.toLowerCase().includes(proyectoQuery.toLowerCase()) ||
      p.cliente.toLowerCase().includes(proyectoQuery.toLowerCase()))
   );
-
-  useEffect(() => {
-  const cargarMateriales = async () => {
-    try {
-      setLoadingMateriales(true);
-
-      const data = await obtenerMateriales();
-
-      setMateriales(data ?? []);
-    } catch (error) {
-      console.error('Error cargando materiales:', error);
-      onToast('Error al cargar materiales');
-    } finally {
-      setLoadingMateriales(false);
-    }
-  };
-
-  cargarMateriales();
-}, []);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -87,7 +68,7 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
 
  const handleCreateProject = async () => {
   // Evitar doble ejecución mientras se está guardando
-  if (saving) return;
+  if (mutationPending.current) return;
 
   const e: Record<string, string> = {};
 
@@ -134,6 +115,7 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
     return;
   }
 
+  mutationPending.current = true;
   setSaving(true);
   setProjectErrors({});
 
@@ -196,6 +178,7 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
 
     onToast(`Error: ${message}`);
   } finally {
+    mutationPending.current = false;
     setSaving(false);
   }
 };
@@ -211,6 +194,10 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
       i: number,
       mat: { id: string; nombre: string }
     ) => {
+      if (lineas.some((linea, index) => index !== i && linea.skuId === mat.id)) {
+        onToast('El material ya está en la lista. Edita su cantidad en la línea existente.');
+        return;
+      }
       setLineas((p) =>
         p.map((l, j) =>
           j !== i
@@ -262,20 +249,24 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
     if (!draft && !form.tecnico.trim()) e.tecnico = 'Requerido para enviar';
     const validLineas = lineas.filter(l => (l.skuId || l.nombre) && parseFloat(l.cantidad) > 0);
     if (!draft && validLineas.length === 0) e.materiales = 'Agrega al menos un material con cantidad';
+    if (tieneMaterialesRepetidos(validLineas)) e.materiales = 'Cada material debe aparecer una sola vez. Revisa las líneas repetidas.';
     return e;
   };
 
   const handleSave = async (draft: boolean) => {
+    if (mutationPending.current || submitted) return;
     const e = validate(draft);
     if (Object.keys(e).length) { setErrors(e); return; }
     const validLineas = lineas.filter(l => (l.skuId || l.nombre) && parseFloat(l.cantidad) > 0);
 
     // find project id — either selected or recently created
-    const resolvedProject = selectedProject || state.proyectos.find(p => p.nombre === proyectoQuery);
+    const resolvedProject = selectedProject;
     const proyectoId = resolvedProject?.id ?? '';
     const tecnico = form.tecnico || resolvedProject?.responsable || '';
 
     if (!proyectoId) { setErrors({ proyecto: 'Selecciona un proyecto registrado antes de guardar' }); return; }
+    mutationPending.current = true;
+    let stored = false;
     setSaving(true);
     try {
       await crearSolicitud({ proyectoId, sede: form.sede, ubicacion: form.ubicacion, descripcion: form.descripcion, tecnico,
@@ -283,6 +274,7 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
           const material = materiales.find(m => m.id === l.skuId);
           return { skuId: l.skuId, nombre: l.nombre, cantidad: parseFloat(l.cantidad), unidad: material?.unidad, marca: material?.marca };
         }), borrador: draft });
+      stored = true;
       await refreshRemoteData();
       setSubmittedWithShortage(!draft && faltantes.length > 0);
       setSubmitted(true);
@@ -296,7 +288,7 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
       setTimeout(() => onNav('mis-solicitudes'), 1200);
     } catch (error) {
       onToast(error instanceof Error ? error.message : 'No se pudo guardar la solicitud');
-    } finally { setSaving(false); }
+    } finally { if (!stored) mutationPending.current = false; setSaving(false); }
   };
 
   if (submitted) {
@@ -650,13 +642,8 @@ const [loadingMateriales, setLoadingMateriales] = useState(true);
             ) : (
             <input
                 className="input-field"
-                placeholder={
-                  loadingMateriales
-                    ? 'Cargando materiales...'
-                    : 'Selecciona o busca un material...'
-                }
+                placeholder="Selecciona o busca un material..."
                 value={linea.query}
-                disabled={loadingMateriales}
                 style={{
                   width: '100%',
                   height: 42,

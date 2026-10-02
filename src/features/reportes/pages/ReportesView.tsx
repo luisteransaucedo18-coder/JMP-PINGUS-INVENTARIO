@@ -1,33 +1,27 @@
+import { SEDE_COLOR, SEDE_BG, REQUERIMIENTO_COLOR as ESTADO_COLOR, REQUERIMIENTO_BG as ESTADO_BG } from '../../../config/visualTokens';
 import { Card, SectionHead, BarChart } from '../../../components/DashboardPrimitives';
 import { useState } from 'react';
 import { useAppStore } from '../../../store/AppContext';
-import { SEDES, Sede } from '../../../domain/types';
+import { SEDES } from '../../../domain/types';
 import { ChartTooltip } from '../../../components/ChartTooltip';
 import { fechaLima, inicioPeriodo, enPeriodo, describirPeriodo } from '../periodo';
 import './reportes.css';
 
-const SEDE_COLOR: Record<Sede, string> = { Chiclayo: '#2563EB', Chimbote: '#059669', Trujillo: '#7C3AED' };
-const SEDE_BG: Record<Sede, string>    = { Chiclayo: '#DBEAFE', Chimbote: '#CCFBF1', Trujillo: '#F3E8FF' };
-const ESTADO_COLOR: Record<string, string> = { ENVIADO: '#D97706', CONFIRMADO: '#059669', RECHAZADO: '#DC2626', BORRADOR: '#71717A' };
-const ESTADO_BG: Record<string, string>    = { ENVIADO: '#FEF3C7', CONFIRMADO: '#CCFBF1', RECHAZADO: '#FEE2E2', BORRADOR: '#F4F4F5' };
 
-type Period = '7d' | '30d' | 'all' | 'custom';
+type Period = '7d' | '30d' | 'all';
 
 export default function ReportesView() {
   const { state } = useAppStore();
   const { materials, requerimientos } = state;
-  const [period, setPeriod] = useState<Period>('all');
   const [activeTab, setActiveTab] = useState<'todos' | 'confirmados' | 'pendientes'>('todos');
 
-  const [desde, setDesde] = useState('');
-  const [hasta, setHasta] = useState('');
+  const [{ desde, hasta }, setRange] = useState({ desde: '', hasta: '' });
+  const today = fechaLima();
+  const period = !desde && !hasta ? 'all' : hasta === today && desde === inicioPeriodo(7, today) ? '7d' : hasta === today && desde === inicioPeriodo(30, today) ? '30d' : 'custom';
   const invalidRange = !!(desde && hasta && desde > hasta);
   const periodLabel = invalidRange ? 'Rango de fechas inválido' : describirPeriodo(desde, hasta);
   function selectPeriod(value: Period) {
-    setPeriod(value);
-    const today = fechaLima();
-    setDesde(value === '7d' ? inicioPeriodo(7, today) : value === '30d' ? inicioPeriodo(30, today) : '');
-    setHasta(value === 'all' ? '' : today);
+    setRange({ desde: value === '7d' ? inicioPeriodo(7, today) : value === '30d' ? inicioPeriodo(30, today) : '', hasta: value === 'all' ? '' : today });
   }
   const filteredReqs = requerimientos.filter(r => enPeriodo(r.fecha, desde, hasta));
 
@@ -76,8 +70,8 @@ export default function ReportesView() {
           </div>
         </div>
         <div className="report-date-fields">
-          <label>Desde<input className="input-field" type="date" value={desde} aria-invalid={invalidRange} aria-describedby={invalidRange ? 'report-date-error' : 'report-date-help'} onChange={e => { setDesde(e.target.value); setPeriod('custom'); }} /></label>
-          <label>Hasta<input className="input-field" type="date" value={hasta} aria-invalid={invalidRange} aria-describedby={invalidRange ? 'report-date-error' : 'report-date-help'} onChange={e => { setHasta(e.target.value); setPeriod('custom'); }} /></label>
+          <label>Desde<input className="input-field" type="date" value={desde} aria-invalid={invalidRange} aria-describedby={invalidRange ? 'report-date-error' : 'report-date-help'} onChange={e => setRange(range => ({ ...range, desde: e.target.value }))} /></label>
+          <label>Hasta<input className="input-field" type="date" value={hasta} aria-invalid={invalidRange} aria-describedby={invalidRange ? 'report-date-error' : 'report-date-help'} onChange={e => setRange(range => ({ ...range, hasta: e.target.value }))} /></label>
           <button type="button" className="btn btn-ghost" onClick={() => selectPeriod('all')}>Limpiar fechas</button>
         </div>
         {invalidRange ? <p id="report-date-error" role="alert" className="report-date-error">La fecha Desde debe ser anterior o igual a Hasta. Corrige el rango para visualizar los resultados.</p>
@@ -231,7 +225,7 @@ export default function ReportesView() {
           {/* Estado por estado resumen */}
           <div style={{ borderLeft: '1px solid #F0F2FF', paddingLeft: 24 }}>
             <SectionHead title="Resumen de estados" />
-            {['CONFIRMADO', 'ENVIADO', 'RECHAZADO', 'BORRADOR'].map(e => {
+            {(['CONFIRMADO', 'ENVIADO', 'RECHAZADO', 'BORRADOR'] as const).map(e => {
               const cnt = filteredReqs.filter(r => r.estado === e).length;
               return (
                 <div key={e} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>

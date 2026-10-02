@@ -1888,10 +1888,6 @@ body {
   border-radius: 8px;
 }
 
-.manager-kpi-sparkline {
-  flex: 0 0 auto;
-}
-
 .manager-kpi-value {
   overflow: hidden;
   font-size: 28px;
@@ -2394,20 +2390,19 @@ body {
 .mobile-navigation {
   position: fixed; inset: 0; margin: 0; padding: 0; width: 100%; max-width: none;
   height: 100dvh; max-height: none; border: 0; background: transparent; overflow: hidden;
+  transition: display 180ms allow-discrete, overlay 180ms allow-discrete;
 }
-.mobile-navigation::backdrop { background: rgba(15, 23, 42, .55); }
+.mobile-navigation::backdrop { background: rgba(15, 23, 42, .55); opacity: 0; transition: opacity 180ms ease-out, display 180ms allow-discrete, overlay 180ms allow-discrete; }
 .mobile-navigation .mobile-sidebar {
   margin: 0; width: min(300px, calc(100vw - 48px)) !important; min-width: 0 !important;
   height: 100dvh; border-radius: 0 12px 12px 0; background: #fff;
   padding-bottom: env(safe-area-inset-bottom); overflow-y: auto; overscroll-behavior: contain;
+  transform: translateX(-100%); transition: transform 180ms ease-out;
 }
 .mobile-sidebar .sidebar-logo { padding-right: 58px; flex-shrink: 0; }
 .mobile-sidebar .sidebar-role, .mobile-sidebar .sidebar-footer { flex-shrink: 0; }
 .mobile-sidebar .sidebar-nav { min-height: 80px; overscroll-behavior: contain; }
-.mobile-navigation { transition: display 180ms allow-discrete, overlay 180ms allow-discrete; }
-.mobile-navigation .mobile-sidebar { transform: translateX(-100%); transition: transform 180ms ease-out; }
 .mobile-navigation[open] .mobile-sidebar { transform: translateX(0); }
-.mobile-navigation::backdrop { opacity: 0; transition: opacity 180ms ease-out, display 180ms allow-discrete, overlay 180ms allow-discrete; }
 .mobile-navigation[open]::backdrop { opacity: 1; }
 @starting-style {
   .mobile-navigation[open] .mobile-sidebar { transform: translateX(-100%); }
@@ -2586,9 +2581,9 @@ body {
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
-.chart-tooltip strong { display: block; font-size: 13px; }
+.chart-tooltip strong { display: block; font-size: 14px; line-height: 1.4; }
 .chart-tooltip-value { display: block; margin-top: 4px; color: #2563EB; font-size: 18px; font-weight: 700; }
-.chart-tooltip p { margin: 6px 0 0; color: #52525B; }
+.chart-tooltip p { margin: 6px 0 0; color: #52525B; font-size: 13px; line-height: 1.6; }
 
 /* Manager hierarchy: roomy search, readable headings, explicit chart detail. */
 .app-shell[data-role='gerente'] .header-search { max-width: 680px !important; flex: 1 1 420px !important; min-width: 140px; margin-left: 0 !important; }
@@ -2601,8 +2596,6 @@ body {
 .app-shell[data-role='gerente'] .section-title { font-size: 18px; font-weight: 700; line-height: 1.4; }
 .app-shell[data-role='gerente'] .manager-kpi-label { font-size: 13px !important; color: #475569 !important; line-height: 1.5; }
 .chart-explainer:focus-visible, .dashboard-chart g:focus-visible { outline: 2px solid #2563EB; outline-offset: 3px; border-radius: 6px; }
-.chart-tooltip strong { font-size: 14px; line-height: 1.4; }
-.chart-tooltip p { font-size: 13px; line-height: 1.6; }
 @media (max-width: 1000px) and (min-width: 769px) {
   .app-shell[data-role='gerente'] .header-title { flex-basis: 220px !important; }
   .app-shell[data-role='gerente'] .app-header { gap: 14px !important; padding-inline: 18px !important; }

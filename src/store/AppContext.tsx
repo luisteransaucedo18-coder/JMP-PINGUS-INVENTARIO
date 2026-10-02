@@ -1,10 +1,11 @@
-import { createContext, useCallback, useContext, useEffect, useReducer, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import type { Entrega, Material, Proyecto, Requerimiento, RequerimientoCompra } from '../domain/types';
 import { obtenerCompras } from '../services/compraService';
 import { obtenerEntregas } from '../services/devolucionService';
 import { obtenerMateriales } from '../services/materialService';
 import { obtenerProyectos, obtenerRequerimientos } from '../services/requerimientoService';
 import { supabase } from '../services/supabase';
+import { createCoalescedTask } from '../utils/coalescedTask';
 
 interface AppState {
   materials: Material[];
@@ -53,7 +54,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [initialLoad, setInitialLoad] = useState<'loading' | 'ready' | 'error'>('loading');
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [state, dispatch] = useReducer(reducer, initialState);
-  const refreshRemoteData = useCallback(async () => {
+  const mounted = useRef(true);
+  const lastSyncComplete = useRef(false);
+  const refreshRemoteData = useMemo(() => createCoalescedTask(async () => {
     const results = await Promise.allSettled([
       obtenerRequerimientos(),
       obtenerProyectos(),
@@ -62,6 +65,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       obtenerCompras(),
     ]);
     const [requirements, projects, materials, deliveries, purchases] = results;
+    lastSyncComplete.current = results.every(result => result.status === 'fulfilled');
+    if (!mounted.current) return;
     if (requirements.status === 'fulfilled') dispatch({ type: 'REPLACE_REQUERIMIENTOS', payload: requirements.value });
     if (projects.status === 'fulfilled') dispatch({ type: 'REPLACE_PROYECTOS', payload: projects.value });
     if (materials.status === 'fulfilled') dispatch({ type: 'REPLACE_MATERIALS', payload: materials.value });
@@ -70,14 +75,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     results.forEach(result => {
       if (result.status === 'rejected') console.error('No se pudo sincronizar una fuente remota:', result.reason);
     });
-  }, []);
+  }), []);
 
   useEffect(() => {
+    mounted.current = true;
     let active = true;
     const refresh = async () => {
       try {
         await refreshRemoteData();
-        if (active) setInitialLoad('ready');
+        if (active) setInitialLoad(lastSyncComplete.current ? 'ready' : 'error');
       } catch (error) {
         console.error('No se pudo sincronizar datos remotos:', error);
         if (active) setInitialLoad('error');
@@ -97,7 +103,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'ordenes_compra' }, () => { void refresh(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orden_compra_items' }, () => { void refresh(); })
       .subscribe();
-    return () => { active = false; void supabase.removeChannel(channel); };
+    return () => { active = false; mounted.current = false; void supabase.removeChannel(channel); };
   }, [refreshRemoteData, loadAttempt]);
 
   return <AppContext.Provider value={{ state, refreshRemoteData, initialLoad, retryInitialLoad: () => setLoadAttempt(value => value + 1) }}>{children}</AppContext.Provider>;

@@ -1,3 +1,4 @@
+import { COMPRA_COLOR as E_COLOR, COMPRA_BG as E_BG } from '../../../config/visualTokens';
 import { useState } from 'react';
 import { useAppStore } from '../../../store/AppContext';
 import { EstadoCompra } from '../../../domain/types';
@@ -5,8 +6,6 @@ import { cancelarCompra } from '../../../services/compraService';
 
 interface Props { usuario: string; onNav: (v: string) => void; onToast: (m: string) => void; }
 
-const E_COLOR: Record<EstadoCompra, string> = { BORRADOR: '#8B8FA8', ENVIADO: '#D97706', APROBADO: '#2563EB', COMPRADO: '#059669', RECHAZADO: '#DC2626' };
-const E_BG:    Record<EstadoCompra, string> = { BORRADOR: '#F4F4F5', ENVIADO: '#FEF3C7', APROBADO: '#DBEAFE', COMPRADO: '#CCFBF1', RECHAZADO: '#FEE2E2' };
 const E_LABEL: Record<EstadoCompra, string> = { BORRADOR: 'Borrador', ENVIADO: 'Enviado', APROBADO: 'Aprobado', COMPRADO: 'Comprado', RECHAZADO: 'Cancelada' };
 
 export default function MisComprasView({ usuario, onNav, onToast }: Props) {
