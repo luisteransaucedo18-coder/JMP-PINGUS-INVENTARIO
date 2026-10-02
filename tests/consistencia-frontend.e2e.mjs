@@ -58,7 +58,7 @@ try {
     assert.equal(await search.count(),1,'The second line remains unselected');
     assert.equal(catalogReads,2,'New requirement reuses the shared catalogue');
     await nav('Órdenes de Compra');
-    await page.getByRole('button',{name:'Crear una →',exact:true}).click();
+    await page.getByRole('button',{name:'Crear una →',exact:true}).press('Enter');
     search=page.getByPlaceholder('Buscar por nombre o SKU…');
     await search.fill('Tubería');
     await page.getByText('Tubería de cobre',{exact:true}).last().click();
