@@ -16,7 +16,7 @@ export const supabase = createClient(
   supabaseKey ?? 'missing-supabase-key',
   {
     auth: {
-      persistSession: false,
+      persistSession: true,
     },
   },
 )

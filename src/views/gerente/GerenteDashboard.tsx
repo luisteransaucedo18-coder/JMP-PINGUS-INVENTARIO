@@ -1,3 +1,4 @@
+import { Card, SectionHead, BarChart } from '../../components/DashboardPrimitives';
 import { useAppStore } from '../../store/AppContext';
 import { SEDES, Sede } from '../../domain/types';
 
@@ -6,83 +7,20 @@ const SEDE_BG: Record<Sede, string>    = { Chiclayo: '#DBEAFE', Chimbote: '#CCFB
 const ESTADO_COLOR: Record<string, string> = { BORRADOR: '#A1A1AA', ENVIADO: '#D97706', CONFIRMADO: '#059669', RECHAZADO: '#DC2626' };
 const ESTADO_BG: Record<string, string>    = { BORRADOR: '#F4F4F5', ENVIADO: '#FEF3C7', CONFIRMADO: '#CCFBF1', RECHAZADO: '#FEE2E2' };
 
-/* ── SVG Bar Chart ── */
-function BarChart({ data, colors, labels, height = 140 }: {
-  data: number[][];   // data[barGroupIndex][seriesIndex]
-  colors: string[];
-  labels: string[];
-  height?: number;
-}) {
-  const groups = data.length;
-  const series = colors.length;
-  const maxVal = Math.max(...data.flat(), 1);
-  const tickStep = Math.max(1, Math.ceil(maxVal / 4));
-  const chartMax = Math.ceil(maxVal / tickStep) * tickStep;
-  const ticks = Array.from({ length: chartMax / tickStep + 1 }, (_, index) => index * tickStep);
-  const W = 900; const H = height;
-  const margin = { top: 10, right: 18, bottom: 34, left: 34 };
-  const plotW = W - margin.left - margin.right;
-  const plotH = H - margin.top - margin.bottom;
-  const barW = Math.min(34, plotW / Math.max(groups * (series + 2), 1));
-  const gap = Math.max(6, barW * 0.3);
-
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Solicitudes confirmadas y pendientes por sede" style={{ width: '100%', height: '100%', minHeight: 220, display: 'block' }}>
-      {/* Gridlines */}
-      {ticks.map(value => {
-        const y = margin.top + plotH - (value / chartMax) * plotH;
-        return (
-          <g key={value}>
-            <line x1={margin.left} y1={y} x2={W - margin.right} y2={y} stroke="#E4E4F0" strokeWidth={1} strokeDasharray={value === 0 ? undefined : '4 4'} />
-            <text x={margin.left - 9} y={y + 4} fontSize={11} fill="#8B8FA8" textAnchor="end">
-              {value}
-            </text>
-          </g>
-        );
-      })}
-      {/* Bars */}
-      {data.map((group, gi) => {
-        const centerX = margin.left + ((gi + 0.5) / groups) * plotW;
-        const groupBarsW = series * barW + (series - 1) * gap;
-        const gx = centerX - groupBarsW / 2;
-        return group.map((val, si) => {
-          const barH = (val / chartMax) * plotH;
-          const x = gx + si * (barW + gap);
-          const y = margin.top + plotH - barH;
-          return (
-            <g key={`${gi}-${si}`}>
-              <rect x={x} y={y} width={barW} height={barH} rx={6} fill={colors[si]} opacity={0.92} />
-              {val > 0 && (
-                <text x={x + barW / 2} y={Math.max(y - 7, 10)} fontSize={11} fontWeight={700} fill={colors[si]} textAnchor="middle">{val}</text>
-              )}
-            </g>
-          );
-        });
-      })}
-      {/* Labels */}
-      {data.map((_, gi) => {
-        const gx = margin.left + ((gi + 0.5) / groups) * plotW;
-        return (
-          <text key={gi} x={gx} y={H - 8} fontSize={11.5} fontWeight={600} fill="#71717A" textAnchor="middle">{labels[gi]}</text>
-        );
-      })}
-    </svg>
-  );
-}
-
 /* ── SVG Line/Area Chart ── */
 function LineChart({ values, color, height = 110 }: { values: number[]; color: string; height?: number }) {
   const W = 440; const H = height;
   const max = Math.max(...values, 1);
   const pts = values.map((v, i) => ({
-    x: (i / (values.length - 1)) * W,
-    y: H - (v / max) * H,
+    x: 8 + (i / Math.max(values.length - 1, 1)) * (W - 16),
+    y: H - 8 - (v / max) * (H - 16),
   }));
   const path = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
   const area = `${path} L ${W} ${H} L 0 ${H} Z`;
   const id = `grad-${color.replace('#', '')}`;
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%' }}>
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Distribución de stock por sede" style={{ width: '100%', display: 'block', overflow: 'visible' }}>
+      <desc>{SEDES.map((s, i) => `${s}: ${values[i]}`).join('; ')}</desc>
       <defs>
         <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={color} stopOpacity="0.22" />
@@ -95,35 +33,6 @@ function LineChart({ values, color, height = 110 }: { values: number[]; color: s
         <circle key={i} cx={p.x} cy={p.y} r={3} fill="#fff" stroke={color} strokeWidth={2} />
       ))}
     </svg>
-  );
-}
-
-/* ── Card wrapper ── */
-function Card({ children, style, className }: { children: React.ReactNode; style?: React.CSSProperties; className?: string }) {
-  return (
-    <div className={className} style={{
-      background: '#fff',
-      borderRadius: 20,
-      boxShadow: '0 4px 24px rgba(99,102,241,0.07)',
-      overflow: 'hidden',
-      ...style,
-    }}>
-      {children}
-    </div>
-  );
-}
-
-/* ── Section header ── */
-function SectionHead({ title, action, actionLabel = 'Ver todo' }: { title: string; action?: () => void; actionLabel?: string }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-      <span style={{ fontSize: 15, fontWeight: 700, color: '#1A1D23' }}>{title}</span>
-      {action && (
-        <button onClick={action} style={{ background: 'none', border: 'none', fontSize: 12.5, color: '#2563EB', cursor: 'pointer', fontWeight: 600 }}>
-          {actionLabel}
-        </button>
-      )}
-    </div>
   );
 }
 
@@ -205,7 +114,7 @@ export default function GerenteDashboard({ onNav }: Props) {
         {/* Recent activity */}
         <Card style={{ padding: '22px 20px', display: 'flex', flexDirection: 'column' }}>
           <SectionHead title="Actividad reciente" />
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div className="manager-recent-list" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
             {recentReqs.map(r => {
               const initial = r.proyecto.charAt(0).toUpperCase();
               const color = SEDE_COLOR[r.sede];
@@ -215,7 +124,7 @@ export default function GerenteDashboard({ onNav }: Props) {
                     {initial}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: '#1A1D23', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.proyecto}</div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#1A1D23', overflowWrap: 'anywhere' }}>{r.proyecto}</div>
                     <div style={{ fontSize: 10.5, color: '#8B8FA8' }}>{r.fecha} · {r.sede}</div>
                   </div>
                   <span style={{ fontSize: 10.5, fontWeight: 700, background: ESTADO_BG[r.estado], color: ESTADO_COLOR[r.estado], borderRadius: 6, padding: '2px 7px', flexShrink: 0 }}>
@@ -241,7 +150,7 @@ export default function GerenteDashboard({ onNav }: Props) {
               const critS     = materials.filter(m => m.stockSedes[s] < m.minimo).length;
               const pct = sedeReqs.length > 0 ? Math.round((sedeConf / sedeReqs.length) * 100) : 0;
               return (
-                <div key={s} style={{ background: '#F8F9FF', borderRadius: 14, padding: '14px 16px' }}>
+                <div key={s} style={{ background: '#F8F9FF', borderRadius: 'var(--surface-inset-radius)', padding: '14px 16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{ width: 10, height: 10, borderRadius: '50%', background: SEDE_COLOR[s] }} />
@@ -294,7 +203,7 @@ export default function GerenteDashboard({ onNav }: Props) {
                 <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: '#F8F9FF', borderRadius: 10 }}>
                   <div style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: m.estado === 'AGOTADO' ? '#DC2626' : m.estado === 'CRÍTICO' ? '#EF4444' : '#D97706' }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 11.5, fontWeight: 600, color: '#1A1D23', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.nombre}</div>
+                    <div style={{ fontSize: 11.5, fontWeight: 600, color: '#1A1D23', overflowWrap: 'anywhere' }}>{m.nombre}</div>
                     <div style={{ fontSize: 10.5, color: '#8B8FA8' }}>Total: {Object.values(m.stockSedes).reduce((a, b) => a + b, 0)} UND · Mín {m.minimo}</div>
                   </div>
                   <span style={{ fontSize: 9.5, fontWeight: 700, background: m.estado === 'AGOTADO' || m.estado === 'CRÍTICO' ? '#FEE2E2' : '#FEF3C7', color: m.estado === 'AGOTADO' || m.estado === 'CRÍTICO' ? '#DC2626' : '#D97706', borderRadius: 6, padding: '2px 6px', flexShrink: 0 }}>
@@ -318,7 +227,7 @@ export default function GerenteDashboard({ onNav }: Props) {
           ].map(({ label, count, color, bg }) => {
             const pct = requerimientos.length > 0 ? (count / requerimientos.length) * 100 : 0;
             return (
-              <div key={label} style={{ background: '#F8F9FF', borderRadius: 14, padding: '16px 18px' }}>
+              <div key={label} style={{ background: '#F8F9FF', borderRadius: 'var(--surface-inset-radius)', padding: '16px 18px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                   <span style={{ fontSize: 11.5, color: '#8B8FA8', fontWeight: 500 }}>{label}</span>
                   <span style={{ background: bg, color, borderRadius: 8, padding: '2px 8px', fontSize: 10.5, fontWeight: 700 }}>{pct.toFixed(0)}%</span>
@@ -348,7 +257,7 @@ export default function GerenteDashboard({ onNav }: Props) {
               {recentReqs.slice(0, 5).map(r => (
                 <tr key={r.id} style={{ borderBottom: '1px solid #F8F9FF' }}>
                   <td style={{ padding: '11px 8px', fontFamily: 'monospace', fontSize: 11, color: '#2563EB', fontWeight: 700 }}>{r.id}</td>
-                  <td style={{ padding: '11px 8px', fontSize: 12.5, fontWeight: 600, color: '#1A1D23', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.proyecto}</td>
+                  <td style={{ padding: '11px 8px', fontSize: 12.5, fontWeight: 600, color: '#1A1D23', maxWidth: 200, overflowWrap: 'anywhere' }}>{r.proyecto}</td>
                   <td style={{ padding: '11px 8px' }}>
                     <span style={{ background: SEDE_BG[r.sede], color: SEDE_COLOR[r.sede], borderRadius: 6, padding: '3px 8px', fontSize: 11, fontWeight: 700 }}>{r.sede}</span>
                   </td>

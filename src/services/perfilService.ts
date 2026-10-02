@@ -1,6 +1,6 @@
 import { supabase } from "./supabase"
 
-interface Perfil {
+export interface Perfil {
   id: string
 
   codigo?: string | null
@@ -11,7 +11,7 @@ interface Perfil {
 
   rol: "gerente" | "analista" | "coordinador"
 
-  sede: "Chiclayo" | "Chimbote" | "Trujillo"
+  sede: "Chiclayo" | "Chimbote" | "Trujillo" | null
 
   estado: "ACTIVO" | "INACTIVO"
 
@@ -20,6 +20,10 @@ interface Perfil {
   cargo?: string | null
 
   bio?: string | null
+
+  foto_path?: string | null
+
+  foto_url?: string | null
 
   ultimo_acceso?: string | null
 
@@ -100,4 +104,23 @@ export async function actualizarPerfil(id: string, cambios: CambiosPerfil) {
   }
 
   return data
+}
+
+export async function obtenerMiPerfil(): Promise<Perfil> {
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) throw new Error('Tu sesión terminó. Inicia sesión nuevamente.');
+  const { data, error } = await supabase.from('perfiles').select('*').eq('id', user.id).single();
+  if (error || !data || data.id !== user.id) throw new Error('No se pudo cargar tu perfil. Inténtalo nuevamente.');
+  if (data.estado !== 'ACTIVO' || !['gerente', 'analista', 'coordinador'].includes(data.rol)) throw new Error('Tu cuenta no tiene acceso activo al sistema.');
+  return data as Perfil;
+}
+
+export type DatosPersonales = { nombre: string; telefono: string; cargo: string; bio: string };
+export async function guardarMiPerfil(fields: DatosPersonales, fotoPath?: string): Promise<Perfil> {
+  const { data, error } = await supabase.rpc('actualizar_mi_perfil', {
+    p_nombre: fields.nombre.trim(), p_telefono: fields.telefono.trim(), p_cargo: fields.cargo.trim(),
+    p_bio: fields.bio.trim(), p_foto_path: fotoPath ?? null,
+  }).single();
+  if (error || !data) throw new Error('No se pudo guardar tu perfil. Tus cambios siguen disponibles para reintentar.');
+  return data as Perfil;
 }

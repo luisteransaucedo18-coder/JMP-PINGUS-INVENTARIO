@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import type { Role } from './domain/types';
+import { obtenerMiPerfil, type Perfil } from './services/perfilService';
+import { UserProfileProvider, useUserProfile } from './store/UserProfileContext';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import MobileNavigation from './components/MobileNavigation';
@@ -26,7 +27,7 @@ function Toast({ msg, onDismiss }: { msg: string; onDismiss: () => void }) {
 }
 
 /* ─── Login Screen ─── */
-function LoginScreen({ onLogin }: { onLogin: (role: Role, name: string, email: string) => void }) {
+function LoginScreen({ onLogin }: { onLogin: (profile: Perfil) => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
@@ -106,11 +107,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     }
 
     // 5. Entrar al sistema
-    onLogin(
-      perfil.rol as Role,
-      perfil.nombre,
-      perfil.email
-    );
+    onLogin(perfil as Perfil);
 
   } catch (error) {
     console.error('Error inesperado:', error);
@@ -183,7 +180,9 @@ const handleSubmit = async (e: React.FormEvent) => {
 }
 
 /* ─── Inner app (needs AppContext) ─── */
-function AppShell({ session, onLogout, loggingOut, logoutError }: { loggingOut: boolean; logoutError: string; session: { role: Role; name: string; email: string }; onLogout: () => void }) {
+function AppShell({ onLogout, loggingOut, logoutError }: { loggingOut: boolean; logoutError: string; onLogout: () => void }) {
+  const { profile, avatarUrl } = useUserProfile();
+  const session = { role: profile.rol, name: profile.nombre, email: profile.email };
   const [view, setView] = useState('dashboard');
   const [menuOpen, setMenuOpen] = useState(false);
   const menuTrigger = useRef<HTMLButtonElement>(null);
@@ -195,7 +194,7 @@ function AppShell({ session, onLogout, loggingOut, logoutError }: { loggingOut: 
   }, []);
   const navigate = (next: string) => { setView(next); setMenuOpen(false); };
   const sidebarProps = { role: session.role, activeView: view, onNav: navigate, onLogout,
-    userName: session.name, userEmail: session.email, loggingOut, logoutError };
+    userName: session.name, userEmail: session.email, avatarUrl, loggingOut, logoutError };
 
   const [toast, setToast] = useState<string | null>(null);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -219,23 +218,26 @@ function AppShell({ session, onLogout, loggingOut, logoutError }: { loggingOut: 
           </button>}
           title={titles?.title || 'Sistema de Gestión'}
           subtitle={titles?.subtitle}
+          onProfile={() => navigate('perfil')}
+          avatarUrl={avatarUrl}
           userName={session.name}
           userInitials={session.name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()}
           unreadCount={unread}
+          notificationsOpen={notifOpen}
+          notificationPanel={<NotificationsPanel
+            open={notifOpen}
+            onClose={() => setNotifOpen(false)}
+            role={session.role}
+            userName={session.name}
+            readIds={readIds}
+            onMarkRead={setReadIds}
+          />}
           onBellClick={() => setNotifOpen(open => !open)}
         />
         <div className="app-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
           <ViewRouter role={session.role} view={view} onToast={msg => setToast(msg)} onNav={setView} userName={session.name} userEmail={session.email} />
         </div>
       </div>
-      <NotificationsPanel
-        open={notifOpen}
-        onClose={() => setNotifOpen(false)}
-        role={session.role}
-        userName={session.name}
-        readIds={readIds}
-        onMarkRead={setReadIds}
-      />
       {toast && <Toast msg={toast} onDismiss={() => setToast(null)} />}
     </div>
   );
@@ -257,23 +259,33 @@ function ConfigurationErrorScreen() {
 }
 
 export default function App() {
-  const [session, setSession] = useState<{ role: Role; name: string; email: string } | null>(null);
+  const [session, setSession] = useState<Perfil | null>(null);
   const [sessionError, setSessionError] = useState('');
   const [loggingOut, setLoggingOut] = useState(false);
   const logoutPending = useRef(false);
+  const [restoring, setRestoring] = useState(true);
 
   useEffect(() => {
     if (supabaseConfigError) return;
+    let active = true;
+    void supabase.auth.getSession().then(async ({ data }) => {
+      if (!data.session) return;
+      const profile = await obtenerMiPerfil();
+      if (active) setSession(profile);
+    }).catch(() => { if (active) setSessionError('No se pudo recuperar tu sesión. Inicia sesión nuevamente.'); })
+      .finally(() => { if (active) setRestoring(false); });
     const { data: { subscription } } = supabase.auth.onAuthStateChange(event => {
       if (event === 'SIGNED_OUT') {
+        active = false;
+        setRestoring(false);
         setSession(null);
       }
     });
-    return () => subscription.unsubscribe();
+    return () => { active = false; subscription.unsubscribe(); };
   }, []);
 
-  const handleLogin = (role: Role, name: string, email: string) => {
-    setSession({ role, name, email });
+  const handleLogin = (profile: Perfil) => {
+    setSession(profile);
     setSessionError('');
   };
 
@@ -296,10 +308,11 @@ export default function App() {
   };
 
   if (supabaseConfigError) return <ConfigurationErrorScreen />;
+  if (restoring) return <main className="session-restoring" role="status">Cargando tu sesión…</main>;
 
   return <>
     {!session && sessionError && <div role="alert" className="sidebar-session-error">{sessionError} Si la sesión local ya se cerró, inicia sesión para reintentar.</div>}
-    {session ? <AppProvider key={session.email}><WorkspaceGate loggingOut={loggingOut} logoutError={sessionError} onLogout={() => void logout()}><AppShell loggingOut={loggingOut} logoutError={sessionError} session={session} onLogout={() => void logout()} /></WorkspaceGate></AppProvider>
+    {session ? <UserProfileProvider key={session.id} initialProfile={session} onChange={next => setSession(current => current?.id === next.id ? next : current)}><AppProvider><WorkspaceGate loggingOut={loggingOut} logoutError={sessionError} onLogout={() => void logout()}><AppShell loggingOut={loggingOut} logoutError={sessionError} onLogout={() => void logout()} /></WorkspaceGate></AppProvider></UserProfileProvider>
       : <LoginScreen onLogin={handleLogin} />}
   </>;
 }

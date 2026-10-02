@@ -1,3 +1,4 @@
+import { Card, SectionHead, BarChart } from '../../../components/DashboardPrimitives';
 import { useState } from 'react';
 import { useAppStore } from '../../../store/AppContext';
 import { SEDES, Sede } from '../../../domain/types';
@@ -8,62 +9,6 @@ const ESTADO_COLOR: Record<string, string> = { ENVIADO: '#D97706', CONFIRMADO: '
 const ESTADO_BG: Record<string, string>    = { ENVIADO: '#FEF3C7', CONFIRMADO: '#CCFBF1', RECHAZADO: '#FEE2E2', BORRADOR: '#F4F4F5' };
 
 type Period = '7d' | '30d' | 'all';
-
-/* ── Shared card ── */
-function Card({ children, style, className }: { children: React.ReactNode; style?: React.CSSProperties; className?: string }) {
-  return (
-    <div className={className} style={{ background: '#fff', borderRadius: 20, boxShadow: '0 4px 24px rgba(99,102,241,0.07)', overflow: 'hidden', ...style }}>
-      {children}
-    </div>
-  );
-}
-
-/* ── Section header ── */
-function SectionHead({ title }: { title: string }) {
-  return <div style={{ fontSize: 15, fontWeight: 700, color: '#1A1D23', marginBottom: 16 }}>{title}</div>;
-}
-
-/* ── SVG Bar chart ── */
-function BarChart({ data, colors, labels, height = 110 }: {
-  data: number[][];
-  colors: string[];
-  labels: string[];
-  height?: number;
-}) {
-  const W = 380; const H = height;
-  const maxVal = Math.max(...data.flat(), 1);
-  const series = colors.length;
-  const barW = 14; const gap = 5; const groupGap = 18;
-  const groupW = series * (barW + gap) - gap + groupGap;
-  const startX = 12;
-
-  return (
-    <svg viewBox={`0 0 ${W} ${H + 24}`} style={{ width: '100%' }}>
-      {[0, 0.5, 1].map(t => {
-        const y = H - t * H;
-        return (
-          <g key={t}>
-            <line x1={0} y1={y} x2={W} y2={y} stroke="#E4E4F0" strokeWidth={1} strokeDasharray={t === 0 ? '0' : '3 3'} />
-            <text x={0} y={y - 3} fontSize={8.5} fill="#A1A1AA">{Math.round(t * maxVal)}</text>
-          </g>
-        );
-      })}
-      {data.map((group, gi) => {
-        const gx = startX + gi * groupW;
-        return group.map((val, si) => {
-          const barH = (val / maxVal) * H;
-          return (
-            <rect key={`${gi}-${si}`} x={gx + si * (barW + gap)} y={H - barH} width={barW} height={barH} rx={5} fill={colors[si]} opacity={0.88} />
-          );
-        });
-      })}
-      {data.map((_, gi) => {
-        const gx = startX + gi * groupW + (series * (barW + gap) - gap) / 2;
-        return <text key={gi} x={gx} y={H + 16} fontSize={9} fill="#71717A" textAnchor="middle">{labels[gi]}</text>;
-      })}
-    </svg>
-  );
-}
 
 export default function ReportesView() {
   const { state } = useAppStore();
@@ -154,7 +99,7 @@ export default function ReportesView() {
       </div>
 
       {/* ── Row 2: Bar chart + Analistas + Estado inventario ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 220px 220px', gap: 18, marginBottom: 22 }}>
+      <div className="report-analysis-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 220px 220px', gap: 18, marginBottom: 22 }}>
         {/* Bar chart */}
         <Card style={{ padding: '22px 24px' }}>
           <SectionHead title="Requerimientos por sede" />
@@ -166,7 +111,7 @@ export default function ReportesView() {
               </div>
             ))}
           </div>
-          <BarChart data={barData} colors={['#059669', '#D97706']} labels={SEDES} height={120} />
+          <BarChart data={barData} colors={['#059669', '#D97706']} labels={SEDES} height={240} />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginTop: 16 }}>
             {SEDES.map(s => {
               const sedeReqs = filteredReqs.filter(r => r.sede === s);

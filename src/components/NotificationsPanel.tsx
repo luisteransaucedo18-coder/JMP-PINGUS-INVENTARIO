@@ -307,11 +307,27 @@ export default function NotificationsPanel({ open, onClose, role, userName, read
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) onClose();
+      if (!(e.target as Element).closest('.notification-anchor')) onClose();
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { onClose(); document.getElementById('notification-trigger')?.focus(); }
     };
     document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('keydown', escape);
+    return () => { document.removeEventListener('mousedown', handler); document.removeEventListener('keydown', escape); };
   }, [open, onClose]);
+
+  useEffect(() => {
+    if (!open) return;
+    const header = panelRef.current?.closest('.app-header');
+    if (!header) return;
+    const position = () => panelRef.current?.style.setProperty('--notification-top', `${header.getBoundingClientRect().bottom + 8}px`);
+    position();
+    const observer = new ResizeObserver(position);
+    observer.observe(header);
+    window.addEventListener('resize', position);
+    return () => { observer.disconnect(); window.removeEventListener('resize', position); };
+  }, [open]);
 
   const markAllRead = () => setRead(new Set(notifications.map(n => n.id)));
   const markRead = (id: string) => setRead(prev => new Set([...prev, id]));
@@ -329,33 +345,17 @@ export default function NotificationsPanel({ open, onClose, role, userName, read
     { value: 'purchase', label: 'Compras' },
   ];
 
+  if (!open) return null;
+
   return (
     <>
-      {/* Backdrop */}
-      {open && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.15)', zIndex: 98, backdropFilter: 'blur(1px)' }} onClick={onClose} />
-      )}
-
-      {/* Slide-in panel */}
+      {/* Anchored notification panel */}
       <div
         ref={panelRef}
         className="notifications-panel"
-        style={{
-          position: 'fixed',
-          top: 0,
-          right: 0,
-          width: 400,
-          height: '100vh',
-          background: '#fff',
-          zIndex: 99,
-          boxShadow: '-8px 0 40px rgba(99,102,241,0.15)',
-          display: 'flex',
-          flexDirection: 'column',
-          transform: open ? 'translateX(0)' : 'translateX(100%)',
-          transition: 'transform 0.28s cubic-bezier(0.4,0,0.2,1)',
-          borderRadius: '20px 0 0 20px',
-          overflow: 'hidden',
-        }}
+        id="notifications-panel"
+        role="region"
+        aria-label="Notificaciones"
       >
         {/* Header */}
         <div style={{ padding: '22px 22px 14px', borderBottom: '1px solid #F0F2FF', flexShrink: 0 }}>
@@ -379,7 +379,7 @@ export default function NotificationsPanel({ open, onClose, role, userName, read
                   Marcar todo leído
                 </button>
               )}
-              <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 10, border: 'none', background: '#F8F9FF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8B8FA8', fontSize: 18, lineHeight: 1, transition: 'background 0.1s' }}
+              <button aria-label="Cerrar notificaciones" onClick={onClose} style={{ width: 32, height: 32, borderRadius: 10, border: 'none', background: '#F8F9FF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8B8FA8', fontSize: 18, lineHeight: 1, transition: 'background 0.1s' }}
                 onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#EEF0FF'}
                 onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#F8F9FF'}>
                 ×
@@ -388,10 +388,10 @@ export default function NotificationsPanel({ open, onClose, role, userName, read
           </div>
 
           {/* Filter pills */}
-          <div style={{ display: 'flex', gap: 5, overflowX: 'auto', paddingBottom: 2 }}>
+          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', paddingBottom: 2 }}>
             {FILTER_OPTIONS.map(opt => (
-              <button key={opt.value} onClick={() => setFilter(opt.value)} style={{
-                padding: '5px 13px', borderRadius: 20, border: 'none', cursor: 'pointer',
+              <button aria-pressed={filter === opt.value} key={opt.value} onClick={() => setFilter(opt.value)} style={{
+                padding: '5px 13px', borderRadius: 8, border: 'none', cursor: 'pointer',
                 fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', transition: 'all 0.15s',
                 background: filter === opt.value ? '#2563EB' : '#F8F9FF',
                 color: filter === opt.value ? '#fff' : '#8B8FA8',
@@ -405,7 +405,7 @@ export default function NotificationsPanel({ open, onClose, role, userName, read
         <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
           {filtered.length === 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60%', gap: 12 }}>
-              <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#F8F9FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#C4C6D8' }}><svg width="24" height="24" viewBox="0 0 15 15" fill="none"><path d="M7.5 1.5A4 4 0 0111.5 5.5V9l1.5 2H2L3.5 9V5.5A4 4 0 017.5 1.5z" stroke="currentColor" strokeWidth="1.3"/><path d="M6 11a1.5 1.5 0 003 0" stroke="currentColor" strokeWidth="1.3"/></svg></div>
+              <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#F8F9FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#71717A' }}><svg width="24" height="24" viewBox="0 0 15 15" fill="none"><path d="M7.5 1.5A4 4 0 0111.5 5.5V9l1.5 2H2L3.5 9V5.5A4 4 0 017.5 1.5z" stroke="currentColor" strokeWidth="1.3"/><path d="M6 11a1.5 1.5 0 003 0" stroke="currentColor" strokeWidth="1.3"/></svg></div>
               <div style={{ fontSize: 14, fontWeight: 600, color: '#1A1D23' }}>Sin notificaciones</div>
               <div style={{ fontSize: 12.5, color: '#8B8FA8', textAlign: 'center', maxWidth: 220 }}>
                 {filter === 'all' ? 'Todo está al día. Aquí aparecerán los eventos relevantes del sistema.' : `No hay notificaciones de este tipo.`}
@@ -415,7 +415,7 @@ export default function NotificationsPanel({ open, onClose, role, userName, read
             filtered.map(n => {
               const isRead = read.has(n.id);
               return (
-                <div key={n.id}
+                <button type="button" className="notification-item" key={n.id} aria-label={`${n.title}. ${n.body}`}
                   onClick={() => markRead(n.id)}
                   style={{
                     display: 'flex', gap: 13, padding: '14px 20px', cursor: 'pointer',
@@ -442,15 +442,15 @@ export default function NotificationsPanel({ open, onClose, role, userName, read
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 3 }}>
                       <div style={{ fontSize: 13, fontWeight: isRead ? 500 : 700, color: '#1A1D23', lineHeight: 1.3 }}>{n.title}</div>
                     </div>
-                    <div style={{ fontSize: 12, color: '#8B8FA8', lineHeight: 1.5, marginBottom: 5 }}>{n.body}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ fontSize: 12, color: '#52525B', lineHeight: 1.5, marginBottom: 5 }}>{n.body}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                       {n.ref && (
                         <span style={{ fontSize: 10.5, fontFamily: 'monospace', fontWeight: 700, color: TYPE_COLOR[n.type], background: TYPE_BG[n.type], borderRadius: 5, padding: '1px 6px' }}>{n.ref.split(',')[0]}</span>
                       )}
-                      <span style={{ fontSize: 11, color: '#C4C6D8' }}>{timeAgo(n.date)}</span>
+                      <span style={{ fontSize: 11, color: '#71717A' }}>{timeAgo(n.date)}</span>
                     </div>
                   </div>
-                </div>
+                </button>
               );
             })
           )}
@@ -458,7 +458,7 @@ export default function NotificationsPanel({ open, onClose, role, userName, read
 
         {/* Footer */}
         <div style={{ padding: '14px 20px', borderTop: '1px solid #F0F2FF', flexShrink: 0, background: '#FAFBFF' }}>
-          <div style={{ fontSize: 11.5, color: '#C4C6D8', textAlign: 'center' }}>
+          <div style={{ fontSize: 11.5, color: '#71717A', textAlign: 'center' }}>
             Las notificaciones se generan automáticamente desde el estado del sistema.
           </div>
         </div>

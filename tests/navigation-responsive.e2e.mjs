@@ -20,6 +20,7 @@ for (const role of (process.env.QA_ROLE ? [process.env.QA_ROLE] : ['gerente','an
     return route.fulfill({status:failLogout?400:204,contentType:'application/json',body:failLogout?JSON.stringify({msg:'Test logout failure'}):''});
    }
    const user={id:'11111111-1111-4111-8111-111111111111',aud:'authenticated',role:'authenticated',email:`${role}@test.invalid`,app_metadata:{},user_metadata:{},created_at:new Date().toISOString()};
+   if (route.request().url().includes('/user')) return route.fulfill({json:user});
    return route.fulfill({json:{access_token:'test-token',refresh_token:'test-refresh',expires_in:3600,token_type:'bearer',user}});
   });
   await page.route('**/rest/v1/**',route=>route.fulfill({json:route.request().url().includes('/perfiles') && route.request().headers().accept?.includes('vnd.pgrst.object')?{id:'11111111-1111-4111-8111-111111111111',rol:role,estado:'ACTIVO',nombre:`Prueba ${role}`,email:`${role}@test.invalid`}:[]}));
@@ -84,7 +85,7 @@ for (const role of (process.env.QA_ROLE ? [process.env.QA_ROLE] : ['gerente','an
   await login();
   assert.equal(await page.locator('.app-header h1').textContent(),{gerente:'Dashboard General',analista:'Mi Panel',coordinador:'Panel de Coordinación'}[role]);
   await page.reload();
-  await page.getByRole('button',{name:'Ingresar al sistema'}).waitFor();
+  await page.locator('.app-header').waitFor({timeout:15000});
   console.log(`PASS ${role} ${width}: role navigation, modal, logout failure/retry, login, protected shell`);
   await page.close();
  }

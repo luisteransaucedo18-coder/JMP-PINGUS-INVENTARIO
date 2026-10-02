@@ -107,14 +107,14 @@ export default function ComprasView({ onToast }: Props) {
 
       {/* ── Alert banners ── */}
       {pending > 0 && (
-        <div style={{ marginBottom: 16, background: '#FFFBEB', border: '1.5px solid #FDE68A', borderRadius: 14, padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="system-alert" style={{ marginBottom: 16, background: '#FFFBEB', border: '1.5px solid #FDE68A', borderRadius: 'var(--surface-inset-radius)', padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 12 }}>
           <svg width="16" height="16" viewBox="0 0 15 15" fill="none"><path d="M7.5 1L14 13H1L7.5 1z" stroke="#D97706" strokeWidth="1.3" strokeLinejoin="round"/><path d="M7.5 6v3M7.5 11v.5" stroke="#D97706" strokeWidth="1.3" strokeLinecap="round"/></svg>
           <span style={{ fontSize: 13, color: '#92400E' }}><strong>{pending} orden{pending !== 1 ? 'es' : ''}</strong> esperan tu aprobación.</span>
           <button className="btn btn-ghost" style={{ marginLeft: 'auto', fontSize: 12 }} onClick={() => setEstadoFilter('ENVIADO')}>Ver pendientes →</button>
         </div>
       )}
       {approved > 0 && (
-        <div style={{ marginBottom: 16, background: '#EFF6FF', border: '1.5px solid #BFDBFE', borderRadius: 14, padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="system-alert" style={{ marginBottom: 16, background: '#EFF6FF', border: '1.5px solid #BFDBFE', borderRadius: 'var(--surface-inset-radius)', padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 12 }}>
           <svg width="16" height="16" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6" stroke="#2563EB" strokeWidth="1.3"/><path d="M4.5 7.5l2 2 3.5-3.5" stroke="#2563EB" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
           <span style={{ fontSize: 13, color: '#1D4ED8' }}><strong>{approved} orden{approved !== 1 ? 'es' : ''}</strong> aprobadas — confirma la compra cuando lleguen los materiales.</span>
           <button className="btn btn-ghost" style={{ marginLeft: 'auto', fontSize: 12, borderColor: '#BFDBFE' }} onClick={() => setEstadoFilter('APROBADO')}>Ver aprobadas →</button>

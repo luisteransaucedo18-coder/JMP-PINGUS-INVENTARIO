@@ -99,7 +99,7 @@ export default function MisComprasView({ usuario, onNav, onToast }: Props) {
 
         {/* Expanded detail */}
         {det && (
-          <div style={{ background: '#fff', borderRadius: 20, boxShadow: '0 4px 24px rgba(99,102,241,0.09)', overflow: 'hidden' }}>
+          <div style={{ background: 'var(--color-surface)', border: '1px solid var(--surface-border)', borderRadius: 'var(--surface-radius)', boxShadow: 'var(--surface-shadow)', overflow: 'hidden' }}>
             <div style={{ padding: '18px 24px', borderBottom: '1px solid #F0F2FF', display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 800, color: '#1A1D23' }}>{det.id} · Detalle de la orden</div>

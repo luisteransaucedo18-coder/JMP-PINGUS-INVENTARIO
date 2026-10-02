@@ -1,3 +1,4 @@
+import UserAvatar from './UserAvatar';
 import { useState } from 'react';
 
 interface HeaderProps {
@@ -7,11 +8,15 @@ interface HeaderProps {
   actions?: React.ReactNode;
   userName?: string;
   userInitials?: string;
+  avatarUrl?: string | null;
+  onProfile?: () => void;
   onBellClick?: () => void;
   unreadCount?: number;
+  notificationsOpen?: boolean;
+  notificationPanel?: React.ReactNode;
 }
 
-export default function Header({ menuButton, title, subtitle, actions, userName, userInitials, onBellClick, unreadCount = 0 }: HeaderProps) {
+export default function Header({ menuButton, title, subtitle, actions, userName, avatarUrl, onProfile, onBellClick, unreadCount = 0, notificationsOpen, notificationPanel }: HeaderProps) {
   const [search, setSearch] = useState('');
 
   return (
@@ -72,8 +77,8 @@ export default function Header({ menuButton, title, subtitle, actions, userName,
       {actions && <div style={{ display: 'flex', alignItems: 'center' }}>{actions}</div>}
 
       {/* Notification bell */}
-      <div style={{ position: 'relative', flexShrink: 0 }}>
-        <button aria-label="Notificaciones" onClick={onBellClick} style={{ width: 44, height: 44, borderRadius: 12, border: '1.5px solid #E8EAFF', background: '#F8F9FF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.1s' }}
+      <div className="notification-anchor" style={{ position: 'relative', flexShrink: 0 }}>
+        <button id="notification-trigger" aria-expanded={notificationsOpen} aria-controls="notifications-panel" aria-label="Notificaciones" onClick={onBellClick} style={{ width: 44, height: 44, borderRadius: 12, border: '1.5px solid #E8EAFF', background: '#F8F9FF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.1s' }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#EEF0FF'; (e.currentTarget as HTMLElement).style.borderColor = '#BFDBFE'; }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#F8F9FF'; (e.currentTarget as HTMLElement).style.borderColor = '#E8EAFF'; }}>
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1.5A4 4 0 0111.5 5.5V9l1.5 2H2L3.5 9V5.5A4 4 0 017.5 1.5z" stroke="#8B8FA8" strokeWidth="1.3"/><path d="M6 11a1.5 1.5 0 003 0" stroke="#8B8FA8" strokeWidth="1.3"/></svg>
@@ -83,12 +88,13 @@ export default function Header({ menuButton, title, subtitle, actions, userName,
             {unreadCount > 9 ? '9+' : unreadCount}
           </div>
         )}
+        {notificationPanel}
       </div>
 
       {/* Avatar */}
-      <div className="header-avatar" title={userName} style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg, #2563EB 0%, #7C3AED 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', flexShrink: 0, boxShadow: '0 2px 8px rgba(37,99,235,0.35)' }}>
-        {userInitials ?? 'U'}
-      </div>
+      <button type="button" className="header-avatar" onClick={onProfile} aria-label="Mi perfil" title={userName} style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg, #2563EB 0%, #7C3AED 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', flexShrink: 0, boxShadow: '0 2px 8px rgba(37,99,235,0.35)' }}>
+        <UserAvatar name={userName ?? 'Usuario'} src={avatarUrl} />
+      </button>
     </div>
   );
 }

@@ -171,7 +171,7 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
 
         {/* Alert strip — show if there are critical materials */}
         {criticos.length > 0 && (
-          <div style={{ background: '#FFF1F1', border: '1.5px solid #FECACA', borderRadius: 14, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div className="system-alert" style={{ background: '#FFF1F1', border: '1.5px solid #FECACA', borderRadius: 'var(--surface-inset-radius)', padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
             <div style={{ width: 36, height: 36, borderRadius: 10, background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <svg width="18" height="18" viewBox="0 0 15 15" fill="none"><path d="M7.5 1L14 13H1L7.5 1z" stroke="#DC2626" strokeWidth="1.3" strokeLinejoin="round"/><path d="M7.5 6v3M7.5 11v.5" stroke="#DC2626" strokeWidth="1.3" strokeLinecap="round"/></svg>
             </div>
@@ -190,7 +190,7 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
         )}
 
         {/* Tabs */}
-        <div style={{ background: '#fff', borderRadius: 20, boxShadow: '0 4px 24px rgba(99,102,241,0.07)', overflow: 'hidden' }}>
+        <div style={{ background: 'var(--color-surface)', border: '1px solid var(--surface-border)', borderRadius: 'var(--surface-radius)', boxShadow: 'var(--surface-shadow)', overflow: 'hidden' }}>
           <div style={{ display: 'flex', borderBottom: '1px solid #F0F2FF', padding: '0 24px' }}>
             {([['form', 'Nueva solicitud'], ['criticos', `Materiales críticos${criticos.length + bajos.length > 0 ? ` (${criticos.length + bajos.length})` : ''}`]] as const).map(([id, label]) => (
               <button key={id} onClick={() => setActiveTab(id)} style={{

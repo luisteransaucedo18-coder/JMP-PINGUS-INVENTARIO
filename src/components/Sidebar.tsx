@@ -1,3 +1,4 @@
+import UserAvatar from './UserAvatar';
 import { useState } from 'react';
 import type { Role } from '../domain/types';
 import { useAppStore } from '../store/AppContext';
@@ -16,12 +17,12 @@ const roleBadgeColors: Record<Role, { bg: string; text: string }> = {
   coordinador: { bg: '#CCFBF1', text: '#0F766E' },
 };
 
-interface Props { role: Role; activeView: string; onNav: (v: string) => void; onLogout: () => void; userName: string; userEmail: string; onProfile?: () => void; mobile?: boolean; onClose?: () => void; loggingOut?: boolean; logoutError?: string; }
+interface Props { role: Role; activeView: string; onNav: (v: string) => void; onLogout: () => void; userName: string; userEmail: string; avatarUrl?: string | null; onProfile?: () => void; mobile?: boolean; onClose?: () => void; loggingOut?: boolean; logoutError?: string; }
 
 const COLLAPSED_W = 62;
 const EXPANDED_W  = 225;
 
-export default function Sidebar({ role, activeView, onNav, onLogout, userName, userEmail, mobile = false, onClose, loggingOut = false, logoutError }: Props) {
+export default function Sidebar({ role, activeView, onNav, onLogout, userName, userEmail, avatarUrl, mobile = false, onClose, loggingOut = false, logoutError }: Props) {
   const { state } = useAppStore();
   const [hovered, setHovered] = useState(false);
 
@@ -29,7 +30,6 @@ export default function Sidebar({ role, activeView, onNav, onLogout, userName, u
   const badge = roleBadgeColors[role];
   const pendingReqs    = state.requerimientos.filter(r => r.estado === 'ENVIADO').length;
   const pendingCompras = state.compras.filter(c => c.estado === 'ENVIADO').length;
-  const initials = userName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
 
   const expanded = mobile || hovered;
   const W = expanded ? EXPANDED_W : COLLAPSED_W;
@@ -122,7 +122,7 @@ export default function Sidebar({ role, activeView, onNav, onLogout, userName, u
       <div className="sidebar-footer">
         <div className="sidebar-user">
           <button aria-label={`Ver perfil de ${userName}`} className={`sidebar-user-avatar${activeView === 'perfil' ? ' active' : ''}`} title={!expanded ? userName : undefined} onClick={() => onNav('perfil')} style={{ background: badge.bg, color: badge.text }}>
-            {initials}
+            <UserAvatar name={userName} src={avatarUrl} />
           </button>
           {expanded && (
             <div className="sidebar-user-copy">
@@ -131,6 +131,7 @@ export default function Sidebar({ role, activeView, onNav, onLogout, userName, u
             </div>
           )}
         </div>
+        {expanded && <button className="sidebar-profile-link" aria-current={activeView === 'perfil' ? 'page' : undefined} onClick={() => onNav('perfil')}>Mi perfil</button>}
         {expanded && (
           <button className="sidebar-logout" onClick={onLogout} disabled={loggingOut} aria-busy={loggingOut}>
             <LogoutIcon />
