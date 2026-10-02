@@ -9,6 +9,7 @@ import { operarCotizacion } from "../../../services/cotizacionService"
 import { remainingMaterial } from "../../cotizaciones/domain"
 
 import { Field } from "../../cotizaciones/QuoteEditor"
+import NumericInput from "../../../components/NumericInput"
 
 export default function RequerimientoCotizado({
   onToast,
@@ -174,17 +175,15 @@ export default function RequerimientoCotizado({
                       </small>
                     </label>
                     <Field label={`Cantidad de ${m.nombre}`}>
-                      <input
+                      <NumericInput
                         className="input-field"
-                        type="number"
-                        step="any"
-                        min="0"
+                        min={0}
                         max={remaining}
                         value={amounts[m.id] ?? 0}
-                        onChange={(e) =>
+                        onValueChange={(value) =>
                           setAmounts((a) => ({
                             ...a,
-                            [m.id]: Number(e.target.value),
+                            [m.id]: value,
                           }))
                         }
                       />

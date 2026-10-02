@@ -241,6 +241,43 @@ export type QuotePeriod = {
   updated_at: string
 }
 
+export function defaultQuoteRates(
+  modalidad: Modalidad,
+  ciudad = "",
+  departamento = "",
+): QuoteRates {
+  const piura = ciudad.toLocaleLowerCase("es").startsWith("piura")
+
+  return {
+    utilidad:
+      modalidad === "COBRE"
+        ? 22
+        : modalidad === "PEALPE"
+          ? 25
+          : modalidad === "PEQUENOS"
+            ? 20
+            : 0,
+
+    generales: modalidad === "COBRE" ? 10 : 0,
+    comision:
+      modalidad === "COBRE"
+        ? piura
+          ? 6
+          : 5
+        : modalidad === "PEALPE"
+          ? piura || departamento === "Piura"
+            ? 12
+            : 10
+          : modalidad === "FISE"
+            ? 11
+            : 10,
+
+    igv: 18,
+    financiamientoMensual: modalidad === "COBRE" ? 2.5 : 0,
+    meses: modalidad === "COBRE" ? 1 : 0,
+  }
+}
+
 export function newBudget(sede: Sede = "Chiclayo"): QuoteBudget {
   const today = new Date().toLocaleDateString("en-CA", {
     timeZone: "America/Lima",
@@ -260,14 +297,7 @@ export function newBudget(sede: Sede = "Chiclayo"): QuoteBudget {
     alternativa: "Propuesta principal",
     materiales: [],
     gastos: [],
-    tasas: {
-      utilidad: 0,
-      generales: 0,
-      comision: 0,
-      igv: 18,
-      financiamientoMensual: 0,
-      meses: 0,
-    },
+    tasas: defaultQuoteRates("PEALPE"),
     fise: {
       configuracion: "",
       configuracionInterna: "",
@@ -354,6 +384,20 @@ export function calculateQuote(budget: QuoteBudget): QuoteTotals {
 
 export function quoteValidation(b: QuoteBudget): string[] {
   const errors: string[] = []
+  if (new Set(b.materiales.map((m) => m.sku)).size !== b.materiales.length)
+    errors.push(
+      "Cada material del catálogo solo puede aparecer una vez. Edita su cantidad en la partida existente.",
+    )
+
+  const expenseKey = (g: BudgetExpense) =>
+    g.variableExcel ??
+    `${g.rubro}:${g.descripcion.trim().toLocaleLowerCase("es").replace(/\s+/g, " ")}`
+
+  if (new Set(b.gastos.map(expenseKey)).size !== b.gastos.length)
+    errors.push(
+      "No repitas la misma partida de costo. Edita la cantidad o el importe de la existente.",
+    )
+
   const number = (v: number, min = 0, max = 100000000) =>
     Number.isFinite(v) && v >= min && v < max
   if (!b.ciudad.trim() || !b.alcance.trim() || !b.tecnico.trim())

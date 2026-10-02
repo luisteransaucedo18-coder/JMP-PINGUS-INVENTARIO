@@ -15,7 +15,7 @@ El módulo se abre desde Cotizaciones, el resumen del dashboard o el detalle de 
 | Habilitación | Autor o coordinación | Fecha de habilitación para control del bono y resumen mensual |
 | Cierre | Coordinador | Conciliación explícita de costos, consumo y devoluciones; resultado final |
 
-Gerencia consulta. Los analistas solo modifican sus cotizaciones; coordinación administra tarifas y concilia/cierra. Los permisos se comprueban en la base de datos, incluyendo usuarios inactivos. No se autorizan escrituras directas sobre las tablas del módulo.
+Gerencia consulta. Los analistas solo modifican sus cotizaciones; coordinación consulta y concilia/cierra. Los permisos se comprueban en la base de datos, incluyendo usuarios inactivos. No se autorizan escrituras directas sobre las tablas del módulo.
 
 Una presentación congela el presupuesto. Los cambios requieren una nueva versión. Una nueva aceptación sustituye la aceptación anterior, conserva gastos y solicitudes y no admite eliminar/reducir materiales ya solicitados ni cambiar la moneda de la serie aceptada. La serie cerrada no puede reabrirse con otra versión. Cada operación guarda actor, fecha, estado y detalle. La revisión optimista evita sobrescribir cambios de otra sesión.
 
@@ -33,7 +33,7 @@ Migración adicional: `20261002215459_cotizacion_guiada_proyecto_al_aceptar.sql`
 
 ## Excel: nombres y ubicación de las variables
 
-Referencia: `CONTROL DE COSTOS PROYECTOS COMERCIALES MYPES.xlsx`. No se modificó el archivo ni se importaron cotizaciones históricas de clientes. Los precios y tarifas deben configurarse y revisarse antes de su uso.
+Referencia: `CONTROL DE COSTOS PROYECTOS COMERCIALES MYPES.xlsx`. No se modificó el archivo ni se importaron cotizaciones históricas de clientes. Los porcentajes se muestran predeterminados según el Excel y pueden editarse. Los precios se revisan en cada cotización.
 
 | Nombre en el Excel | Ubicación en el sistema |
 | --- | --- |
@@ -84,6 +84,12 @@ Referencia: `CONTROL DE COSTOS PROYECTOS COMERCIALES MYPES.xlsx`. No se modific�
 `src/features/cotizaciones/excelVariables.ts` guarda los nombres y referencias de hoja/celda de las partidas. El formulario muestra cada referencia para localizar el concepto. La modalidad filtra las partidas específicas; los gastos adicionales se pueden describir sin inventar un SKU de inventario.
 
 ## Cálculos y límites
+
+El formulario no aplica plantillas de tarifas. Los valores iniciales editables son: COBRE, utilidad 22%, generales 10%, comisión 5% (Piura ciudad 6%), financiamiento 2.5% mensual y un mes; PEALPE, utilidad 25% y comisión 10% (departamento Piura 12%); PEQUEÑOS, utilidad 20% y comisión 10%; FISE, comisión 11%, con utilidad calculada desde el ingreso del convenio. Los demás cargos comienzan en cero; IGV 18% y moneda PEN. Se siguen los rótulos del Excel donde hay diferencias con sus fórmulas. Al cambiar de modalidad se actualizan solamente los porcentajes aún no editados. Una cotización existente conserva sus porcentajes guardados.
+
+DEPARTAMENTO y Ciudad aparecen una sola vez, en Datos del proyecto. El segundo listado depende del primero y se vacía al cambiar de departamento. El catálogo utiliza localidades urbanas del conjunto [ubigeo-peru-aumentado](https://github.com/jmcastagnetto/ubigeo-peru-aumentado), consultado el 2 de octubre de 2026. Se conserva su licencia MIT en `src/features/cotizaciones/peruLocations.LICENSE.txt`. Los nombres de los departamentos se normalizan con sus tildes. La misma relación departamento/localidad se valida en la base de datos.
+
+Los campos numéricos del flujo rechazan letras y notación exponencial, aceptan coma o punto decimal y aplican los límites del presupuesto al guardar. Los materiales se buscan por nombre o SKU; el listado está disponible antes de escribir y no permite agregar dos veces el mismo SKU. Tampoco se puede repetir una partida específica del Excel ni un gasto con el mismo rubro y descripción. La migración `20261002222328_validar_cotizacion_ubicacion_y_duplicados.sql` añade estas verificaciones de guardado sin modificar presupuestos existentes.
 
 Todos los costos unitarios y reales se ingresan sin IGV y en la moneda de la cotización. El tipo de cambio es una referencia guardada, no una conversión automática de precios del catálogo. PEN y USD se reportan separados.
 

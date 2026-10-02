@@ -2,11 +2,23 @@ import { useEffect, useRef, useState, type ReactNode } from "react"
 
 import { SEDES, type Material, type Proyecto } from "../../domain/types"
 
+import NumericInput from "../../components/NumericInput"
+
+import {
+  DEPARTAMENTOS,
+  PERU_LOCATIONS,
+  departmentForCity,
+  validLocation,
+} from "./locations"
+
+import { searchMaterials } from "../../utils/materialSearch"
+
 import {
   calculateQuote,
   money,
   MODALIDADES,
   newBudget,
+  defaultQuoteRates,
   quoteValidation,
   RUBROS,
   RUBRO_LABELS,
@@ -48,6 +60,8 @@ export function NumberField({
   max,
 
   min = 0,
+
+  integer = false,
 }: {
   label: string
 
@@ -58,20 +72,19 @@ export function NumberField({
   max?: number
 
   min?: number
+
+  integer?: boolean
 }) {
   return (
     <Field label={label}>
-      <input
+      <NumericInput
         className="input-field"
-        type="number"
-        step="any"
         min={min}
         max={max}
         required
+        integer={integer}
         value={value}
-        onChange={(e) =>
-          onChange(e.target.value === "" ? 0 : Number(e.target.value))
-        }
+        onValueChange={onChange}
       />
     </Field>
   )
@@ -79,9 +92,11 @@ export function NumberField({
 
 export function Totals({
   budget,
+
   totals,
 }: {
   budget: QuoteBudget
+
   totals?: ReturnType<typeof calculateQuote>
 }) {
   const t = totals ?? calculateQuote(budget)
@@ -133,8 +148,6 @@ export default function QuoteEditor({
 
   materials,
 
-  templates,
-
   saving,
 
   onSave,
@@ -153,8 +166,6 @@ export default function QuoteEditor({
 
   materials: Material[]
 
-  templates: QuoteTemplate[]
-
   saving: boolean
 
   onSave: (
@@ -166,7 +177,9 @@ export default function QuoteEditor({
 
     snapshot: {
       revision: number
+
       actualizadaEn?: string
+
       proyecto: Quote["proyecto_snapshot"]
     },
   ) => Promise<void>
@@ -177,6 +190,7 @@ export default function QuoteEditor({
 }) {
   const [snapshot] = useState(() => ({
     revision: quote?.revision ?? 0,
+
     actualizadaEn: template?.updated_at,
   }))
 
@@ -186,6 +200,7 @@ export default function QuoteEditor({
 
   useEffect(() => {
     stepHeading.current?.focus()
+
     stepHeading.current?.scrollIntoView({ block: "start" })
   }, [step])
 
@@ -201,22 +216,27 @@ export default function QuoteEditor({
     () =>
       quote?.proyecto_snapshot ?? {
         nombre: initialProject?.nombre ?? "",
+
         cliente: initialProject?.cliente ?? "",
 
         ubicacion: initialProject?.ubicacion ?? "",
+
         responsable: initialProject?.responsable ?? "",
       },
   )
 
   const steps = [
     templateMode ? "Datos de la tarifa" : "Datos del proyecto",
+
     "Materiales y costos",
+
     "Condiciones y márgenes",
+
     templateMode ? "Revisar tarifa" : "Revisar cotización",
   ]
 
-  const [budget, setBudget] = useState<QuoteBudget>(() =>
-    quote
+  const [budget, setBudget] = useState<QuoteBudget>(() => {
+    const initial = quote
       ? structuredClone(quote.presupuesto)
       : template
         ? {
@@ -250,48 +270,35 @@ export default function QuoteEditor({
               (templateMode ? "Por definir" : ""),
 
             alcance: templateMode ? "Plantilla de tarifas" : "",
-          },
-  )
+          }
+
+    if (!DEPARTAMENTOS.includes(initial.excel.departamento))
+      initial.excel.departamento = departmentForCity(initial.ciudad)
+
+    return initial
+  })
 
   const [templateName, setTemplateName] = useState(template?.nombre ?? "")
 
-  const [templateId, setTemplateId] = useState("")
+  const [materialQuery, setMaterialQuery] = useState("")
 
-  const [sku, setSku] = useState("")
+  const [editedRates, setEditedRates] = useState<Record<string, boolean>>(() =>
+    quote
+      ? Object.fromEntries(
+          Object.keys(quote.presupuesto.tasas).map((key) => [key, true]),
+        )
+      : {},
+  )
 
   const [errors, setErrors] = useState<string[]>([])
 
   const set = <K extends keyof QuoteBudget>(key: K, value: QuoteBudget[K]) =>
     setBudget((b) => ({ ...b, [key]: value }))
 
-  const applyTemplate = () => {
-    const template = templates.find((t) => t.id === templateId)
-
-    if (!template) return
-
-    setBudget((b) => ({
-      ...b,
-
-      ...structuredClone(template.parametros),
-
-      modalidad: template.modalidad,
-
-      ciudad: template.ciudad,
-
-      tipo: template.tipo,
-
-      puntos: template.puntos,
-
-      tasas: { ...template.tasas },
-
-      gastos: template.gastos.map((g) => ({ ...g, id: crypto.randomUUID() })),
-    }))
-  }
-
-  const addMaterial = () => {
+  const addMaterial = (sku: string) => {
     const m = materials.find((m) => m.id === sku)
 
-    if (!m) return
+    if (!m || budget.materiales.some((item) => item.sku === sku)) return
 
     set("materiales", [
       ...budget.materiales,
@@ -315,17 +322,17 @@ export default function QuoteEditor({
       },
     ])
 
-    setSku("")
+    setMaterialQuery("")
   }
 
   const nextStep = () => {
     const messages: string[] = []
 
     if (step === 0) {
-      if (
-        !templateMode &&
-        Object.values(project).some((v) => !v.trim())
-      )
+      if (!validLocation(budget.excel.departamento, budget.ciudad))
+        messages.push("Selecciona el departamento y una ciudad de su listado.")
+
+      if (!templateMode && Object.values(project).some((v) => !v.trim()))
         messages.push(
           "Completa nombre, cliente, ubicación y responsable del proyecto.",
         )
@@ -343,11 +350,7 @@ export default function QuoteEditor({
         )
     }
 
-    if (
-      step === 1 &&
-      !budget.materiales.length &&
-      !budget.gastos.length
-    )
+    if (step === 1 && !budget.materiales.length && !budget.gastos.length)
       messages.push(
         "Agrega al menos un material o costo para cotizar.",
       )
@@ -355,6 +358,7 @@ export default function QuoteEditor({
     if (step === 2) messages.push(...quoteValidation(budget))
 
     setErrors(messages)
+
     if (!messages.length) setStep((s) => s + 1)
   }
 
@@ -364,10 +368,18 @@ export default function QuoteEditor({
       noValidate
       onSubmit={async (e) => {
         e.preventDefault()
+
         if (saving) return
-        if (step < 3) { nextStep(); return }
+
+        if (step < 3) {
+          nextStep()
+          return
+        }
 
         const validation = quoteValidation(budget)
+
+        if (!validLocation(budget.excel.departamento, budget.ciudad))
+          validation.unshift("Selecciona un departamento y una ciudad válidos.")
 
         if (!templateMode && Object.values(project).some((v) => !v.trim()))
           validation.unshift(
@@ -382,8 +394,9 @@ export default function QuoteEditor({
         if (validation.length) return
 
         try {
-          await onSave(budget, quote ? selectedProject : '', templateName, {
+          await onSave(budget, quote ? selectedProject : "", templateName, {
             ...snapshot,
+
             proyecto: project,
           })
         } catch (error) {
@@ -437,8 +450,11 @@ export default function QuoteEditor({
               templateMode
                 ? "Identifica la tarifa, su ciudad y modalidad. Los analistas podrán aplicarla a sus cotizaciones."
                 : "Describe el trabajo y el cliente. El proyecto se creará cuando el cliente acepte la cotización.",
+
               "Selecciona los materiales y agrega los costos que correspondan. Conservamos los nombres del Excel para ayudarte.",
+
               "Define los porcentajes, el financiamiento y los datos del convenio, si aplica.",
+
               templateMode
                 ? "Revisa los costos y porcentajes antes de guardar la tarifa."
                 : "Revisa el presupuesto antes de guardarlo. Podrás presentarlo al cliente sin aprobación del coordinador.",
@@ -474,8 +490,11 @@ export default function QuoteEditor({
               ) : (
                 ([
                   "nombre",
+
                   "cliente",
+
                   "ubicacion",
+
                   "responsable",
                 ] as const).map((key) => (
                   <Field
@@ -483,8 +502,11 @@ export default function QuoteEditor({
                     label={
                       {
                         nombre: "Nombre del proyecto",
+
                         cliente: "Cliente",
+
                         ubicacion: "Ubicación del proyecto",
+
                         responsable: "Responsable del proyecto",
                       }[key]
                     }
@@ -496,6 +518,7 @@ export default function QuoteEditor({
                       value={project[key]}
                       onChange={(e) => {
                         setProject((p) => ({ ...p, [key]: e.target.value }))
+
                         if (key === "responsable")
                           set("tecnico", e.target.value)
                       }}
@@ -503,13 +526,60 @@ export default function QuoteEditor({
                   </Field>
                 ))
               )}
-              <Field label={EXCEL_LABELS.ciudad}>
-                <input
-                  className="input-field"
+              <Field label="DEPARTAMENTO">
+                <select
+                  className="select-field"
                   required
+                  value={budget.excel.departamento}
+                  onChange={(e) =>
+                    setBudget((b) => ({
+                      ...b,
+                      ciudad: "",
+                      excel: { ...b.excel, departamento: e.target.value },
+                    }))
+                  }
+                >
+                  <option value="">Selecciona un departamento</option>
+                  {DEPARTAMENTOS.map((d) => (
+                    <option key={d}>{d}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label={EXCEL_LABELS.ciudad}>
+                <select
+                  className="select-field"
+                  required
+                  disabled={!budget.excel.departamento}
                   value={budget.ciudad}
-                  onChange={(e) => set("ciudad", e.target.value)}
-                />
+                  onChange={(e) => {
+                    const ciudad = e.target.value
+                    setBudget((b) => ({
+                      ...b,
+                      ciudad,
+                      tasas: {
+                        ...b.tasas,
+                        comision: editedRates.comision
+                          ? b.tasas.comision
+                          : defaultQuoteRates(
+                              b.modalidad,
+                              ciudad,
+                              b.excel.departamento,
+                            ).comision,
+                      },
+                    }))
+                  }}
+                >
+                  <option value="">
+                    {budget.excel.departamento
+                      ? "Selecciona una ciudad"
+                      : "Primero selecciona el departamento"}
+                  </option>
+                  {(PERU_LOCATIONS[budget.excel.departamento] ?? []).map(
+                    (c) => (
+                      <option key={c}>{c}</option>
+                    ),
+                  )}
+                </select>
               </Field>
               <Field label="Sede de abastecimiento">
                 <select
@@ -553,7 +623,27 @@ export default function QuoteEditor({
                   className="select-field"
                   value={budget.modalidad}
                   onChange={(e) =>
-                    set("modalidad", e.target.value as QuoteBudget["modalidad"])
+                    setBudget((b) => {
+                      const modalidad = e.target
+                        .value as QuoteBudget["modalidad"]
+                      const defaults = defaultQuoteRates(
+                        modalidad,
+                        b.ciudad,
+                        b.excel.departamento,
+                      )
+                      return {
+                        ...b,
+                        modalidad,
+                        tasas: Object.fromEntries(
+                          Object.entries(defaults).map(([key, value]) => [
+                            key,
+                            editedRates[key]
+                              ? b.tasas[(key as keyof typeof b.tasas)]
+                              : value,
+                          ]),
+                        ) as typeof b.tasas,
+                      }
+                    })
                   }
                 >
                   {MODALIDADES.map((m) => (
@@ -578,23 +668,11 @@ export default function QuoteEditor({
               <NumberField
                 label={EXCEL_LABELS.puntos}
                 value={budget.puntos}
+                integer
                 min={1}
                 max={10000}
                 onChange={(v) => set("puntos", v)}
               />
-              <Field label="DEPARTAMENTO">
-                <input
-                  className="input-field"
-                  value={budget.excel.departamento}
-                  onChange={(e) =>
-                    set("excel", {
-                      ...budget.excel,
-
-                      departamento: e.target.value,
-                    })
-                  }
-                />
-              </Field>
               <Field label="CONSECION">
                 <input
                   className="input-field"
@@ -772,69 +850,60 @@ export default function QuoteEditor({
           </section>
           {!templateMode && (
             <section className="panel quote-section">
-              <h3>Aplicar tarifas configuradas</h3>
-              <p className="quote-muted">
-                La plantilla reemplaza servicios y porcentajes del borrador. Las
-                versiones guardan una copia de las tarifas utilizadas.
-              </p>
-              <div className="quote-toolbar">
-                <Field label="Plantilla">
-                  <select
-                    className="select-field"
-                    value={templateId}
-                    onChange={(e) => setTemplateId(e.target.value)}
-                  >
-                    <option value="">Selecciona una plantilla</option>
-                    {templates.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.nombre} · {t.ciudad} · {t.puntos} puntos
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                <button
-                  type="button"
-                  disabled={!templateId}
-                  className="btn btn-ghost"
-                  onClick={applyTemplate}
-                >
-                  Aplicar plantilla
-                </button>
-              </div>
-            </section>
-          )}
-          {!templateMode && (
-            <section className="panel quote-section">
               <h3>Materiales del catálogo</h3>
               <p className="quote-muted">
                 Revisa el costo referencial antes de cotizar. Todos los costos
                 se expresan sin IGV en {budget.moneda}; el tipo de cambio es una
                 referencia y no convierte precios automáticamente.
               </p>
-              <div className="quote-toolbar">
-                <Field label="Buscar material">
-                  <select
-                    className="select-field"
-                    value={sku}
-                    onChange={(e) => setSku(e.target.value)}
-                  >
-                    <option value="">Selecciona material</option>
-                    {materials.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.id} · {m.nombre} ({m.unidad})
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                <button
-                  type="button"
-                  className="btn btn-ghost"
-                  disabled={!sku}
-                  onClick={addMaterial}
-                >
-                  Agregar material
-                </button>
-              </div>
+              <Field label="Buscar material por nombre o SKU">
+                <input
+                  className="input-field"
+                  value={materialQuery}
+                  placeholder="Escribe el nombre del material…"
+                  aria-controls="quote-material-results"
+                  onChange={(e) => setMaterialQuery(e.target.value)}
+                />
+              </Field>
+              <ul
+                id="quote-material-results"
+                className="quote-material-results"
+                aria-label="Materiales del catálogo"
+              >
+                {searchMaterials(
+                  materials,
+                  materialQuery,
+                  materials.length,
+                ).map((m) => {
+                  const added = budget.materiales.some(
+                    (item) => item.sku === m.id,
+                  )
+                  return (
+                    <li key={m.id}>
+                      <button
+                        type="button"
+                        className="quote-material-option"
+                        disabled={added}
+                        onClick={() => addMaterial(m.id)}
+                      >
+                        <span>
+                          <strong>{m.nombre}</strong>
+                          <small>
+                            SKU {m.id} · {m.unidad}
+                          </small>
+                        </span>
+                        <span>{added ? "Agregado" : "Agregar +"}</span>
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+              {!searchMaterials(materials, materialQuery, materials.length)
+                .length && (
+                <p role="status">
+                  No se encontraron materiales con ese nombre.
+                </p>
+              )}
               {budget.materiales.map((m, index) => (
                 <div key={m.id} className="quote-line">
                   <strong>
@@ -969,6 +1038,7 @@ export default function QuoteEditor({
                             i === index
                               ? {
                                   ...x,
+
                                   rubro: e.target.value as typeof g.rubro,
                                 }
                               : x,
@@ -1134,18 +1204,21 @@ export default function QuoteEditor({
 
                 ["meses", "MESES DE FINANCIAMIENTO"],
               ] as const)
+
                 .filter(
                   ([key]) => budget.modalidad !== "FISE" || key !== "utilidad",
                 )
+
                 .map(([key, label]) => (
                   <NumberField
                     key={key}
                     label={label}
                     max={key === "meses" ? 120 : 100}
                     value={budget.tasas[key]}
-                    onChange={(v) =>
+                    onChange={(v) => {
+                      setEditedRates((r) => ({ ...r, [key]: true }))
                       set("tasas", { ...budget.tasas, [key]: v })
-                    }
+                    }}
                   />
                 ))}
             </div>
@@ -1212,13 +1285,21 @@ export default function QuoteEditor({
                   <datalist id="excel-presiones-fise">
                     {[
                       "23",
+
                       "340",
+
                       "23 - 23",
+
                       "23 - 340",
+
                       "340 - 340",
+
                       "23 - 23 - 23",
+
                       "23 - 23 - 340",
+
                       "23 - 340 - 340",
+
                       "340 - 340 - 340",
                     ].map((p) => (
                       <option key={p} value={p} />
@@ -1263,16 +1344,24 @@ export default function QuoteEditor({
                   </span>
                 </div>
               ))}
-                {budget.gastos.map((g) => (
-                  <div className="quote-review-item" key={g.id}>
-                    <strong>{g.descripcion}</strong>
-                    <span>{g.cantidad} × {money(g.costoUnitario, budget.moneda)}</span>
-                    <span>{money(g.cantidad * g.costoUnitario, budget.moneda)}</span>
-                  </div>
-                ))}
+              {budget.gastos.map((g) => (
+                <div className="quote-review-item" key={g.id}>
+                  <strong>{g.descripcion}</strong>
+                  <span>
+                    {g.cantidad} × {money(g.costoUnitario, budget.moneda)}
+                  </span>
+                  <span>
+                    {money(g.cantidad * g.costoUnitario, budget.moneda)}
+                  </span>
+                </div>
+              ))}
             </div>
-              <p className="quote-muted">Vigencia: {budget.vigencia} · Técnico: {budget.tecnico}</p>
-              {budget.condiciones && <p className="quote-note">{budget.condiciones}</p>}
+            <p className="quote-muted">
+              Vigencia: {budget.vigencia} · Técnico: {budget.tecnico}
+            </p>
+            {budget.condiciones && (
+              <p className="quote-note">{budget.condiciones}</p>
+            )}
             <h3>Resumen del cálculo</h3>
             <Totals budget={budget} />
             {calculateQuote(budget).utilidad < 0 && (
@@ -1292,6 +1381,7 @@ export default function QuoteEditor({
               className="btn btn-ghost"
               onClick={() => {
                 setStep((s) => s - 1)
+
                 setErrors([])
               }}
             >

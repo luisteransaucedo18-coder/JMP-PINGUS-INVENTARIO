@@ -36,7 +36,7 @@ export const NAVIGATION_BY_ROLE: Record<Role, NavigationItem[]> = {
   ],
   coordinador: [
     { id: 'dashboard', label: 'Dashboard', icon: 'grid', title: 'Panel de Coordinación', subtitle: 'Gestión de requerimientos e inventario' },
-    { id: 'cotizaciones', label: 'Cotizaciones', icon: 'document', title: 'Cotizaciones de proyectos', subtitle: 'Consultar propuestas, configurar tarifas y conciliar cierres' },
+    { id: 'cotizaciones', label: 'Cotizaciones', icon: 'document', title: 'Cotizaciones de proyectos', subtitle: 'Consultar propuestas y conciliar cierres' },
     { id: 'requerimientos', label: 'Requerimientos', icon: 'document', title: 'Requerimientos', subtitle: 'Validar y confirmar solicitudes de analistas' },
     { id: 'compras', label: 'Compras', icon: 'cart', title: 'Órdenes de Compra', subtitle: 'Aprobar solicitudes y confirmar ingresos de stock' },
     { id: 'entregas', label: 'Entregas', icon: 'delivery', title: 'Entregas al Técnico', subtitle: 'Preparar y registrar entregas de materiales' },

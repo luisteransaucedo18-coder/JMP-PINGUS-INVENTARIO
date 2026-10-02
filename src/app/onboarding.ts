@@ -30,7 +30,7 @@ const descriptions: Record<Role, Record<string, string>> = {
     inventario: 'Busca materiales por nombre o SKU y consulta las existencias de cada sede antes de pedir materiales o solicitar una compra.',
   },
   coordinador: {
-    cotizaciones: 'Consulta cotizaciones sin aprobarlas. Configura tarifas, atiende requerimientos de proyectos aceptados y concilia costos, consumo y devoluciones antes de cerrar.',
+    cotizaciones: 'Consulta cotizaciones sin aprobarlas. Atiende requerimientos de proyectos aceptados y concilia costos, consumo y devoluciones antes de cerrar.',
     dashboard: 'Revisa solicitudes por confirmar, necesidades de abastecimiento y alertas de stock. Los accesos del panel te llevan a requerimientos e inventario.',
     requerimientos: 'Revisa las solicitudes enviadas por analistas, comprueba las cantidades y la disponibilidad, y confirma o rechaza según corresponda. Atiende los faltantes con compras o traslados.',
     compras: 'Revisa las solicitudes de compra, aprueba o rechaza y confirma el ingreso de los materiales adquiridos al stock.',

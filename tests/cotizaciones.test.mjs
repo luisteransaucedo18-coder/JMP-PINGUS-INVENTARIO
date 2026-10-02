@@ -17,14 +17,29 @@ const { outputText } = ts.transpileModule(source, {
   },
 })
 const domainUrl=`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`;
-const { newBudget, calculateQuote, remainingMaterial, executionSummary, quoteValidation, roundMoney } =
+const { newBudget, calculateQuote, remainingMaterial, executionSummary, quoteValidation, roundMoney, defaultQuoteRates } =
   await import(
     `data:text/javascript;base64,${Buffer.from(outputText).toString("base64")}`
   )
 const id = (n) => `40000000-0000-4000-8000-${String(n).padStart(12, "0")}`
+test('porcentajes predeterminados del Excel y relación departamento/ciudad', async () => {
+  assert.deepEqual(defaultQuoteRates('COBRE','Chiclayo'),{utilidad:22,generales:10,comision:5,igv:18,financiamientoMensual:2.5,meses:1});
+  assert.equal(defaultQuoteRates('COBRE','Piura').comision,6);
+  assert.equal(defaultQuoteRates('PEALPE','Talara','Piura').comision,12);
+  assert.equal(newBudget().tasas.utilidad,25);
+  assert.equal(defaultQuoteRates('PEQUENOS').utilidad,20);
+  assert.equal(defaultQuoteRates('FISE').comision,11);
+  const locations=JSON.parse(readFileSync(new URL('../src/features/cotizaciones/peruLocations.json',import.meta.url),'utf8'));
+  assert.equal(Object.keys(locations).length,25);
+  assert.ok(locations.Lambayeque.includes('Chiclayo'));
+  assert.ok(locations['Áncash'].includes('Chimbote'));
+  assert.ok(!locations.Lambayeque.includes('Chimbote'));
+  for(const cities of Object.values(locations)) assert.equal(new Set(cities).size,cities.length);
+});
 const budget = {
   ...newBudget(),
   ciudad: "Chiclayo",
+  excel: {...newBudget().excel,departamento:"Lambayeque"},
   tecnico: "Técnico",
   alcance: "Instalación de prueba",
   vigencia: "2099-12-31",
@@ -186,6 +201,7 @@ test("migración: permisos, estados, versiones, saldos idempotentes, gastos y ci
       ),
     )
     await db.exec(readFileSync(new URL('../supabase/migrations/20261002215459_cotizacion_guiada_proyecto_al_aceptar.sql',import.meta.url),'utf8'));
+    await db.exec(readFileSync(new URL('../supabase/migrations/20261002222328_validar_cotizacion_ubicacion_y_duplicados.sql',import.meta.url),'utf8'));
     assert.equal((await db.query('select codigo from public.cotizaciones')).rows[0].codigo,'COT-ANTERIOR');
     assert.equal((await db.query("select public.operar_cotizacion(null,'consulta',1) result")).rows[0].result,'anterior');
     const as = async (user, sql, params = []) => {
@@ -225,6 +241,63 @@ test("migración: permisos, estados, versiones, saldos idempotentes, gastos y ci
         requerimientoId: id(req),
         items: [{ itemId: id(10), cantidad: quantity }],
       })
+    await t.test(
+      "ubicación, números y duplicados se validan también al guardar",
+      async () => {
+        const calculate = async (b) =>
+          db.query("select proyecto_cotizaciones_privado.calcular($1::jsonb)", [
+            JSON.stringify(b),
+          ])
+
+        await calculate(budget)
+
+        await assert.rejects(
+          calculate({ ...budget, ciudad: "Chimbote" }),
+          /departamento/,
+        )
+
+        await assert.rejects(
+          calculate({
+            ...budget,
+            materiales: [
+              budget.materiales[0],
+              { ...budget.materiales[0], id: id(99) },
+            ],
+          }),
+          /una sola vez/,
+        )
+
+        await assert.rejects(
+          calculate({
+            ...budget,
+            gastos: [
+              budget.gastos[0],
+              {
+                ...budget.gastos[0],
+                id: id(98),
+                descripcion: " CONSTRUCCIÓN  ",
+              },
+            ],
+          }),
+          /misma partida/,
+        )
+
+        await assert.rejects(
+          calculate({
+            ...budget,
+            tasas: { ...budget.tasas, utilidad: "texto" },
+          }),
+        )
+
+        await assert.rejects(
+          calculate({
+            ...budget,
+            materiales: [{ ...budget.materiales[0], cantidad: "2" }],
+          }),
+        )
+      },
+    )
+
     await t.test('plantillas y resumen mensual requieren coordinación y validan cambios',async()=>{
       await assert.rejects(op(100,'plantilla',60,{nombre:'Tarifa',presupuesto:budget}),/coordinador/);
       await op(102,'plantilla',60,{nombre:'Tarifa',presupuesto:budget});

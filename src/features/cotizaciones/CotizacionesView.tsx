@@ -167,12 +167,8 @@ export default function CotizacionesView({
 
   const [selected, setSelected] = useState<string | null>(null)
 
-  const [editor, setEditor] = useState<"quote" | "template" | null>(
+  const [editor, setEditor] = useState<"quote" | null>(
     nueva ? "quote" : null,
-  )
-
-  const [templateSelection, setTemplateSelection] = useState<string | null>(
-    null,
   )
 
   const [search, setSearch] = useState("")
@@ -366,34 +362,25 @@ export default function CotizacionesView({
       </div>
     )
 
-  const template = state.plantillasCotizacion.find(
-    (t) => t.id === templateSelection,
-  )
-
   if (editor)
     return (
       <div className="quote-view">
         <QuoteEditor
-          key={`${selected ?? templateSelection ?? draftId}:${editor}`}
-          quote={editor === "quote" ? quote : undefined}
-          template={editor === "template" ? template : undefined}
+          key={`${selected ?? draftId}:${editor}`}
+          quote={quote}
           projectId={projectId}
           proyectos={state.proyectos}
           materials={state.materials}
-          templates={state.plantillasCotizacion}
           saving={saving}
-          templateMode={editor === "template"}
           onCancel={() => setEditor(null)}
-          onSave={async (budget, project, name, snapshot) => {
+          onSave={async (budget, project, _name, snapshot) => {
             setSaving(true)
 
             try {
               const id = await operarCotizacion(
-                editor === "template" ? "plantilla" : "guardar",
+                "guardar",
 
-                editor === "template"
-                  ? (template?.id ?? draftId)
-                  : (quote?.id ?? draftId),
+                quote?.id ?? draftId,
 
                 {
                   revision: snapshot.revision,
@@ -403,10 +390,6 @@ export default function CotizacionesView({
                   proyectoId: project,
 
                   proyecto: snapshot.proyecto,
-
-                  nombre: name,
-
-                  actualizadaEn: snapshot.actualizadaEn,
                 },
               )
 
@@ -414,13 +397,9 @@ export default function CotizacionesView({
 
               setEditor(null)
 
-              if (editor === "quote") setSelected(id)
+              setSelected(id)
 
-              onToast(
-                editor === "template"
-                  ? "Plantilla configurada."
-                  : "Borrador guardado.",
-              )
+              onToast("Borrador guardado.")
             } finally {
               setSaving(false)
             }
@@ -746,22 +725,6 @@ export default function CotizacionesView({
                 Nueva cotización
               </button>
             )}
-            {role === "coordinador" && (
-              <button
-                className="btn btn-ghost"
-                onClick={() => {
-                  setDraftId(crypto.randomUUID())
-
-                  setTemplateSelection(null)
-
-                  setSelected(null)
-
-                  setEditor("template")
-                }}
-              >
-                Configurar tarifas
-              </button>
-            )}
             <button
               className="btn btn-ghost"
               onClick={() => void refreshRemoteData()}
@@ -879,33 +842,6 @@ export default function CotizacionesView({
               </button>
             ))}
           </div>
-        )}
-        {state.plantillasCotizacion.length > 0 && (
-          <details className="panel quote-section">
-            <summary>
-              Tarifas configuradas ({state.plantillasCotizacion.length})
-            </summary>
-            {state.plantillasCotizacion.map((t) => (
-              <div className="quote-toolbar quote-line" key={t.id}>
-                <p>
-                  {t.nombre} · {t.modalidad} · {t.ciudad} · {t.puntos} puntos ·
-                  actualizado {date(t.updated_at)}
-                </p>
-                {role === "coordinador" && (
-                  <button
-                    className="btn btn-ghost"
-                    onClick={() => {
-                      setTemplateSelection(t.id)
-
-                      setEditor("template")
-                    }}
-                  >
-                    Editar {t.nombre}
-                  </button>
-                )}
-              </div>
-            ))}
-          </details>
         )}
         <LegacyQuotations projectId={projectId} />
         {!projectId && role !== "analista" && (
@@ -1261,6 +1197,7 @@ export default function CotizacionesView({
                   onClick={() =>
                     begin({
                       title: "Registrar habilitacion",
+
                       action: "habilitar",
                     })
                   }
@@ -1380,7 +1317,9 @@ export default function CotizacionesView({
               <p key={d.id}>
                 {d.codigo} · {d.estado} ·{" "}
                 {d.items
+
                   .map((m) => `${m.nombre}: ${m.cantidad} ${m.unidad}`)
+
                   .join(", ")}
               </p>
             ))}
@@ -1410,25 +1349,35 @@ export default function CotizacionesView({
                       </td>
                       <td>
                         {deliveries
+
                           .filter((e) => e.estado !== "CANCELADA")
+
                           .flatMap((e) => e.items)
+
                           .filter((i) => i.skuId === m.sku)
+
                           .reduce((sum, i) => sum + i.cantidadEntregada, 0)}
                       </td>
                       <td>
                         {returns
+
                           .filter((d) => d.estado === "VALIDADA")
+
                           .flatMap((d) => d.items)
+
                           .filter((i) => i.skuId === m.sku)
+
                           .reduce((sum, i) => sum + i.cantidad, 0)}
                       </td>
                       <td>
                         {result.active
+
                           .filter(
                             (g) =>
                               g.material_sku === m.sku &&
                               g.naturaleza === "COSTO",
                           )
+
                           .reduce((sum, g) => sum + (g.cantidad ?? 0), 0)}
                       </td>
                     </tr>
