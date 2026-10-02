@@ -40,7 +40,7 @@ const TYPE_BG: Record<Notif['type'], string> = {
 export function useNotifications(role: Role, userName: string): Notif[] {
   const { state } = useAppStore();
   const notifs: Notif[] = [];
-  state.cotizaciones.filter(q => role === 'coordinador' ? q.estado === 'EN_REVISION' : ['OBSERVADA','APROBADA','ACEPTADA','CERRADA'].includes(q.estado)).slice(0, 5).forEach(q => {
+  state.cotizaciones.filter(q => role === 'coordinador' ? ['ACEPTADA','CERRADA'].includes(q.estado) : ['PRESENTADA','ACEPTADA','RECHAZADA','CERRADA'].includes(q.estado)).slice(0, 5).forEach(q => {
     notifs.push({ id: `cotizacion-${q.id}-${q.revision}`, type: q.estado === 'OBSERVADA' ? 'warning' : q.estado === 'EN_REVISION' ? 'info' : 'success', title: `${q.codigo} · ${ESTADO_LABELS[q.estado]}`, body: `${q.proyecto_snapshot.nombre}. ${q.observaciones ?? 'Consulta el módulo Cotizaciones para revisar el siguiente paso.'}`, date: q.updated_at, ref: q.codigo });
   });
 

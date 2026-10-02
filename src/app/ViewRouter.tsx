@@ -38,6 +38,7 @@ const MANAGER_DATA_VIEWS: ConsultaGerente[] = [
 export default function ViewRouter({ role, view, onToast, onNav, userName, userEmail, onStartTour }: Props) {
   if (!canAccessView(role, view)) return <ViewMessage message="No tienes acceso a esta vista." />;
   if (view === 'cotizaciones') return <CotizacionesView role={role} onToast={onToast} onNav={onNav} />;
+  if (view === 'nueva-cotizacion') return <CotizacionesView key="nueva-cotizacion" role={role} onToast={onToast} onNav={onNav} nueva />;
   if (view === 'perfil') return <ProfileView role={role} userName={userName} userEmail={userEmail} onToast={onToast} />;
   if (view === 'manual') return <ManualUsuarioView role={role} onNav={onNav} onStartTour={onStartTour} />;
 

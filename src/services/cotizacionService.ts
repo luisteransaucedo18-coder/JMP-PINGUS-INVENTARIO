@@ -31,6 +31,7 @@ export async function obtenerCotizaciones(): Promise<Quote[]> {
     .select(
       "*,eventos:cotizacion_eventos(*),asignaciones:cotizacion_asignaciones(*)",
     )
+    .is('eliminada_en', null)
     .order("updated_at", { ascending: false })
   if (error) throw error
   return (data ?? []).map((row) => ({

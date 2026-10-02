@@ -9,17 +9,27 @@ El módulo se abre desde Cotizaciones, el resumen del dashboard o el detalle de 
 | Paso | Responsable | Resultado |
 | --- | --- | --- |
 | Borrador | Analista autor | Proyecto, alcance, modalidad, ciudad, tipo, puntos, variables del Excel, materiales, servicios y porcentajes |
-| En revisión | Analista envía | Presupuesto listo para evaluar; no reserva ni descuenta stock |
-| Aprobada / Observada | Coordinador | Aprobación interna o devolución con motivo |
 | Presentada | Analista autor | Importe comercial presentado, incluido IGV |
 | Aceptada / Rechazada | Analista autor | Importe aceptado y evidencia verificable, o motivo de rechazo |
 | Ejecución | Autor y coordinación | Solicitudes por etapas, abastecimiento habitual, entregas, devoluciones y costos con comprobantes |
 | Habilitación | Autor o coordinación | Fecha de habilitación para control del bono y resumen mensual |
 | Cierre | Coordinador | Conciliación explícita de costos, consumo y devoluciones; resultado final |
 
-Gerencia consulta. Los analistas solo modifican sus cotizaciones; coordinación administra tarifas y revisa/cierra. Los permisos se comprueban en la base de datos, incluyendo usuarios inactivos. No se autorizan escrituras directas sobre las tablas del módulo.
+Gerencia consulta. Los analistas solo modifican sus cotizaciones; coordinación administra tarifas y concilia/cierra. Los permisos se comprueban en la base de datos, incluyendo usuarios inactivos. No se autorizan escrituras directas sobre las tablas del módulo.
 
-Una aprobación congela el presupuesto. Los cambios requieren una nueva versión. Una nueva aceptación sustituye la aceptación anterior, conserva gastos y solicitudes y no admite eliminar/reducir materiales ya solicitados ni cambiar la moneda de la serie aceptada. La serie cerrada no puede reabrirse con otra versión. Cada operación guarda actor, fecha, estado y detalle. La revisión optimista evita sobrescribir cambios de otra sesión.
+Una presentación congela el presupuesto. Los cambios requieren una nueva versión. Una nueva aceptación sustituye la aceptación anterior, conserva gastos y solicitudes y no admite eliminar/reducir materiales ya solicitados ni cambiar la moneda de la serie aceptada. La serie cerrada no puede reabrirse con otra versión. Cada operación guarda actor, fecha, estado y detalle. La revisión optimista evita sobrescribir cambios de otra sesión.
+
+## Recorrido guiado y reglas del proyecto
+
+El formulario tiene cuatro pasos: Datos del proyecto, Materiales y costos, Condiciones y márgenes, Revisar cotización. Cada paso conserva los nombres del Excel y valida sus datos antes de avanzar.
+
+El presupuesto guarda nombre, cliente, ubicación y responsable sin crear el proyecto. El analista presenta directamente al cliente. Su aceptación crea el proyecto y vincula las versiones de la serie en una sola transacción; los materiales quedan disponibles para requerimientos por etapas, sin crear solicitudes automáticamente ni duplicar el catálogo.
+
+Para editar una cotización aceptada se crea una nueva versión: la anterior sigue vigente hasta la nueva aceptación del cliente. La eliminación solo corresponde al analista autor tras registrar el rechazo, y queda prohibida si la serie fue aceptada alguna vez. Se oculta el registro de la lista conservando el historial en `eliminada_en`.
+
+Se retiró la creación directa desde Proyectos y Requerimientos. “Cotizar un nuevo proyecto” abre el asistente. Nuevo requerimiento permite seleccionar únicamente una cotización aceptada del autor y sus materiales con saldo. La base usa verificaciones diferidas para impedir la creación de proyectos y requerimientos por rutas que omitan este flujo.
+
+Migración adicional: `20261002215459_cotizacion_guiada_proyecto_al_aceptar.sql`. Conserva los proyectos y requerimientos históricos. Los estados antiguos de revisión permanecen legibles, pero la presentación actual no exige coordinación.
 
 ## Excel: nombres y ubicación de las variables
 
@@ -48,7 +58,7 @@ Referencia: `CONTROL DE COSTOS PROYECTOS COMERCIALES MYPES.xlsx`. No se modific�
 | GASTOS DE FINANCIAMIENTO: (2.5%/MES), GASTOS GENERALES, Utilidad, Comision Venta, IGV | Porcentajes y financiamiento, con tasa aplicada y meses explícitos |
 | Costo Directo:, Sub Total:, Total:, Total Venta: | Resumen de cálculo |
 | COTIZACIÓN PRESENTADA | Registro de presentación, separado del cálculo |
-| COTIZACIÓN APROBADA / COTIZACIÓN APROBADA POR CLIENTE (CON IGV) | Registro de aceptación del cliente; se distingue de aprobación interna |
+| COTIZACIÓN APROBADA / COTIZACIÓN APROBADA POR CLIENTE (CON IGV) | Registro de aceptación del cliente; no requiere aprobación interna |
 | Configuración FISE, Configuración interna | Convenio FISE |
 | Presión de artefactos (23 - 340) | Presiones ordenadas por punto; admite combinaciones de 23 y 340 mbar |
 | Instalación interna, Acometida | Convenio FISE; A LA VISTA / EMPOTRADA, G4/G6 y murete existente/construido |

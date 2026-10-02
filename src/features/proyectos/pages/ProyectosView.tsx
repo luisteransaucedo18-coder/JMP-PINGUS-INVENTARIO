@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useAppStore } from '../../../store/AppContext';
-import { crearProyecto } from '../../../services/requerimientoService';
 import { Proyecto, Requerimiento, Role, SEDES, Sede } from '../../../domain/types';
 import RequirementStatusTimeline from '../../../components/RequirementStatusTimeline';
 import CotizacionesView from '../../cotizaciones/CotizacionesView';
@@ -11,85 +10,6 @@ const SEDE_COLOR: Record<Sede, string> = { Chiclayo: '#2563EB', Chimbote: '#0596
 const SEDE_BG: Record<Sede, string> = { Chiclayo: '#DBEAFE', Chimbote: '#CCFBF1', Trujillo: '#F3E8FF' };
 const ESTADO_COLOR: Record<string, string> = { ENVIADO: '#D97706', CONFIRMADO: '#059669', RECHAZADO: '#DC2626', BORRADOR: '#71717A' };
 const ESTADO_BG: Record<string, string> = { ENVIADO: '#FEF3C7', CONFIRMADO: '#CCFBF1', RECHAZADO: '#FEE2E2', BORRADOR: '#F4F4F5' };
-
-function NewProyectoModal({ onSave, onClose }: { onSave: (p: Omit<Proyecto, 'id' | 'creadoEn'>) => Promise<void>; onClose: () => void }) {
-  const [form, setForm] = useState({ nombre: '', ubicacion: '', sede: 'Chiclayo' as Sede, responsable: '', cliente: '', observaciones: '' });
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [saving, setSaving] = useState(false);
-
-  const validate = () => {
-    const e: Record<string, string> = {};
-    if (!form.nombre.trim()) e.nombre = 'Requerido';
-    if (!form.ubicacion.trim()) e.ubicacion = 'Requerido';
-    if (!form.responsable.trim()) e.responsable = 'Requerido';
-    if (!form.cliente.trim()) e.cliente = 'Requerido';
-    return e;
-  };
-
-  const handleSave = async () => {
-    const e = validate();
-    if (Object.keys(e).length) { setErrors(e); return; }
-    setSaving(true);
-    try { await onSave(form); } catch (error) { setErrors({ nombre: error instanceof Error ? error.message : 'No se pudo guardar el proyecto.' }); } finally { setSaving(false); }
-  };
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{ width: 560 }} onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#18181B' }}>Nuevo Proyecto</h2>
-          <button className="btn btn-ghost" style={{ padding: '5px 10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClose}><svg width="11" height="11" viewBox="0 0 15 15" fill="none"><path d="M2.5 2.5l10 10M12.5 2.5l-10 10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg></button>
-        </div>
-        <div style={{ padding: '20px 22px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-          <div style={{ gridColumn: '1/-1' }}>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#52525B', marginBottom: 6 }}>Nombre del proyecto <span style={{ color: '#DC2626' }}>*</span></label>
-            <input className="input-field" placeholder="Ej. Urbanización Las Flores — Etapa 4" value={form.nombre}
-              style={{ borderColor: errors.nombre ? '#DC2626' : undefined }}
-              onChange={e => { setForm(p => ({ ...p, nombre: e.target.value })); setErrors(p => ({ ...p, nombre: '' })); }} />
-            {errors.nombre && <div style={{ fontSize: 11, color: '#DC2626', marginTop: 3 }}>{errors.nombre}</div>}
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#52525B', marginBottom: 6 }}>Sede <span style={{ color: '#DC2626' }}>*</span></label>
-            <select className="select-field" style={{ width: '100%' }} value={form.sede} onChange={e => setForm(p => ({ ...p, sede: e.target.value as Sede }))}>
-              {SEDES.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#52525B', marginBottom: 6 }}>Cliente <span style={{ color: '#DC2626' }}>*</span></label>
-            <input className="input-field" placeholder="Ej. Inmobiliaria XYZ SAC" value={form.cliente}
-              style={{ borderColor: errors.cliente ? '#DC2626' : undefined }}
-              onChange={e => { setForm(p => ({ ...p, cliente: e.target.value })); setErrors(p => ({ ...p, cliente: '' })); }} />
-            {errors.cliente && <div style={{ fontSize: 11, color: '#DC2626', marginTop: 3 }}>{errors.cliente}</div>}
-          </div>
-          <div style={{ gridColumn: '1/-1' }}>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#52525B', marginBottom: 6 }}>Ubicación específica <span style={{ color: '#DC2626' }}>*</span></label>
-            <input className="input-field" placeholder="Ej. Av. La Marina 450, Mz. B, Lotes 4–8" value={form.ubicacion}
-              style={{ borderColor: errors.ubicacion ? '#DC2626' : undefined }}
-              onChange={e => { setForm(p => ({ ...p, ubicacion: e.target.value })); setErrors(p => ({ ...p, ubicacion: '' })); }} />
-            {errors.ubicacion && <div style={{ fontSize: 11, color: '#DC2626', marginTop: 3 }}>{errors.ubicacion}</div>}
-          </div>
-          <div style={{ gridColumn: '1/-1' }}>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#52525B', marginBottom: 6 }}>Responsable técnico <span style={{ color: '#DC2626' }}>*</span></label>
-            <input className="input-field" placeholder="Nombre y apellido completo" value={form.responsable}
-              style={{ borderColor: errors.responsable ? '#DC2626' : undefined }}
-              onChange={e => { setForm(p => ({ ...p, responsable: e.target.value })); setErrors(p => ({ ...p, responsable: '' })); }} />
-            {errors.responsable && <div style={{ fontSize: 11, color: '#DC2626', marginTop: 3 }}>{errors.responsable}</div>}
-          </div>
-          <div style={{ gridColumn: '1/-1' }}>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#52525B', marginBottom: 6 }}>Observaciones</label>
-            <textarea className="input-field" rows={2} placeholder="Notas adicionales sobre el proyecto…" value={form.observaciones}
-              style={{ resize: 'none', fontFamily: 'inherit' }}
-              onChange={e => setForm(p => ({ ...p, observaciones: e.target.value }))} />
-          </div>
-        </div>
-        <div style={{ padding: '14px 22px', borderTop: '1px solid #E4E4E7', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
-          <button className="btn btn-primary" disabled={saving} onClick={() => void handleSave()}>{saving ? 'Guardando…' : 'Crear proyecto'}</button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function ProjectDetail({ proyecto, onBack, role, onToast, onNav, managerSurface = false }: { proyecto: Proyecto; onBack: () => void; role: Role; onToast: (msg: string) => void; onNav?: (view: string) => void; managerSurface?: boolean }) {
   const [showQuotes, setShowQuotes] = useState(false);
@@ -277,10 +197,9 @@ function ProjectDetail({ proyecto, onBack, role, onToast, onNav, managerSurface 
 }
 
 export default function ProyectosView({ role, onToast, onNav }: Props) {
-  const { state, refreshRemoteData } = useAppStore();
+  const { state } = useAppStore();
   const [search, setSearch] = useState('');
   const [sedeFilter, setSedeFilter] = useState('');
-  const [showNew, setShowNew] = useState(false);
   const [selected, setSelected] = useState<Proyecto | null>(null);
 
   const filtered = state.proyectos.filter(p =>
@@ -289,15 +208,6 @@ export default function ProyectosView({ role, onToast, onNav }: Props) {
       p.cliente.toLowerCase().includes(search.toLowerCase()) ||
       p.responsable.toLowerCase().includes(search.toLowerCase()))
   );
-
-  const handleCreate = async (data: Omit<Proyecto, 'id' | 'creadoEn'>) => {
-    const dup = state.proyectos.find(p => p.nombre.toLowerCase() === data.nombre.toLowerCase());
-    if (dup) throw new Error('Ya existe un proyecto con ese nombre');
-    await crearProyecto(data);
-    setShowNew(false);
-    onToast('✓ Proyecto creado correctamente');
-    void refreshRemoteData().catch(() => onToast('El proyecto fue creado; la lista se actualizará al recargar.'));
-  };
 
   if (selected) return <ProjectDetail proyecto={selected} onBack={() => setSelected(null)} managerSurface={role === 'gerente'} role={role} onToast={onToast} onNav={onNav} />;
 
@@ -329,8 +239,8 @@ export default function ProyectosView({ role, onToast, onNav }: Props) {
           {SEDES.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
         <div style={{ marginLeft: 'auto', fontSize: 12, color: '#71717A' }}>{filtered.length} de {state.proyectos.length}</div>
-        {(role === 'coordinador' || role === 'analista') && (
-          <button className="btn btn-primary" onClick={() => setShowNew(true)}>+ Nuevo proyecto</button>
+        {role === 'analista' && (
+          <button className="btn btn-primary" onClick={() => onNav?.("nueva-cotizacion")}>Cotizar un nuevo proyecto</button>
         )}
       </div>
 
@@ -339,7 +249,7 @@ export default function ProyectosView({ role, onToast, onNav }: Props) {
         <div style={{ textAlign: 'center', padding: '60px 20px', color: '#A1A1AA' }}>
           <div style={{ marginBottom: 12, color: '#C4C6D8', display: 'flex', justifyContent: 'center' }}><svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M3 21h18M9 21V7l6-4v18" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M9 11h6M9 15h6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><rect x="3" y="10" width="6" height="11" rx="0.5" stroke="currentColor" strokeWidth="1.3"/></svg></div>
           <div style={{ fontSize: 15, fontWeight: 600, color: '#71717A' }}>No hay proyectos</div>
-          <div style={{ fontSize: 13, marginTop: 6 }}>Ajusta los filtros o crea un nuevo proyecto.</div>
+          <div style={{ fontSize: 13, marginTop: 6 }}>Los proyectos se crean al aceptar una cotización. Ajusta los filtros para consultar los existentes.</div>
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
@@ -407,7 +317,6 @@ export default function ProyectosView({ role, onToast, onNav }: Props) {
         </div>
       )}
 
-      {showNew && <NewProyectoModal onSave={handleCreate} onClose={() => setShowNew(false)} />}
     </div>
   );
 }

@@ -36,7 +36,7 @@ export const NAVIGATION_BY_ROLE: Record<Role, NavigationItem[]> = {
   ],
   coordinador: [
     { id: 'dashboard', label: 'Dashboard', icon: 'grid', title: 'Panel de Coordinación', subtitle: 'Gestión de requerimientos e inventario' },
-    { id: 'cotizaciones', label: 'Cotizaciones', icon: 'document', title: 'Cotizaciones de proyectos', subtitle: 'Revisar presupuestos, configurar tarifas y conciliar cierres' },
+    { id: 'cotizaciones', label: 'Cotizaciones', icon: 'document', title: 'Cotizaciones de proyectos', subtitle: 'Consultar propuestas, configurar tarifas y conciliar cierres' },
     { id: 'requerimientos', label: 'Requerimientos', icon: 'document', title: 'Requerimientos', subtitle: 'Validar y confirmar solicitudes de analistas' },
     { id: 'compras', label: 'Compras', icon: 'cart', title: 'Órdenes de Compra', subtitle: 'Aprobar solicitudes y confirmar ingresos de stock' },
     { id: 'entregas', label: 'Entregas', icon: 'delivery', title: 'Entregas al Técnico', subtitle: 'Preparar y registrar entregas de materiales' },
@@ -55,6 +55,7 @@ const SHARED_VIEWS: Record<string, ViewMeta> = {
 
 const ROLE_EXTRA_VIEWS: Partial<Record<Role, Record<string, ViewMeta>>> = {
   analista: {
+    'nueva-cotizacion': { title: 'Nueva cotización', subtitle: 'Prepara el proyecto y su presupuesto paso a paso' },
     'nueva-compra': { title: 'Nueva Solicitud de Compra', subtitle: 'Solicitar compra de materiales faltantes' },
   },
 };

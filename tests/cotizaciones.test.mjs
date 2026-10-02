@@ -185,6 +185,7 @@ test("migración: permisos, estados, versiones, saldos idempotentes, gastos y ci
         "utf8",
       ),
     )
+    await db.exec(readFileSync(new URL('../supabase/migrations/20261002215459_cotizacion_guiada_proyecto_al_aceptar.sql',import.meta.url),'utf8'));
     assert.equal((await db.query('select codigo from public.cotizaciones')).rows[0].codigo,'COT-ANTERIOR');
     assert.equal((await db.query("select public.operar_cotizacion(null,'consulta',1) result")).rows[0].result,'anterior');
     const as = async (user, sql, params = []) => {
@@ -244,14 +245,14 @@ test("migración: permisos, estados, versiones, saldos idempotentes, gastos y ci
           await assert.rejects(
             op(actor, "guardar", 1, {
               revision: 0,
-              proyectoId: id(200),
+              proyecto: {nombre:'Proyecto cotizado',cliente:'Cliente',ubicacion:'Dirección',responsable:'Técnico'},
               presupuesto: budget,
             }),
             /permiso|analista/i,
           )
         await op(100, "guardar", 1, {
           revision: 0,
-          proyectoId: id(200),
+          proyecto: {nombre:'Proyecto cotizado',cliente:'Cliente',ubicacion:'Dirección',responsable:'Técnico'},
           presupuesto: budget,
         })
         const q = await get()
@@ -276,7 +277,7 @@ test("migración: permisos, estados, versiones, saldos idempotentes, gastos y ci
         await assert.rejects(
           op(101, "guardar", 1, {
             revision: 1,
-            proyectoId: id(200),
+            proyecto: {nombre:'Proyecto cotizado',cliente:'Cliente',ubicacion:'Dirección',responsable:'Técnico'},
             presupuesto: budget,
           }),
           /otro usuario/,
@@ -284,7 +285,7 @@ test("migración: permisos, estados, versiones, saldos idempotentes, gastos y ci
         await assert.rejects(
           op(100, "guardar", 1, {
             revision: 0,
-            proyectoId: id(200),
+            proyecto: {nombre:'Proyecto cotizado',cliente:'Cliente',ubicacion:'Dirección',responsable:'Técnico'},
             presupuesto: budget,
           }),
           /cambió/,
@@ -292,7 +293,7 @@ test("migración: permisos, estados, versiones, saldos idempotentes, gastos y ci
         await assert.rejects(
           op(100, "guardar", 1, {
             revision: 1,
-            proyectoId: id(200),
+            proyecto: {nombre:'Proyecto cotizado',cliente:'Cliente',ubicacion:'Dirección',responsable:'Técnico'},
             presupuesto: { ...budget, tasas: { ...budget.tasas, igv: 999 } },
           }),
           /rango/,
@@ -300,27 +301,13 @@ test("migración: permisos, estados, versiones, saldos idempotentes, gastos y ci
       },
     )
     await t.test(
-      "revisión exige rol y conserva importe calculado, presentado y aceptado",
+      "el analista acepta sin coordinación y crea el proyecto al aceptar",
       async () => {
         await assert.rejects(request(1, 20, 5), /aceptada/)
-        await transition(100, 1, "EN_REVISION")
-        await assert.rejects(transition(100, 1, "APROBADA"), /Transición/)
-        await transition(102, 1, "OBSERVADA", { detalle: "Revisar flete" })
-        await op(100, "guardar", 1, {
-          revision: (await get()).revision,
-          proyectoId: id(200),
-          presupuesto: budget,
-        })
-        await transition(100, 1, "EN_REVISION")
-        await transition(102, 1, "APROBADA")
-        await assert.rejects(
-          op(100, "guardar", 1, {
-            revision: (await get()).revision,
-            proyectoId: id(200),
-            presupuesto: budget,
-          }),
-          /borradores/,
-        )
+        assert.equal((await get()).proyecto_id,null);
+        assert.equal((await db.query('select count(*)::int n from public.proyectos')).rows[0].n,1);
+        await assert.rejects(transition(102,1,'APROBADA'),/analista/);
+        await assert.rejects(transition(100,1,'EN_REVISION'),/analista/);
         await transition(100, 1, "PRESENTADA", { importe: 330 })
         await assert.rejects(
           transition(100, 1, "ACEPTADA", { importe: 320 }),
@@ -331,6 +318,10 @@ test("migración: permisos, estados, versiones, saldos idempotentes, gastos y ci
           detalle: "Cliente aceptó por correo",
         })
         const q = await get()
+        assert.ok(q.proyecto_id);
+        assert.equal((await db.query('select count(*)::int n from public.proyectos')).rows[0].n,2);
+        await assert.rejects(op(100,'eliminar',1,{revision:q.revision}),/eliminar/);
+        await assert.rejects(op(100,'guardar',1,{revision:q.revision,presupuesto:budget}),/borradores/);
         assert.equal(q.importe_presentado, "330.00")
         assert.equal(q.importe_aceptado, "320.00")
         assert.equal(q.totales.total, 313.57)
@@ -378,11 +369,9 @@ test("migración: permisos, estados, versiones, saldos idempotentes, gastos y ci
         }
         await op(100, "guardar", 2, {
           revision: 1,
-          proyectoId: id(200),
+          proyecto: {nombre:'Proyecto cotizado',cliente:'Cliente',ubicacion:'Dirección',responsable:'Técnico'},
           presupuesto: reduced,
         })
-        await transition(100, 2, "EN_REVISION")
-        await transition(102, 2, "APROBADA")
         await transition(100, 2, "PRESENTADA", { importe: 300 })
         await assert.rejects(
           transition(100, 2, "ACEPTADA", {
@@ -395,9 +384,9 @@ test("migración: permisos, estados, versiones, saldos idempotentes, gastos y ci
           revision: (await get()).revision,
           nuevoId: id(3),
         })
-        await transition(100, 3, "EN_REVISION")
-        await transition(102, 3, "APROBADA")
         await transition(100, 3, "PRESENTADA", { importe: 354 })
+        assert.equal((await get()).estado,'ACEPTADA');
+        assert.equal((await db.query('select count(*)::int n from public.proyectos')).rows[0].n,2);
         await transition(100, 3, "ACEPTADA", {
           importe: 354,
           detalle: "Versión aprobada por cliente",
@@ -407,6 +396,21 @@ test("migración: permisos, estados, versiones, saldos idempotentes, gastos y ci
         await assert.rejects(request(3, 23, 1), /saldo/)
       },
     )
+    await t.test('eliminación solo para el rechazo del cliente; origen de proyectos y requerimientos protegido',async()=>{
+      const data={revision:0,proyecto:{nombre:'Sin contrato',cliente:'Cliente',ubicacion:'Dirección',responsable:'Técnico'},presupuesto:budget};
+      await op(100,'guardar',80,data);
+      await assert.rejects(op(100,'eliminar',80,{revision:(await get(80)).revision}),/no aceptó/);
+      await transition(100,80,'RECHAZADA',{detalle:'Cliente no desea contratar'});
+      await assert.rejects(op(102,'eliminar',80,{revision:(await get(80)).revision}),/Solo/);
+      await op(100,'eliminar',80,{revision:(await get(80)).revision});
+      assert.ok((await get(80)).eliminada_en);
+      await transition(100,2,'RECHAZADA',{detalle:'Cliente no aceptó el cambio'});
+      await assert.rejects(op(100,'eliminar',2,{revision:(await get(2)).revision}),/aceptada no se puede/);
+      await assert.rejects(op(100,'version',80,{revision:(await get(80)).revision,nuevoId:id(81)}),/eliminada/);
+      await assert.rejects(db.exec("insert into public.proyectos values('40000000-0000-4000-8000-000000000888','Directo','Dir','Chiclayo','Tec','Cli',true)"),/cotización/);
+      await assert.rejects(db.exec("insert into public.requerimientos(id,proyecto_id) values('40000000-0000-4000-8000-000000000888','40000000-0000-4000-8000-000000000200')"),/cotización aceptada/);
+      assert.equal((await db.query('select count(*)::int n from public.proyectos')).rows[0].n,2);
+    });
     await t.test(
       "costos auditables y cierre con pendientes bloqueado",
       async () => {

@@ -195,7 +195,7 @@ export type ProjectExpense = {
 export type Quote = {
   id: string
   codigo: string
-  proyecto_id: string
+  proyecto_id: string | null
   serie_id: string
   version: number
   revision: number

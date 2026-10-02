@@ -87,9 +87,9 @@ const MANUAL_BY_ROLE: Record<Role, RoleManual> = {
         summary:
           'Sirve para registrar un requerimiento de materiales asociado a un proyecto y tecnico.',
         tasks: [
-          'Seleccionar proyecto, sede, ubicacion, tecnico responsable y descripcion del trabajo.',
-          'Agregar materiales por SKU, nombre, cantidad, unidad y marca cuando aplique.',
-          'Guardar como borrador si falta informacion o enviar al coordinador para revision.',
+          'Seleccionar un proyecto con cotizacion aceptada por el cliente.',
+          'Marcar materiales cotizados e indicar cantidades dentro del saldo disponible para esta etapa.',
+          'Enviar al coordinador para revisar stock y abastecimiento. Para otro proyecto, usar Cotizar un nuevo proyecto.',
           'Corregir cantidades antes de enviar para evitar rechazos o demoras.',
         ],
       },
@@ -218,7 +218,7 @@ const MANUAL_BY_ROLE: Record<Role, RoleManual> = {
         summary:
           'Gestiona y consulta proyectos para ordenar requerimientos por sede y responsabilidad.',
         tasks: [
-          'Crear o revisar proyectos con cliente, ubicacion, sede y responsable.',
+          'Revisar proyectos creados desde cotizaciones aceptadas, con cliente, ubicacion, sede y responsable.',
           'Usar el proyecto como referencia al validar requerimientos de materiales.',
           'Mantener informacion clara para que los analistas soliciten contra el proyecto correcto.',
         ],
@@ -257,14 +257,14 @@ export default function ManualUsuarioView({ role, onNav, onStartTour }: Props) {
   const original = MANUAL_BY_ROLE[role];
   const manual = { ...original, sections: [...original.sections, {
     title: 'Cotizaciones y costos de proyectos',
-    summary: 'Conecta presupuesto, revisión interna, propuesta al cliente, ejecución y cierre con un historial por versión.',
+    summary: 'Guía la cotización por pasos y crea el proyecto al aceptar el cliente. Conecta materiales, requerimientos por etapas y costos reales.',
     tasks: role === 'analista' ? [
-      'Crea una cotización asociada al proyecto, modalidad, ciudad, puntos, materiales y servicios; revisa unidades y costos sin IGV.',
-      'Envía el presupuesto a revisión. Si fue observado, corrígelo; después de aprobado registra el importe presentado y la aceptación con evidencia.',
+      'Completa los cuatro pasos: datos del proyecto, materiales y costos, condiciones y márgenes, y resumen; conserva las etiquetas del Excel.',
+      'Presenta la propuesta sin aprobación del coordinador. Solo el analista registra la aceptación del cliente; el proyecto se crea automáticamente.',
       'Genera requerimientos por etapas desde el saldo de materiales. Sigue faltantes, compras, entregas y devoluciones en sus módulos habituales.',
-      'Registra costos reales sin IGV y comprobantes; distingue material consumido de material entregado. Crea una nueva versión para cambiar un presupuesto aprobado.',
+      'Edita una cotización aceptada creando una nueva versión. Los cambios se activan tras una nueva aceptación del cliente. Puedes eliminar una cotización rechazada que nunca haya sido aceptada.',
     ] : role === 'coordinador' ? [
-      'Revisa y aprueba u observa presupuestos enviados por analistas. Los porcentajes quedan guardados en cada versión.',
+      'Consulta las cotizaciones y sus versiones; la presentación y aceptación corresponden al analista autor y no requieren aprobación de coordinación.',
       'Configura plantillas por modalidad, ciudad, tipo y puntos desde Cotizaciones. El analista debe aplicarlas expresamente al borrador.',
       'Atiende las solicitudes generadas y sus faltantes mediante compras o traslados; registra entregas y devoluciones.',
       'Concilia costos reales, consumo, devoluciones y comprobantes antes de cerrar. La anulación de gastos conserva el registro y exige un motivo.',

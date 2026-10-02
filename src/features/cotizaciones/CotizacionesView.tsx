@@ -1,13 +1,23 @@
 import { useEffect, useRef, useState, type ReactNode } from "react"
+
 import type { Role } from "../../domain/types"
+
 import { useAppStore } from "../../store/AppContext"
+
 import { useUserProfile } from "../../store/UserProfileContext"
+
 import { operarCotizacion } from "../../services/cotizacionService"
+
 import QuoteEditor, { Field, NumberField, Totals } from "./QuoteEditor"
+
 import QuotationReport from "./QuotationReport"
-import LegacyQuotations from './LegacyQuotations'
+
+import LegacyQuotations from "./LegacyQuotations"
+
 import BudgetContext from "./BudgetContext"
+
 import { EXCEL_LABELS, EXCEL_MODALIDADES } from "./excelVariables"
+
 import {
   ESTADOS_COTIZACION,
   ESTADO_LABELS,
@@ -22,41 +32,65 @@ import {
 
 type Props = {
   role: Role
+
   onToast: (message: string) => void
+
   onNav?: (view: string) => void
+
   projectId?: string
+
+  nueva?: boolean
 }
+
 const date = (value: string) =>
   new Date(value).toLocaleString("es-PE", { timeZone: "America/Lima" })
+
 type Operation = {
   title: string
+
   action: string
+
   target?: EstadoCotizacion
+
   expense?: ProjectExpense
 }
 
 function Dialog({
   title,
+
   children,
+
   onClose,
+
+  destructive = false,
 }: {
   title: string
+
   children: ReactNode
+
   onClose: () => void
+
+  destructive?: boolean
 }) {
   const ref = useRef<HTMLDialogElement>(null)
+
   useEffect(() => {
     const dialog = ref.current
+
     dialog?.showModal()
+
     return () => dialog?.close()
   }, [])
+
   return (
     <dialog
       className="quote-dialog"
       ref={ref}
       aria-labelledby="quote-dialog-title"
+      role={destructive ? "alertdialog" : undefined}
       onCancel={(e) => {
         e.preventDefault()
+
         onClose()
       }}
     >
@@ -68,31 +102,38 @@ function Dialog({
 
 export function QuotationSummary({ onNav }: { onNav: (view: string) => void }) {
   const { state } = useAppStore()
+
   const accepted = state.cotizaciones.filter((q) =>
     ["ACEPTADA", "CERRADA"].includes(q.estado),
   )
+
   return (
     <section className="panel quote-summary">
       <div>
         <strong>Cotizaciones de proyectos</strong>
         <p className="quote-muted">
-          {state.cotizaciones.filter((q) => q.estado === "EN_REVISION").length}{" "}
-          en revisión · {accepted.filter((q) => q.estado === "ACEPTADA").length}{" "}
-          en ejecución · {accepted.filter((q) => q.estado === "CERRADA").length}{" "}
-          cerradas
+          {state.cotizaciones.filter((q) => q.estado === "PRESENTADA").length}{" "}
+          esperando al cliente ·{" "}
+          {accepted.filter((q) => q.estado === "ACEPTADA").length} en ejecución
+          · {accepted.filter((q) => q.estado === "CERRADA").length} cerradas
         </p>
         {(["PEN", "USD"] as const)
+
           .filter((currency) =>
             accepted.some((q) => q.presupuesto.moneda === currency),
           )
+
           .map((currency) => (
             <p key={currency}>
               Aceptado en {currency}:{" "}
               <strong>
                 {money(
                   accepted
+
                     .filter((q) => q.presupuesto.moneda === currency)
+
                     .reduce((sum, q) => sum + (q.importe_aceptado ?? 0), 0),
+
                   currency,
                 )}
               </strong>
@@ -111,51 +152,91 @@ export function QuotationSummary({ onNav }: { onNav: (view: string) => void }) {
 
 export default function CotizacionesView({
   role,
+
   onToast,
+
   onNav,
+
   projectId,
+
+  nueva = false,
 }: Props) {
   const { state, refreshRemoteData } = useAppStore()
+
   const { profile } = useUserProfile()
+
   const [selected, setSelected] = useState<string | null>(null)
-  const [editor, setEditor] = useState<"quote" | "template" | null>(null)
+
+  const [editor, setEditor] = useState<"quote" | "template" | null>(
+    nueva ? "quote" : null,
+  )
+
   const [templateSelection, setTemplateSelection] = useState<string | null>(
     null,
   )
+
   const [search, setSearch] = useState("")
+
   const [filter, setFilter] = useState("")
+
   const [projectFilter, setProjectFilter] = useState("")
+
   const [saving, setSaving] = useState(false)
+
   const [error, setError] = useState("")
+
   const [tab, setTab] = useState("presupuesto")
+
   const [operation, setOperation] = useState<Operation | null>(null)
+
   const [detail, setDetail] = useState("")
+
   const [amount, setAmount] = useState(0)
+
   const [requestAmounts, setRequestAmounts] = useState<Record<string, number>>(
     {},
   )
+
   const [operationId, setOperationId] = useState("")
-  const [operationRevision,setOperationRevision]=useState(0);
+
+  const [operationRevision, setOperationRevision] = useState(0)
+
   const [habilitationDate, setHabilitationDate] = useState(
     new Date().toLocaleDateString("en-CA", { timeZone: "America/Lima" }),
   )
-  const [draftId, setDraftId] = useState("")
+
+  const [draftId, setDraftId] = useState(() =>
+    nueva ? crypto.randomUUID() : "",
+  )
+
   const [expense, setExpense] = useState({
     rubro: "MANO_OBRA",
+
     naturaleza: "COSTO",
+
     descripcion: "",
+
     monto: 0,
+
     fecha: new Date().toLocaleDateString("en-CA", { timeZone: "America/Lima" }),
+
     comprobante: "",
+
     material_sku: "",
+
     cantidad: 0,
   })
+
   const quote = state.cotizaciones.find((q) => q.id === selected)
+
   const family = quote
     ? state.cotizaciones.filter((q) => q.serie_id === quote.serie_id)
     : []
+
   const owner = role === "analista" && quote?.creado_por === profile.id
+
   const writable = owner || role === "coordinador"
+
   const available = state.cotizaciones.filter(
     (q) =>
       (!projectId || q.proyecto_id === projectId) &&
@@ -163,62 +244,93 @@ export default function CotizacionesView({
       (!filter || q.estado === filter) &&
       (!search ||
         `${q.codigo} ${q.proyecto_snapshot.nombre} ${q.proyecto_snapshot.cliente} ${q.presupuesto.ciudad}`
+
           .toLocaleLowerCase()
+
           .includes(search.toLocaleLowerCase())),
   )
+
   const begin = (op: Operation) => {
     if (!quote) return
+
     setOperation(op)
-    setOperationRevision(quote.revision);
+
+    setOperationRevision(quote.revision)
+
     setError("")
+
     setDetail("")
+
     setAmount(
       op.target === "ACEPTADA"
         ? (quote.importe_presentado ?? quote.totales.total)
         : quote.totales.total,
     )
+
     setOperationId(crypto.randomUUID())
+
     setRequestAmounts(
       Object.fromEntries(
         quote.presupuesto.materiales.map((m) => [
           m.id,
-          remainingMaterial(m, family, state.requerimientos),
+
+          0,
         ]),
       ),
     )
+
     setHabilitationDate(
       quote.fecha_habilitacion ??
         new Date().toLocaleDateString("en-CA", { timeZone: "America/Lima" }),
     )
+
     setExpense({
       rubro: "MANO_OBRA",
+
       naturaleza: "COSTO",
+
       descripcion: "",
+
       monto: 0,
+
       fecha: new Date().toLocaleDateString("en-CA", {
         timeZone: "America/Lima",
       }),
+
       comprobante: "",
+
       material_sku: "",
+
       cantidad: 0,
     })
   }
+
   const run = async (
     action: string,
+
     data: Record<string, unknown>,
+
     id = quote?.id,
   ) => {
     if (!id || saving) return
+
     setSaving(true)
+
     setError("")
+
     try {
       const result = await operarCotizacion(action, id, {
         revision: quote?.revision,
+
         ...data,
       })
+
       await refreshRemoteData()
+
       setOperation(null)
+
       onToast("Operación guardada correctamente.")
+
       return result
     } catch (err) {
       setError(
@@ -228,12 +340,17 @@ export default function CotizacionesView({
       setSaving(false)
     }
   }
+
   const startDraft = () => {
     setSelected(null)
+
     setDraftId(crypto.randomUUID())
+
     setEditor("quote")
+
     setError("")
   }
+
   if (state.cotizacionesError && !editor)
     return (
       <div className="quote-view">
@@ -248,9 +365,11 @@ export default function CotizacionesView({
         </button>
       </div>
     )
+
   const template = state.plantillasCotizacion.find(
     (t) => t.id === templateSelection,
   )
+
   if (editor)
     return (
       <div className="quote-view">
@@ -267,23 +386,36 @@ export default function CotizacionesView({
           onCancel={() => setEditor(null)}
           onSave={async (budget, project, name, snapshot) => {
             setSaving(true)
+
             try {
               const id = await operarCotizacion(
                 editor === "template" ? "plantilla" : "guardar",
+
                 editor === "template"
                   ? (template?.id ?? draftId)
                   : (quote?.id ?? draftId),
+
                 {
                   revision: snapshot.revision,
+
                   presupuesto: budget,
+
                   proyectoId: project,
+
+                  proyecto: snapshot.proyecto,
+
                   nombre: name,
+
                   actualizadaEn: snapshot.actualizadaEn,
                 },
               )
+
               await refreshRemoteData()
+
               setEditor(null)
+
               if (editor === "quote") setSelected(id)
+
               onToast(
                 editor === "template"
                   ? "Plantilla configurada."
@@ -296,7 +428,9 @@ export default function CotizacionesView({
         />
       </div>
     )
+
   const nav = (view: string) => onNav?.(view)
+
   const stateAction = (target: EstadoCotizacion, title: string) => (
     <button
       className="btn btn-ghost"
@@ -306,9 +440,11 @@ export default function CotizacionesView({
       {title}
     </button>
   )
+
   const dialog = operation && quote && (
     <Dialog
       title={operation.title}
+      destructive={operation.action === "eliminar"}
       onClose={() => {
         if (!saving) setOperation(null)
       }}
@@ -316,23 +452,35 @@ export default function CotizacionesView({
       <form
         onSubmit={async (e) => {
           e.preventDefault()
+
           const payload: Record<string, unknown> = {
-              revision: operationRevision,
-              detalle: detail,
+            revision: operationRevision,
+
+            detalle: detail,
+
             estado: operation.target,
+
             importe: amount,
+
             fechaHabilitacion: habilitationDate,
           }
+
           if (operation.action === "requerimiento") {
             payload.requerimientoId = operationId
+
             payload.items = Object.entries(requestAmounts)
+
               .filter(([, n]) => n > 0)
+
               .map(([itemId, cantidad]) => ({ itemId, cantidad }))
           }
+
           if (operation.action === "gasto")
             Object.assign(payload, expense, { gastoId: operationId })
+
           if (operation.action === "anular_gasto")
             payload.gastoId = operation.expense?.id
+
           await run(operation.action, payload)
         }}
       >
@@ -342,6 +490,21 @@ export default function CotizacionesView({
           </p>
         )}
         <fieldset disabled={saving}>
+          {operation.action === "eliminar" && (
+            <p className="quote-note">
+              Se quitará esta cotización de la lista. El historial de la
+              decisión del cliente se conservará. Confirma que deseas
+              eliminarla.
+            </p>
+          )}
+          {operation.target === "ACEPTADA" && (
+            <p className="quote-note">
+              Registra la aceptación real del cliente. Se creará el proyecto y
+              quedarán disponibles los materiales cotizados para solicitarlos
+              por etapas. Si es una nueva versión, reemplazará la versión
+              aceptada anterior.
+            </p>
+          )}
           {operation.action === "requerimiento" && (
             <>
               <p>
@@ -433,6 +596,7 @@ export default function CotizacionesView({
                       onChange={(e) =>
                         setExpense((g) => ({
                           ...g,
+
                           material_sku: e.target.value,
                         }))
                       }
@@ -467,7 +631,9 @@ export default function CotizacionesView({
                 onChange={(e) =>
                   setExpense((g) => ({
                     ...g,
+
                     naturaleza: e.target.value,
+
                     descripcion:
                       e.target.value === "ABONO"
                         ? "A CUENTA DEL MATERIAL SOBRANTE"
@@ -500,7 +666,8 @@ export default function CotizacionesView({
                 onChange={setAmount}
               />
             )}
-          {operation.action !== "requerimiento" &&
+          {operation.action !== "eliminar" &&
+            operation.action !== "requerimiento" &&
             operation.action !== "gasto" && (
               <Field
                 label={
@@ -562,6 +729,7 @@ export default function CotizacionesView({
       </form>
     </Dialog>
   )
+
   if (!quote)
     return (
       <div className="quote-view">
@@ -569,8 +737,7 @@ export default function CotizacionesView({
           <div>
             <h2>Cotizaciones de proyectos</h2>
             <p className="quote-muted">
-              Presupuesto → revisión → propuesta → aceptación → ejecución →
-              cierre
+              Presupuesto → propuesta → aceptación → ejecución → cierre
             </p>
           </div>
           <div className="quote-actions">
@@ -584,8 +751,11 @@ export default function CotizacionesView({
                 className="btn btn-ghost"
                 onClick={() => {
                   setDraftId(crypto.randomUUID())
+
                   setTemplateSelection(null)
+
                   setSelected(null)
+
                   setEditor("template")
                 }}
               >
@@ -616,7 +786,11 @@ export default function CotizacionesView({
                 onChange={(e) => setFilter(e.target.value)}
               >
                 <option value="">Todos los estados</option>
-                {ESTADOS_COTIZACION.map((s) => (
+                {ESTADOS_COTIZACION.filter(
+                  (s) =>
+                    !["EN_REVISION", "OBSERVADA", "APROBADA"].includes(s) ||
+                    state.cotizaciones.some((q) => q.estado === s),
+                ).map((s) => (
                   <option key={s} value={s}>
                     {ESTADO_LABELS[s]}
                   </option>
@@ -646,15 +820,19 @@ export default function CotizacionesView({
             <h3>No hay cotizaciones para estos filtros</h3>
             <p>
               {role === "analista"
-                ? "Selecciona un proyecto y prepara su presupuesto. Puedes crear el proyecto desde la sección Proyectos."
+                ? "Prepara tu primera cotización. El proyecto se creará cuando el cliente la acepte."
                 : "Las cotizaciones enviadas por los analistas aparecerán aquí."}
             </p>
             {onNav && (
               <button
                 className="btn btn-ghost"
-                onClick={() => nav("proyectos")}
+                onClick={() =>
+                  role === "analista" ? startDraft() : nav("proyectos")
+                }
               >
-                Ir a proyectos
+                {role === "analista"
+                  ? "Crear mi primera cotización"
+                  : "Ir a proyectos"}
               </button>
             )}
           </section>
@@ -666,7 +844,9 @@ export default function CotizacionesView({
                 key={q.id}
                 onClick={() => {
                   setSelected(q.id)
+
                   setTab("presupuesto")
+
                   setError("")
                 }}
               >
@@ -691,6 +871,7 @@ export default function CotizacionesView({
                     q.importe_aceptado ??
                       q.importe_presentado ??
                       q.totales.total,
+
                     q.presupuesto.moneda,
                   )}
                 </strong>
@@ -715,6 +896,7 @@ export default function CotizacionesView({
                     className="btn btn-ghost"
                     onClick={() => {
                       setTemplateSelection(t.id)
+
                       setEditor("template")
                     }}
                   >
@@ -731,18 +913,25 @@ export default function CotizacionesView({
         )}
       </div>
     )
+
   const result = executionSummary(quote, family, state.gastosProyecto)
+
   const reqIds = new Set(
     family.flatMap((q) => q.asignaciones.map((a) => a.requerimiento_id)),
   )
+
   const linkedRequests = state.requerimientos.filter((r) => reqIds.has(r.id))
+
   const deliveries = state.entregas.filter((e) => reqIds.has(e.requerimientoId))
+
   const returns = state.devoluciones.filter((d) =>
     reqIds.has(d.requerimientoId),
   )
+
   const purchases = state.compras.filter(
     (c) => c.requerimientoId && reqIds.has(c.requerimientoId),
   )
+
   return (
     <div className="quote-view">
       {dialog}
@@ -750,6 +939,7 @@ export default function CotizacionesView({
         className="btn btn-ghost"
         onClick={() => {
           setSelected(null)
+
           setError("")
         }}
       >
@@ -802,18 +992,18 @@ export default function CotizacionesView({
               >
                 Editar presupuesto
               </button>
-              {stateAction("EN_REVISION", "Enviar a revisión")}
-            </>
-          )}
-          {role === "coordinador" && quote.estado === "EN_REVISION" && (
-            <>
-              {stateAction("APROBADA", "Aprobar presupuesto")}
-              {stateAction("OBSERVADA", "Observar")}
             </>
           )}
           {owner &&
-            quote.estado === "APROBADA" &&
-            stateAction("PRESENTADA", "Registrar presentación")}
+            ["BORRADOR", "OBSERVADA", "EN_REVISION", "APROBADA"].includes(
+              quote.estado,
+            ) &&
+            stateAction("PRESENTADA", "Presentar al cliente")}
+          {owner &&
+            ["BORRADOR", "OBSERVADA", "EN_REVISION", "APROBADA"].includes(
+              quote.estado,
+            ) &&
+            stateAction("RECHAZADA", "El cliente no acepta")}
           {owner && quote.estado === "PRESENTADA" && (
             <>
               {stateAction("ACEPTADA", "Registrar aceptación")}
@@ -832,24 +1022,31 @@ export default function CotizacionesView({
                 const id = await run("version", {
                   nuevoId: crypto.randomUUID(),
                 })
+
                 if (id) {
                   setSelected(id)
+
                   setEditor("quote")
                 }
               }}
             >
-              Crear nueva versión
+              {quote.estado === "ACEPTADA"
+                ? "Editar cotización (nueva versión)"
+                : "Crear nueva versión"}
             </button>
           )}
           {owner &&
-            [
-              "BORRADOR",
-              "OBSERVADA",
-              "EN_REVISION",
-              "APROBADA",
-              "PRESENTADA",
-            ].includes(quote.estado) &&
-            stateAction("ANULADA", "Anular cotización")}
+            quote.estado === "RECHAZADA" &&
+            !family.some((q) => q.importe_aceptado != null) && (
+              <button
+                className="btn btn-danger"
+                onClick={() =>
+                  begin({ title: "Eliminar cotización", action: "eliminar" })
+                }
+              >
+                Eliminar cotización
+              </button>
+            )}
           {role === "coordinador" && quote.estado === "ACEPTADA" && (
             <button
               className="btn btn-primary"
@@ -861,10 +1058,16 @@ export default function CotizacionesView({
             </button>
           )}
           {[
+            "BORRADOR",
+
             "APROBADA",
+
             "PRESENTADA",
+
             "ACEPTADA",
+
             "CERRADA",
+
             "SUPERADA",
           ].includes(quote.estado) && (
             <button
@@ -874,6 +1077,7 @@ export default function CotizacionesView({
                   const { downloadQuotation } = await import(
                     "../../utils/quotationPdf"
                   )
+
                   await downloadQuotation(quote)
                 } catch (err) {
                   setError(
@@ -897,8 +1101,11 @@ export default function CotizacionesView({
       <nav className="quote-tabs" aria-label="Detalle de cotización">
         {[
           ["presupuesto", "Presupuesto"],
+
           ["propuesta", "Propuesta comercial"],
+
           ["ejecucion", "Ejecución y costos reales"],
+
           ["historial", "Versiones e historial"],
         ].map(([id, label]) => (
           <button
@@ -914,7 +1121,8 @@ export default function CotizacionesView({
       {tab === "presupuesto" && (
         <section className="panel quote-section">
           <h3>
-            {EXCEL_MODALIDADES[quote.presupuesto.modalidad]} · {quote.presupuesto.ciudad} ·{" "}
+            {EXCEL_MODALIDADES[quote.presupuesto.modalidad]} ·{" "}
+            {quote.presupuesto.ciudad} ·{" "}
             {quote.presupuesto.tipo === "TIPICO" ? "Típico" : "No típico"} ·{" "}
             {quote.presupuesto.puntos} puntos
           </h3>
@@ -952,6 +1160,7 @@ export default function CotizacionesView({
                     <td>
                       {money(
                         m.cantidad * m.costoUnitario,
+
                         quote.presupuesto.moneda,
                       )}
                     </td>
@@ -968,6 +1177,7 @@ export default function CotizacionesView({
                     <td>
                       {money(
                         g.cantidad * g.costoUnitario,
+
                         quote.presupuesto.moneda,
                       )}
                     </td>
@@ -1018,9 +1228,13 @@ export default function CotizacionesView({
             <dl className="quote-totals">
               {([
                 ["TOTAL COTIZADO (SIN IGV)", result.saleWithoutTax],
+
                 ["Costo previsto (incluye cargos)", result.planned],
+
                 ["TOTAL COSTOS (SIN IGV)", result.actual],
+
                 ["Desviación del costo (real − previsto)", result.difference],
+
                 ["UTILIDAD", result.result],
               ] as const).map(([label, value]) => (
                 <div key={label}>
@@ -1029,9 +1243,31 @@ export default function CotizacionesView({
                 </div>
               ))}
             </dl>
-            <p><strong>Relación Beneficio / Costo (%):</strong> {result.beneficioCosto==null?'No disponible: no hay costo neto positivo':`${result.beneficioCosto}%`}</p>
-            <p>Fecha de habilitacion: {quote.fecha_habilitacion??'Sin registrar'}</p>
-            {writable&&quote.estado==='ACEPTADA'&&!quote.fecha_habilitacion&&<button className="btn btn-ghost" onClick={()=>begin({title:'Registrar habilitacion',action:'habilitar'})}>Registrar habilitacion</button>}
+            <p>
+              <strong>Relación Beneficio / Costo (%):</strong>{" "}
+              {result.beneficioCosto == null
+                ? "No disponible: no hay costo neto positivo"
+                : `${result.beneficioCosto}%`}
+            </p>
+            <p>
+              Fecha de habilitacion:{" "}
+              {quote.fecha_habilitacion ?? "Sin registrar"}
+            </p>
+            {writable &&
+              quote.estado === "ACEPTADA" &&
+              !quote.fecha_habilitacion && (
+                <button
+                  className="btn btn-ghost"
+                  onClick={() =>
+                    begin({
+                      title: "Registrar habilitacion",
+                      action: "habilitar",
+                    })
+                  }
+                >
+                  Registrar habilitacion
+                </button>
+              )}
             <p className="quote-muted">
               {result.complete
                 ? "Cierre conciliado por coordinación."
@@ -1054,6 +1290,7 @@ export default function CotizacionesView({
                     onClick={() =>
                       begin({
                         title: "Generar requerimiento por etapa",
+
                         action: "requerimiento",
                       })
                     }
@@ -1139,21 +1376,85 @@ export default function CotizacionesView({
             ))}
             {deliveries.length === 0 && <p>Sin entregas registradas.</p>}
             <h3>Devoluciones vinculadas</h3>
-            {returns.map(d=><p key={d.id}>{d.codigo} · {d.estado} · {d.items.map(m=>`${m.nombre}: ${m.cantidad} ${m.unidad}`).join(', ')}</p>)}
-            {returns.length===0&&<p>Sin devoluciones registradas.</p>}
-            <div className="quote-table-wrap"><table className="quote-table"><caption>Materiales · Conforme a obra (unidad de inventario)</caption><thead><tr><th>MATERIAL</th><th>Entregado</th><th>MATERIAL NO UTILIZADO (EN ALMACEN)</th><th>MATERIAL UTILIZADO EXISTENTE / consumo registrado</th></tr></thead><tbody>{Array.from(new Map(quote.presupuesto.materiales.map(m=>[m.sku,m])).values()).map(m=><tr key={m.sku}><td>{m.nombre} ({m.unidadCatalogo})</td><td>{deliveries.filter(e=>e.estado!=='CANCELADA').flatMap(e=>e.items).filter(i=>i.skuId===m.sku).reduce((sum,i)=>sum+i.cantidadEntregada,0)}</td><td>{returns.filter(d=>d.estado==='VALIDADA').flatMap(d=>d.items).filter(i=>i.skuId===m.sku).reduce((sum,i)=>sum+i.cantidad,0)}</td><td>{result.active.filter(g=>g.material_sku===m.sku&&g.naturaleza==='COSTO').reduce((sum,g)=>sum+(g.cantidad??0),0)}</td></tr>)}</tbody></table></div>
-            <p className="quote-muted">Material no utilizado muestra devoluciones validadas. El consumo se registra expresamente con su costo; entregado menos devuelto no demuestra material instalado.</p>
+            {returns.map((d) => (
+              <p key={d.id}>
+                {d.codigo} · {d.estado} ·{" "}
+                {d.items
+                  .map((m) => `${m.nombre}: ${m.cantidad} ${m.unidad}`)
+                  .join(", ")}
+              </p>
+            ))}
+            {returns.length === 0 && <p>Sin devoluciones registradas.</p>}
+            <div className="quote-table-wrap">
+              <table className="quote-table">
+                <caption>
+                  Materiales · Conforme a obra (unidad de inventario)
+                </caption>
+                <thead>
+                  <tr>
+                    <th>MATERIAL</th>
+                    <th>Entregado</th>
+                    <th>MATERIAL NO UTILIZADO (EN ALMACEN)</th>
+                    <th>MATERIAL UTILIZADO EXISTENTE / consumo registrado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Array.from(
+                    new Map(
+                      quote.presupuesto.materiales.map((m) => [m.sku, m]),
+                    ).values(),
+                  ).map((m) => (
+                    <tr key={m.sku}>
+                      <td>
+                        {m.nombre} ({m.unidadCatalogo})
+                      </td>
+                      <td>
+                        {deliveries
+                          .filter((e) => e.estado !== "CANCELADA")
+                          .flatMap((e) => e.items)
+                          .filter((i) => i.skuId === m.sku)
+                          .reduce((sum, i) => sum + i.cantidadEntregada, 0)}
+                      </td>
+                      <td>
+                        {returns
+                          .filter((d) => d.estado === "VALIDADA")
+                          .flatMap((d) => d.items)
+                          .filter((i) => i.skuId === m.sku)
+                          .reduce((sum, i) => sum + i.cantidad, 0)}
+                      </td>
+                      <td>
+                        {result.active
+                          .filter(
+                            (g) =>
+                              g.material_sku === m.sku &&
+                              g.naturaleza === "COSTO",
+                          )
+                          .reduce((sum, g) => sum + (g.cantidad ?? 0), 0)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="quote-muted">
+              Material no utilizado muestra devoluciones validadas. El consumo
+              se registra expresamente con su costo; entregado menos devuelto no
+              demuestra material instalado.
+            </p>
           </section>
           <section className="panel quote-section">
             <h3>Comprobantes y costos reales</h3>
             {state.gastosProyecto
+
               .filter((g) => family.some((q) => q.id === g.cotizacion_id))
+
               .map((g) => (
                 <div className="quote-line" key={g.id}>
                   <div className="quote-toolbar">
                     <strong>
                       {g.descripcion} ·{" "}
-                      {g.naturaleza==='ABONO'?'Abono − ':''}{money(g.monto, quote.presupuesto.moneda)}
+                      {g.naturaleza === "ABONO" ? "Abono − " : ""}
+                      {money(g.monto, quote.presupuesto.moneda)}
                     </strong>
                     <span>{g.estado}</span>
                   </div>
@@ -1179,7 +1480,9 @@ export default function CotizacionesView({
                         onClick={() =>
                           begin({
                             title: "Anular gasto conservando historial",
+
                             action: "anular_gasto",
+
                             expense: g,
                           })
                         }
@@ -1205,7 +1508,9 @@ export default function CotizacionesView({
               solicitudes y gastos de la misma serie.
             </p>
             {family
+
               .sort((a, b) => b.version - a.version)
+
               .map((q) => (
                 <button
                   key={q.id}
@@ -1221,7 +1526,9 @@ export default function CotizacionesView({
           <section className="panel quote-section">
             <h3>Historial de cambios</h3>
             {[...quote.eventos]
+
               .sort((a, b) => b.id - a.id)
+
               .map((event) => (
                 <div className="quote-line" key={event.id}>
                   <strong>
