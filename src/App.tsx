@@ -11,6 +11,8 @@ import WorkspaceGate from './components/WorkspaceTransition';
 import NotificationsPanel, { useNotifications } from './components/NotificationsPanel';
 import { getViewMeta } from './app/navigation';
 import ViewRouter from './app/ViewRouter';
+import OnboardingTour from './components/OnboardingTour';
+import { readTourStatus } from './app/onboarding';
 
 /* ─── Toast ─── */
 function Toast({ msg, onDismiss }: { msg: string; onDismiss: () => void }) {
@@ -184,6 +186,7 @@ function AppShell({ onLogout, loggingOut, logoutError }: { loggingOut: boolean; 
   const { profile, avatarUrl } = useUserProfile();
   const session = { role: profile.rol, name: profile.nombre, email: profile.email };
   const [view, setView] = useState('dashboard');
+  const [tourOpen, setTourOpen] = useState(() => readTourStatus(profile.id) === null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuTrigger = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -235,10 +238,15 @@ function AppShell({ onLogout, loggingOut, logoutError }: { loggingOut: boolean; 
           onBellClick={() => setNotifOpen(open => !open)}
         />
         <div className="app-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-          <ViewRouter role={session.role} view={view} onToast={msg => setToast(msg)} onNav={setView} userName={session.name} userEmail={session.email} />
+          <div className="app-view-content" data-tour-view={view}>
+            <ViewRouter role={session.role} view={view} onToast={msg => setToast(msg)} onNav={setView} userName={session.name} userEmail={session.email}
+              onStartTour={() => { setMenuOpen(false); setNotifOpen(false); setTourOpen(true); }} />
+          </div>
         </div>
       </div>
       {toast && <Toast msg={toast} onDismiss={() => setToast(null)} />}
+      {tourOpen && <OnboardingTour key={`${profile.id}:${session.role}`} role={session.role} userId={profile.id} navigate={setView}
+        onClose={() => setTourOpen(false)} onStorageError={() => setToast('Tu navegador no permitió guardar el tutorial. Podría aparecer nuevamente al ingresar.')} />}
     </div>
   );
 }

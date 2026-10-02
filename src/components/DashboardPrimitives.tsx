@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
+import { ChartTooltip } from './ChartTooltip';
 
 export function Card({ children, style, className = '' }: { children: ReactNode; style?: CSSProperties; className?: string }) {
   return <div className={`panel dashboard-card ${className}`} style={style}>{children}</div>;
@@ -25,9 +26,8 @@ export function BarChart({ data, colors, labels, height = 260 }: { data: number[
   const max = Math.ceil(Math.max(...data.flat(), 1) / step) * step;
   const barW = Math.min(32, plotW / Math.max(data.length * (colors.length + 2), 1));
   const gap = 5;
-  return <div ref={ref} className="dashboard-chart">
+  return <ChartTooltip title="Solicitudes por sede y estado" description="Compara las solicitudes confirmadas y pendientes de cada sede. Una barra más alta representa más solicitudes."><div ref={ref} className="dashboard-chart">
     <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height} role="img" aria-label="Solicitudes por sede y estado">
-      <title>Solicitudes por sede y estado</title>
       <desc>{labels.map((label, i) => `${label}: ${data[i].join(', ')}`).join('; ')}</desc>
       {Array.from({ length: max / step + 1 }, (_, i) => i * step).map(value => {
         const y = margin.top + plotH * (1 - value / max);
@@ -40,9 +40,15 @@ export function BarChart({ data, colors, labels, height = 260 }: { data: number[
           const h = value / max * plotH;
           const x = start + j * (barW + gap);
           const y = margin.top + plotH - h;
-          return <g key={j}><rect x={x} y={y} width={barW} height={h} rx={4} fill={colors[j]}/><text x={x + barW / 2} y={y - 7} textAnchor="middle" fontSize={12} fontWeight={600} fill={colors[j]}>{value}</text></g>;
+          const estado = j === 0 ? 'confirmadas' : 'pendientes';
+          return <g key={j} tabIndex={0} data-chart-title={`${labels[i]} · ${estado}`} data-chart-value={`${value} solicitudes`}
+            data-chart-description={`En ${labels[i]} hay ${value} solicitudes ${estado} dentro de los datos mostrados. La altura de la barra permite comparar la actividad entre sedes.`}>
+            <rect x={x} y={y} width={barW} height={h} rx={4} fill={colors[j]}/>
+            <text x={x + barW / 2} y={y - 7} textAnchor="middle" fontSize={12} fontWeight={600} fill={colors[j]}>{value}</text>
+            <rect x={x} y={Math.min(y - 20, margin.top + plotH - 12)} width={barW} height={Math.max(h + 20, 12)} fill="transparent" />
+          </g>;
         })}<text x={center} y={height - 8} textAnchor="middle" fontSize={12} fill="#52525B">{labels[i]}</text></g>;
       })}
     </svg>
-  </div>;
+  </div></ChartTooltip>;
 }

@@ -250,9 +250,10 @@ const MANUAL_BY_ROLE: Record<Role, RoleManual> = {
 interface Props {
   role: Role;
   onNav: (view: string) => void;
+  onStartTour: () => void;
 }
 
-export default function ManualUsuarioView({ role, onNav }: Props) {
+export default function ManualUsuarioView({ role, onNav, onStartTour }: Props) {
   const manual = MANUAL_BY_ROLE[role];
 
   return (
@@ -288,6 +289,7 @@ export default function ManualUsuarioView({ role, onNav }: Props) {
         <p style={{ margin: 0, color: '#52525B', fontSize: 14.5, lineHeight: 1.65, maxWidth: 900 }}>
           {manual.description}
         </p>
+        <button type="button" className="btn btn-primary" data-tour="restart" style={{ marginTop: 16 }} onClick={onStartTour}>Iniciar recorrido guiado</button>
       </div>
 
       <div

@@ -27,16 +27,17 @@ type Props = {
   onNav: (view: string) => void;
   userName: string;
   userEmail: string;
+  onStartTour: () => void;
 };
 
 const MANAGER_DATA_VIEWS: ConsultaGerente[] = [
   'requerimientos', 'compras', 'entregas', 'devoluciones', 'transporte', 'usuarios',
 ];
 
-export default function ViewRouter({ role, view, onToast, onNav, userName, userEmail }: Props) {
+export default function ViewRouter({ role, view, onToast, onNav, userName, userEmail, onStartTour }: Props) {
   if (!canAccessView(role, view)) return <ViewMessage message="No tienes acceso a esta vista." />;
   if (view === 'perfil') return <ProfileView role={role} userName={userName} userEmail={userEmail} onToast={onToast} />;
-  if (view === 'manual') return <ManualUsuarioView role={role} onNav={onNav} />;
+  if (view === 'manual') return <ManualUsuarioView role={role} onNav={onNav} onStartTour={onStartTour} />;
 
   if (role === 'gerente') {
     if (view === 'dashboard') return <GerenteDashboard onNav={onNav} />;

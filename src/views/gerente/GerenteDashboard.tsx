@@ -1,6 +1,7 @@
 import { Card, SectionHead, BarChart } from '../../components/DashboardPrimitives';
 import { useAppStore } from '../../store/AppContext';
 import { SEDES, Sede } from '../../domain/types';
+import { ChartTooltip } from '../../components/ChartTooltip';
 
 const SEDE_COLOR: Record<Sede, string> = { Chiclayo: '#2563EB', Chimbote: '#059669', Trujillo: '#7C3AED' };
 const SEDE_BG: Record<Sede, string>    = { Chiclayo: '#DBEAFE', Chimbote: '#CCFBF1', Trujillo: '#F3E8FF' };
@@ -19,7 +20,7 @@ function LineChart({ values, color, height = 110 }: { values: number[]; color: s
   const area = `${path} L ${W} ${H} L 0 ${H} Z`;
   const id = `grad-${color.replace('#', '')}`;
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Distribución de stock por sede" style={{ width: '100%', display: 'block', overflow: 'visible' }}>
+    <ChartTooltip title="Distribución de stock por sede" description="Cada punto representa el stock total de una sede. La línea compara sedes, no una evolución en el tiempo."><svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Distribución de stock por sede" style={{ width: '100%', display: 'block', overflow: 'visible' }}>
       <desc>{SEDES.map((s, i) => `${s}: ${values[i]}`).join('; ')}</desc>
       <defs>
         <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
@@ -30,9 +31,14 @@ function LineChart({ values, color, height = 110 }: { values: number[]; color: s
       <path d={area} fill={`url(#${id})`} />
       <path d={path} fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
       {pts.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r={3} fill="#fff" stroke={color} strokeWidth={2} />
+        <g key={i} tabIndex={0} data-chart-title={`Stock · ${SEDES[i]}`} data-chart-value={`${values[i]} unidades`}
+          data-chart-description={`${SEDES[i]} tiene ${values[i]} unidades de stock, sumando los materiales visibles. Un punto más alto representa una mayor cantidad de stock.`}>
+          <circle cx={p.x} cy={p.y} r={3} fill="#fff" stroke={color} strokeWidth={2} />
+          <rect x={i === 0 ? 0 : (pts[i - 1].x + p.x) / 2} y={0}
+            width={(i === pts.length - 1 ? W : (p.x + pts[i + 1].x) / 2) - (i === 0 ? 0 : (pts[i - 1].x + p.x) / 2)} height={H} fill="transparent" />
+        </g>
       ))}
-    </svg>
+    </svg></ChartTooltip>
   );
 }
 
@@ -64,7 +70,7 @@ export default function GerenteDashboard({ onNav }: Props) {
     <div className="manager-view-surface gerente-dashboard" style={{ padding: 24, overflowY: 'auto', flex: 1, minHeight: '100%' }}>
 
       {/* ── Row 1: KPI strip ── */}
-      <div className="dashboard-kpi-grid manager-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 14, marginBottom: 22 }}>
+      <div data-tour="dashboard-summary" className="dashboard-kpi-grid manager-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 14, marginBottom: 22 }}>
         {[
           { label: 'Solicitudes visibles', value: requerimientos.length, color: '#2563EB', bg: '#DBEAFE', icon: <svg width="16" height="16" viewBox="0 0 15 15" fill="none"><rect x="2" y="3" width="11" height="11" rx="1.5" stroke="#2563EB" strokeWidth="1.3"/><path d="M5 3V2.5A1.5 1.5 0 016.5 1h2A1.5 1.5 0 0110 2.5V3" stroke="#2563EB" strokeWidth="1.3"/><path d="M4.5 8h6M4.5 10.5h4" stroke="#2563EB" strokeWidth="1.3" strokeLinecap="round"/></svg> },
           { label: 'Pendientes',        value: enviados,              color: '#D97706', bg: '#FEF3C7', icon: <svg width="16" height="16" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6" stroke="#D97706" strokeWidth="1.3"/><path d="M7.5 4v4l2.5 2" stroke="#D97706" strokeWidth="1.3" strokeLinecap="round"/></svg> },
@@ -227,7 +233,9 @@ export default function GerenteDashboard({ onNav }: Props) {
           ].map(({ label, count, color, bg }) => {
             const pct = requerimientos.length > 0 ? (count / requerimientos.length) * 100 : 0;
             return (
-              <div key={label} style={{ background: '#F8F9FF', borderRadius: 'var(--surface-inset-radius)', padding: '16px 18px' }}>
+              <ChartTooltip key={label} title={`Solicitudes · ${label}`} value={`${count} solicitudes · ${pct.toFixed(1)}%`}
+                description={`Hay ${count} solicitudes en estado ${label}, equivalentes al ${pct.toFixed(1)}% de las ${requerimientos.length} solicitudes visibles. La barra muestra esa proporción.`}>
+              <div style={{ background: '#F8F9FF', borderRadius: 'var(--surface-inset-radius)', padding: '16px 18px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                   <span style={{ fontSize: 11.5, color: '#8B8FA8', fontWeight: 500 }}>{label}</span>
                   <span style={{ background: bg, color, borderRadius: 8, padding: '2px 8px', fontSize: 10.5, fontWeight: 700 }}>{pct.toFixed(0)}%</span>
@@ -236,7 +244,7 @@ export default function GerenteDashboard({ onNav }: Props) {
                 <div style={{ height: 5, borderRadius: 4, background: '#E4E4F0', marginTop: 12, overflow: 'hidden' }}>
                   <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 4 }} />
                 </div>
-              </div>
+              </div></ChartTooltip>
             );
           })}
         </div>

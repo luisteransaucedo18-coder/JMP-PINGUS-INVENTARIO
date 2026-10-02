@@ -21,7 +21,7 @@ export default function CoordinadorDashboard({ onNav }: Props) {
         <button className="btn btn-primary" onClick={() => onNav('transporte')}>Transporte interno →</button>
       </div>
       {/* KPIs */}
-      <div className="coordinator-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+      <div data-tour="dashboard-summary" className="coordinator-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
         {[
           { label: 'Por confirmar', value: pendientes.length, sub: 'solicitudes enviadas', color: '#D97706', bg: '#FEF3C7', nav: 'requerimientos' },
           { label: 'Necesitan abastecimiento', value: requerimientosSinStock.length, sub: 'compra o traslado', color: '#C2410C', bg: '#FFEDD5', nav: 'requerimientos' },

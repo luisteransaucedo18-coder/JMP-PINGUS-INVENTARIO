@@ -2,6 +2,7 @@ import { Card, SectionHead, BarChart } from '../../../components/DashboardPrimit
 import { useState } from 'react';
 import { useAppStore } from '../../../store/AppContext';
 import { SEDES, Sede } from '../../../domain/types';
+import { ChartTooltip } from '../../../components/ChartTooltip';
 
 const SEDE_COLOR: Record<Sede, string> = { Chiclayo: '#2563EB', Chimbote: '#059669', Trujillo: '#7C3AED' };
 const SEDE_BG: Record<Sede, string>    = { Chiclayo: '#DBEAFE', Chimbote: '#CCFBF1', Trujillo: '#F3E8FF' };
@@ -137,7 +138,9 @@ export default function ReportesView() {
             const colors = ['#2563EB', '#059669', '#7C3AED', '#D97706'];
             const c = colors[i % colors.length];
             return (
-              <div key={nombre} style={{ marginBottom: 14 }}>
+              <ChartTooltip key={nombre} title={`Actividad · ${nombre}`} value={`${count} solicitudes`}
+                description={`${nombre} registró ${count} solicitudes en el período seleccionado. La longitud de la barra se compara con el analista con más solicitudes.`}>
+              <div style={{ marginBottom: 14 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
                   <div style={{ width: 32, height: 32, borderRadius: 10, background: `${c}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: c, flexShrink: 0 }}>{initials}</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -149,7 +152,7 @@ export default function ReportesView() {
                 <div style={{ height: 4, background: '#F0F2FF', borderRadius: 4, overflow: 'hidden' }}>
                   <div style={{ height: '100%', width: `${(count / (topAnalistas[0]?.[1] || 1)) * 100}%`, background: c, borderRadius: 4 }} />
                 </div>
-              </div>
+              </div></ChartTooltip>
             );
           })}
         </Card>
@@ -169,7 +172,9 @@ export default function ReportesView() {
           ].map(({ label, count, color, bg }) => {
             const pct = totalSKUs > 0 ? (count / totalSKUs) * 100 : 0;
             return (
-              <div key={label} style={{ marginBottom: 10 }}>
+              <ChartTooltip key={label} title={`Inventario · ${label}`} value={`${count} SKU · ${pct.toFixed(1)}%`}
+                description={`${count} de los ${totalSKUs} materiales están en estado ${label}. La barra muestra su proporción del inventario actual; no depende del período de solicitudes.`}>
+              <div style={{ marginBottom: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                   <span style={{ background: bg, color, borderRadius: 4, padding: '1px 7px', fontSize: 10.5, fontWeight: 700 }}>{label}</span>
                   <span style={{ fontSize: 12, fontWeight: 700, color }}>{count}</span>
@@ -177,7 +182,7 @@ export default function ReportesView() {
                 <div style={{ height: 5, background: '#F0F2FF', borderRadius: 4, overflow: 'hidden' }}>
                   <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 4 }} />
                 </div>
-              </div>
+              </div></ChartTooltip>
             );
           })}
         </Card>
@@ -194,7 +199,9 @@ export default function ReportesView() {
             ) : topMateriales.map(([sku, { nombre, total }], i) => {
               const pct = (total / maxConsumo) * 100;
               return (
-                <div key={sku} style={{ marginBottom: 14 }}>
+                <ChartTooltip key={sku} title={nombre} value={`${total} unidades`}
+                  description={`Las solicitudes confirmadas del período incluyen ${total} unidades de ${nombre}. La barra compara esta cantidad con el material más solicitado (${maxConsumo} unidades).`}>
+                <div style={{ marginBottom: 14 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                       <div style={{ width: 22, height: 22, borderRadius: 7, background: '#DBEAFE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: '#2563EB', flexShrink: 0 }}>{i + 1}</div>
@@ -205,7 +212,7 @@ export default function ReportesView() {
                   <div style={{ height: 6, background: '#F0F2FF', borderRadius: 4, overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${pct}%`, background: '#2563EB', borderRadius: 4, opacity: 0.7 + 0.3 * (1 - i / topMateriales.length) }} />
                   </div>
-                </div>
+                </div></ChartTooltip>
               );
             })}
           </div>

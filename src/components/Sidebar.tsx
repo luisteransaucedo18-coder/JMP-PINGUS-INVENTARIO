@@ -115,6 +115,11 @@ export default function Sidebar({ role, activeView, onNav, onLogout, userName, u
             </button>
           );
         })}
+        <button type="button" className={`sidebar-link${activeView === 'manual' ? ' active' : ''}`} aria-label="Ayuda y Manual de Usuario"
+          title={!expanded ? 'Ayuda y Manual de Usuario' : undefined} aria-current={activeView === 'manual' ? 'page' : undefined} onClick={() => onNav('manual')}>
+          <span className="sidebar-link-icon" aria-hidden="true">?</span>
+          {expanded && <span className="sidebar-link-label">Ayuda y Manual de Usuario</span>}
+        </button>
       </nav>
 
       {logoutError && <p className="sidebar-session-error" role="alert">{logoutError}</p>}

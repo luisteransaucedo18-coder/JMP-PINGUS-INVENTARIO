@@ -2565,3 +2565,83 @@ body {
   .app-header .header-avatar { display: flex !important; width: 44px !important; height: 44px !important; font-size: 11px !important; }
   .profile-photo-controls { padding: 16px; }
 }
+.chart-tooltip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10000;
+  pointer-events: none;
+  width: 270px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100dvh - 16px);
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 14px 16px;
+  border: 1px solid #DBEAFE;
+  border-radius: 12px;
+  background: #fff;
+  color: #1A1D23;
+  box-shadow: 0 8px 28px rgba(30, 41, 59, .16);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.chart-tooltip strong { display: block; font-size: 13px; }
+.chart-tooltip-value { display: block; margin-top: 4px; color: #2563EB; font-size: 18px; font-weight: 700; }
+.chart-tooltip p { margin: 6px 0 0; color: #52525B; }
+
+.app-view-content { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.onboarding-dialog {
+  position: fixed;
+  inset: 0;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  background: transparent;
+  overflow: hidden;
+  color: #18181B;
+}
+.onboarding-dialog::backdrop { background: transparent; }
+.onboarding-shade { position: absolute; inset: 0; background: rgba(15, 23, 42, .62); }
+.onboarding-spotlight {
+  position: absolute;
+  border-radius: 12px;
+  outline: 3px solid #60A5FA;
+  box-shadow: 0 0 0 9999px rgba(15, 23, 42, .62);
+  pointer-events: none;
+}
+.onboarding-card {
+  position: absolute;
+  width: 390px;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 24px;
+  border: 1px solid #DBEAFE;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 16px 48px rgba(15, 23, 42, .24);
+}
+.onboarding-topline { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.onboarding-topline > span { font-size: 10px; letter-spacing: .08em; color: #2563EB; font-weight: 700; }
+.onboarding-skip { border: 0; background: transparent; color: #52525B; padding: 8px 0; font: inherit; font-size: 12px; cursor: pointer; }
+.onboarding-step { margin: 12px 0 6px; color: #71717A; font-size: 12px; }
+.onboarding-progress { height: 4px; overflow: hidden; border-radius: 4px; background: #DBEAFE; }
+.onboarding-progress > span { display: block; height: 100%; background: #2563EB; }
+.onboarding-card h2 { font-size: 22px; line-height: 1.25; margin: 20px 0 12px; font-weight: 700; }
+.onboarding-card h2:focus { outline: none; }
+.onboarding-card #tour-description { font-size: 14px; color: #52525B; line-height: 1.65; margin: 0; }
+.onboarding-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; }
+.onboarding-actions .btn { min-height: 44px; white-space: normal; }
+.onboarding-card .onboarding-keyboard { margin: 16px 0 0; color: #71717A; font-size: 11px; line-height: 1.5; }
+.onboarding-card button:focus-visible { outline: 3px solid #60A5FA; outline-offset: 3px; }
+@media (max-width: 768px) {
+  .onboarding-card { padding: 18px; }
+  .onboarding-card h2 { font-size: 20px; }
+  .onboarding-actions { gap: 8px; }
+}

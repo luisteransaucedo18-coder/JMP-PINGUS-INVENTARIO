@@ -141,6 +141,7 @@ export default function AnalistaDashboard({
       ================================================= */}
 
       <div
+        data-tour="dashboard-summary"
         style={{
           display: 'grid',
 
