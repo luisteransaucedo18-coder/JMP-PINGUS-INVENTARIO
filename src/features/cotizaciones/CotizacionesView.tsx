@@ -12,8 +12,6 @@ import QuoteEditor, { Field, NumberField, Totals } from "./QuoteEditor"
 
 import QuotationReport from "./QuotationReport"
 
-import LegacyQuotations from "./LegacyQuotations"
-
 import BudgetContext from "./BudgetContext"
 
 import { EXCEL_LABELS, EXCEL_MODALIDADES } from "./excelVariables"
@@ -843,7 +841,6 @@ export default function CotizacionesView({
             ))}
           </div>
         )}
-        <LegacyQuotations projectId={projectId} />
         {!projectId && role !== "analista" && (
           <QuotationReport role={role} onToast={onToast} />
         )}
