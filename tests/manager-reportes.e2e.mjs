@@ -1,0 +1,95 @@
+// Read-only manager UI checks. Supabase is simulated; no business data is changed.
+import { createRequire } from 'node:module';
+import { mkdirSync } from 'node:fs';
+import assert from 'node:assert/strict';
+const require = createRequire(process.env.PLAYWRIGHT_PACKAGE_JSON || `${process.cwd()}/package.json`);
+const { chromium } = require('playwright');
+const browser = await chromium.launch({ channel: 'msedge', headless: true });
+mkdirSync('test-results/gerente', { recursive: true });
+try {
+  for (const width of [1440, 1024, 390]) {
+    const page = await browser.newPage({ viewport: { width, height: 1000 }, reducedMotion: 'reduce' });
+    const errors = [];
+    page.on('pageerror', e => errors.push(e.message));
+    const user = { id: '11111111-1111-4111-8111-111111111111', aud: 'authenticated', role: 'authenticated', email: 'gerente@test.invalid', app_metadata: {}, user_metadata: {}, created_at: new Date().toISOString() };
+    await page.addInitScript(id => localStorage.setItem(`jip:onboarding:v1:${id}`, 'completed'), user.id);
+    await page.route('**/auth/v1/**', route => route.fulfill({ json: route.request().url().includes('/user') ? user : { access_token: 'test-token', refresh_token: 'test-refresh', expires_in: 3600, token_type: 'bearer', user } }));
+    await page.route('**/rest/v1/**', route => {
+      assert.equal(route.request().method(), 'GET');
+      const table = new URL(route.request().url()).pathname.split('/').pop();
+      let data = [];
+      if (table === 'perfiles') data = { id: user.id, rol: 'gerente', estado: 'ACTIVO', nombre: 'Gerente QA', email: user.email };
+      if (table === 'materiales') data = [{ sku: 'QA-CU', nombre: 'Tubería de cobre', descripcion: '', categoria_id: 1, unidad: 'MTS', stock_minimo: 1, precio_unitario: 25, estado: 'OK' }];
+      if (table === 'inventario_sedes') data = ['Chiclayo', 'Chimbote', 'Trujillo'].map(sede => ({ material_sku: 'QA-CU', sede, stock: 20 }));
+      if (table === 'requerimientos') data = [1, 2, 3].map(day => ({ id: `qa-${day}`, codigo: `REQ-QA-${day}`, sede: 'Trujillo', fecha: `2026-01-0${day}`, estado: day === 3 ? 'ENVIADO' : 'CONFIRMADO', ubicacion: 'QA', descripcion: 'QA', tecnico: 'Técnico QA', proyecto: { id: 'project-qa', nombre: `Proyecto ${day}` }, analista: { nombre: 'Analista QA' }, coordinador: { nombre: 'Coordinador QA' }, items: [{ material_sku: 'QA-CU', material_nombre: 'Tubería de cobre', cantidad: day * 5, unidad: 'MTS' }] }));
+      return route.fulfill({ json: data });
+    });
+    await page.goto(process.env.QA_BASE_URL || 'http://127.0.0.1:8443');
+    await page.getByPlaceholder('correo@jip.pe').fill(user.email);
+    await page.locator('input[autocomplete="current-password"]').fill('qa-password');
+    await page.getByRole('button', { name: 'Ingresar al sistema' }).click();
+    await page.locator('.app-header').waitFor();
+    await page.screenshot({ path: `test-results/gerente/dashboard-${width}.png` });
+    const stock = page.locator('[data-chart-title="Stock · Trujillo"]');
+    await stock.scrollIntoViewIfNeeded();
+    await stock.hover();
+    await page.getByRole('tooltip').waitFor();
+    assert.match(await page.getByRole('tooltip').innerText(), /Trujillo/);
+    assert.match(await page.getByRole('tooltip').innerText(), /momento actual|actual/);
+    await page.keyboard.press('Escape');
+    if (width > 768) {
+      const search = await page.getByRole('textbox', { name: 'Buscar en el sistema', exact: true }).boundingBox();
+      assert(search.width > (width === 1440 ? 500 : 250), 'Search uses the available desktop space');
+    }
+    if (width <= 768) await page.getByRole('button', { name: 'Abrir menú' }).click();
+    await page.locator(width <= 768 ? '.mobile-sidebar' : '.desktop-sidebar').getByRole('button', { name: 'Reportes', exact: true }).press('Enter');
+    await page.getByRole('heading', { name: 'Periodo del reporte' }).waitFor();
+    const results = page.locator('.report-period-result');
+    assert.match(await results.innerText(), /3 solicitudes/);
+    await page.getByLabel('Desde', { exact: true }).fill('2026-01-02');
+    assert.match(await results.innerText(), /2 solicitudes/);
+    await page.getByLabel('Hasta', { exact: true }).fill('2026-01-02');
+    assert.match(await results.innerText(), /1 solicitud\./);
+    await page.getByLabel('Desde', { exact: true }).fill('');
+    assert.match(await results.innerText(), /2 solicitudes/);
+    await page.getByLabel('Desde', { exact: true }).fill('2026-01-03');
+    await page.getByRole('alert').filter({ hasText: 'La fecha Desde' }).waitFor();
+    assert.equal(await page.getByLabel('Desde', { exact: true }).getAttribute('aria-invalid'), 'true');
+    await page.getByRole('button', { name: 'Limpiar fechas' }).click();
+    assert.match(await results.innerText(), /Todo el historial disponible.*3 solicitudes/);
+    await page.getByRole('button', { name: 'Últimos 7 días', exact: true }).click();
+    assert.notEqual(await page.getByLabel('Desde', { exact: true }).inputValue(), '');
+    await page.getByRole('button', { name: 'Todo el historial', exact: true }).click();
+    const inventory = page.getByRole('heading', { name: 'Estado del inventario', exact: true });
+    await inventory.scrollIntoViewIfNeeded();
+    assert(await page.getByText('Existencias actuales. Este indicador no cambia con las fechas del reporte.', { exact: true }).isVisible());
+    const bar = page.locator('[data-chart-title="Trujillo · confirmadas"]');
+    await bar.scrollIntoViewIfNeeded();
+    await bar.hover();
+    const tooltip = page.getByRole('tooltip');
+    await tooltip.waitFor();
+    assert.match(await tooltip.innerText(), /Trujillo.*confirmadas/s);
+    assert.match(await tooltip.innerText(), /2 solicitudes/);
+    assert.match(await tooltip.innerText(), /Todo el historial/);
+    const tip = await tooltip.boundingBox();
+    assert(tip.x >= 0 && tip.x + tip.width <= width && tip.y >= 0 && tip.y + tip.height <= 1000);
+    await page.screenshot({ path: `test-results/gerente/reportes-tooltip-${width}.png` });
+    await page.keyboard.press('Escape');
+    assert.equal(await tooltip.count(), 0);
+    await bar.focus();
+    await tooltip.waitFor();
+    await page.keyboard.press('Escape');
+    await page.getByRole('heading', { name: 'Materiales en solicitudes confirmadas' }).scrollIntoViewIfNeeded();
+    const material = page.locator('.chart-explainer[aria-label="Tubería de cobre"]');
+    await material.hover();
+    await tooltip.waitFor();
+    assert.match(await tooltip.innerText(), /15 MTS/);
+    await page.keyboard.press('Escape');
+    await page.getByRole('heading', { name: 'Periodo del reporte' }).scrollIntoViewIfNeeded();
+    await page.screenshot({ path: `test-results/gerente/reportes-${width}.png` });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    assert.deepEqual(errors, []);
+    console.log(`PASS ${width}px: wider search, open/inclusive date ranges, invalid range, presets, correct units, hover/keyboard details, viewport`);
+    await page.close();
+  }
+} finally { await browser.close(); }

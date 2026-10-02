@@ -31,8 +31,8 @@ function LineChart({ values, color, height = 110 }: { values: number[]; color: s
       <path d={area} fill={`url(#${id})`} />
       <path d={path} fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
       {pts.map((p, i) => (
-        <g key={i} tabIndex={0} data-chart-title={`Stock · ${SEDES[i]}`} data-chart-value={`${values[i]} unidades`}
-          data-chart-description={`${SEDES[i]} tiene ${values[i]} unidades de stock, sumando los materiales visibles. Un punto más alto representa una mayor cantidad de stock.`}>
+        <g key={i} tabIndex={0} aria-label={`${SEDES[i]}: ${values[i]} de cantidad registrada en stock actual`} data-chart-title={`Stock · ${SEDES[i]}`} data-chart-value={`${values[i]} de cantidad registrada`}
+          data-chart-description={`${SEDES[i]} suma ${values[i]} en las cantidades registradas de los materiales disponibles. Puede combinar distintas unidades de medida. Compara sedes en el momento actual; no es una serie de fechas.`}>
           <circle cx={p.x} cy={p.y} r={3} fill="#fff" stroke={color} strokeWidth={2} />
           <rect x={i === 0 ? 0 : (pts[i - 1].x + p.x) / 2} y={0}
             width={(i === pts.length - 1 ? W : (p.x + pts[i + 1].x) / 2) - (i === 0 ? 0 : (pts[i - 1].x + p.x) / 2)} height={H} fill="transparent" />
@@ -83,9 +83,6 @@ export default function GerenteDashboard({ onNav }: Props) {
               <div className="manager-kpi-icon" style={{ background: bg }}>
                 {icon}
               </div>
-              <svg className="manager-kpi-sparkline" width="28" height="14" viewBox="0 0 28 14" fill="none" aria-hidden="true">
-                <polyline points="0,12 8,6 16,9 28,2" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity="0.6"/>
-              </svg>
             </div>
             <div className="manager-kpi-value" style={{ color }}>{value}</div>
             <div className="manager-kpi-label">{label}</div>
@@ -97,7 +94,8 @@ export default function GerenteDashboard({ onNav }: Props) {
       <div className="dashboard-primary-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(340px, 380px)', gap: 18, marginBottom: 22 }}>
         {/* Bar chart */}
         <Card style={{ padding: '22px 24px', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-          <SectionHead title="Actividad por sede" />
+          <SectionHead title="Solicitudes por sede y estado" />
+          <p className="report-chart-caption">Todo el historial disponible. Verde: confirmadas; naranja: enviadas pendientes de revisión. Consulta cada barra para ver sus cantidades.</p>
           {/* Legend */}
           <div style={{ display: 'flex', gap: 16, marginBottom: 18 }}>
             {[['Confirmadas', '#059669'], ['Pendientes', '#D97706']].map(([l, c]) => (
@@ -170,7 +168,7 @@ export default function GerenteDashboard({ onNav }: Props) {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                     {[
                       ['Solicitudes', sedeReqs.length, '#52525B'],
-                      ['Stock (UND)', sedeStock, SEDE_COLOR[s]],
+                      ['Cantidad en stock', sedeStock, SEDE_COLOR[s]],
                       ['Alertas SKU', critS, critS > 0 ? '#DC2626' : '#71717A'],
                     ].map(([k, v, c]) => (
                       <div key={String(k)} style={{ textAlign: 'center' }}>
@@ -188,7 +186,8 @@ export default function GerenteDashboard({ onNav }: Props) {
         {/* Stock line chart + alerts */}
         <Card style={{ padding: '22px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div>
-            <SectionHead title="Distribución de stock" />
+            <SectionHead title="Stock acumulado por sede" />
+            <p className="report-chart-caption">Existencias actuales. La suma puede combinar distintas unidades de medida; no representa valor económico ni evolución en el tiempo.</p>
             <LineChart values={lineValues} color="#2563EB" height={100} />
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
               {SEDES.map((s, i) => (
@@ -210,7 +209,7 @@ export default function GerenteDashboard({ onNav }: Props) {
                   <div style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: m.estado === 'AGOTADO' ? '#DC2626' : m.estado === 'CRÍTICO' ? '#EF4444' : '#D97706' }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 11.5, fontWeight: 600, color: '#1A1D23', overflowWrap: 'anywhere' }}>{m.nombre}</div>
-                    <div style={{ fontSize: 10.5, color: '#8B8FA8' }}>Total: {Object.values(m.stockSedes).reduce((a, b) => a + b, 0)} UND · Mín {m.minimo}</div>
+                    <div style={{ fontSize: 12, color: '#64748B' }}>Total: {Object.values(m.stockSedes).reduce((a, b) => a + b, 0)} {m.unidad} · Mínimo: {m.minimo} {m.unidad}</div>
                   </div>
                   <span style={{ fontSize: 9.5, fontWeight: 700, background: m.estado === 'AGOTADO' || m.estado === 'CRÍTICO' ? '#FEE2E2' : '#FEF3C7', color: m.estado === 'AGOTADO' || m.estado === 'CRÍTICO' ? '#DC2626' : '#D97706', borderRadius: 6, padding: '2px 6px', flexShrink: 0 }}>
                     {m.estado}

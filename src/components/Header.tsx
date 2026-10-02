@@ -52,6 +52,7 @@ export default function Header({ menuButton, title, subtitle, actions, userName,
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Buscar en el sistema…"
+          aria-label="Buscar en el sistema"
           style={{
             width: '100%',
             height: 38,

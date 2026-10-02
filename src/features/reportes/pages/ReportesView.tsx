@@ -3,29 +3,33 @@ import { useState } from 'react';
 import { useAppStore } from '../../../store/AppContext';
 import { SEDES, Sede } from '../../../domain/types';
 import { ChartTooltip } from '../../../components/ChartTooltip';
+import { fechaLima, inicioPeriodo, enPeriodo, describirPeriodo } from '../periodo';
+import './reportes.css';
 
 const SEDE_COLOR: Record<Sede, string> = { Chiclayo: '#2563EB', Chimbote: '#059669', Trujillo: '#7C3AED' };
 const SEDE_BG: Record<Sede, string>    = { Chiclayo: '#DBEAFE', Chimbote: '#CCFBF1', Trujillo: '#F3E8FF' };
 const ESTADO_COLOR: Record<string, string> = { ENVIADO: '#D97706', CONFIRMADO: '#059669', RECHAZADO: '#DC2626', BORRADOR: '#71717A' };
 const ESTADO_BG: Record<string, string>    = { ENVIADO: '#FEF3C7', CONFIRMADO: '#CCFBF1', RECHAZADO: '#FEE2E2', BORRADOR: '#F4F4F5' };
 
-type Period = '7d' | '30d' | 'all';
+type Period = '7d' | '30d' | 'all' | 'custom';
 
 export default function ReportesView() {
   const { state } = useAppStore();
   const { materials, requerimientos } = state;
-  const [period, setPeriod] = useState<Period>('30d');
+  const [period, setPeriod] = useState<Period>('all');
   const [activeTab, setActiveTab] = useState<'todos' | 'confirmados' | 'pendientes'>('todos');
 
-  const today = new Date();
-  const cutoff = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  if (period === '7d') cutoff.setDate(cutoff.getDate() - 6);
-  if (period === '30d') cutoff.setDate(cutoff.getDate() - 29);
-  const cutoffDate = `${cutoff.getFullYear()}-${String(cutoff.getMonth() + 1).padStart(2, '0')}-${String(cutoff.getDate()).padStart(2, '0')}`;
-
-  const filteredReqs = period === 'all'
-    ? requerimientos
-    : requerimientos.filter(r => r.fecha >= cutoffDate);
+  const [desde, setDesde] = useState('');
+  const [hasta, setHasta] = useState('');
+  const invalidRange = !!(desde && hasta && desde > hasta);
+  const periodLabel = invalidRange ? 'Rango de fechas inválido' : describirPeriodo(desde, hasta);
+  function selectPeriod(value: Period) {
+    setPeriod(value);
+    const today = fechaLima();
+    setDesde(value === '7d' ? inicioPeriodo(7, today) : value === '30d' ? inicioPeriodo(30, today) : '');
+    setHasta(value === 'all' ? '' : today);
+  }
+  const filteredReqs = requerimientos.filter(r => enPeriodo(r.fecha, desde, hasta));
 
   const totalReqs    = filteredReqs.length;
   const confirmados  = filteredReqs.filter(r => r.estado === 'CONFIRMADO').length;
@@ -41,10 +45,10 @@ export default function ReportesView() {
   ]);
 
   /* Top materiales consumidos */
-  const consumoMap: Record<string, { nombre: string; total: number }> = {};
+  const consumoMap: Record<string, { nombre: string; total: number; unidad: string }> = {};
   filteredReqs.filter(r => r.estado === 'CONFIRMADO').forEach(r => {
     r.materiales.forEach(m => {
-      if (!consumoMap[m.skuId]) consumoMap[m.skuId] = { nombre: m.nombre, total: 0 };
+      if (!consumoMap[m.skuId]) consumoMap[m.skuId] = { nombre: m.nombre, total: 0, unidad: m.unidad || materials.find(item => item.id === m.skuId)?.unidad || 'unidad sin definir' };
       consumoMap[m.skuId].total += m.cantidad;
     });
   });
@@ -63,20 +67,22 @@ export default function ReportesView() {
   return (
     <div className="manager-view-surface manager-reports-view" style={{ padding: 24, overflowY: 'auto', flex: 1, minHeight: '100%' }}>
 
-      {/* Period selector */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
-        <span style={{ fontSize: 13, color: '#8B8FA8' }}>Mostrando datos del período seleccionado</span>
-        <div style={{ display: 'flex', background: '#fff', borderRadius: 12, padding: 4, gap: 3, boxShadow: '0 2px 8px rgba(99,102,241,0.08)' }}>
-          {([['7d', 'Últimos 7 días'], ['30d', 'Últimos 30 días'], ['all', 'Todo']] as [Period, string][]).map(([v, label]) => (
-            <button key={v} onClick={() => setPeriod(v)} style={{
-              padding: '7px 16px', borderRadius: 9, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: 500, transition: 'all 0.15s',
-              background: period === v ? '#2563EB' : 'transparent',
-              color: period === v ? '#fff' : '#8B8FA8',
-              boxShadow: period === v ? '0 2px 8px rgba(37,99,235,0.3)' : 'none',
-            }}>{label}</button>
-          ))}
+      <section className="panel report-period" aria-labelledby="report-period-heading">
+        <div className="report-period-heading">
+          <div><h2 id="report-period-heading">Periodo del reporte</h2><p>Filtra las solicitudes por su fecha de registro. Puedes dejar las fechas abiertas.</p></div>
+          <div className="report-period-shortcuts" aria-label="Periodos rápidos">
+            {([['7d', 'Últimos 7 días'], ['30d', 'Últimos 30 días'], ['all', 'Todo el historial']] as const).map(([value, label]) =>
+              <button type="button" key={value} aria-pressed={period === value} onClick={() => selectPeriod(value)}>{label}</button>)}
+          </div>
         </div>
-      </div>
+        <div className="report-date-fields">
+          <label>Desde<input className="input-field" type="date" value={desde} aria-invalid={invalidRange} aria-describedby={invalidRange ? 'report-date-error' : 'report-date-help'} onChange={e => { setDesde(e.target.value); setPeriod('custom'); }} /></label>
+          <label>Hasta<input className="input-field" type="date" value={hasta} aria-invalid={invalidRange} aria-describedby={invalidRange ? 'report-date-error' : 'report-date-help'} onChange={e => { setHasta(e.target.value); setPeriod('custom'); }} /></label>
+          <button type="button" className="btn btn-ghost" onClick={() => selectPeriod('all')}>Limpiar fechas</button>
+        </div>
+        {invalidRange ? <p id="report-date-error" role="alert" className="report-date-error">La fecha Desde debe ser anterior o igual a Hasta. Corrige el rango para visualizar los resultados.</p>
+          : <p id="report-date-help" className="report-period-result" role="status"><strong>{periodLabel}</strong> · {totalReqs} {totalReqs === 1 ? 'solicitud' : 'solicitudes'}. Se incluyen ambos días del rango.</p>}
+      </section>
 
       {/* ── Row 1: KPI strip ── */}
       <div className="manager-kpi-grid report-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 14, marginBottom: 22 }}>
@@ -85,7 +91,7 @@ export default function ReportesView() {
           { label: 'Confirmadas',       value: confirmados,      color: '#059669', bg: '#CCFBF1' },
           { label: 'Rechazadas',        value: rechazados,       color: '#DC2626', bg: '#FEE2E2' },
           { label: 'Pendientes',        value: pendientes,       color: '#D97706', bg: '#FEF3C7' },
-          { label: 'Tasa aprobación',   value: `${tasaAprobacion}%`, color: tasaAprobacion >= 70 ? '#059669' : tasaAprobacion >= 40 ? '#D97706' : '#DC2626', bg: '#F8F9FF' },
+          { label: 'Confirmadas del total', value: `${tasaAprobacion}%`, color: '#2563EB', bg: '#DBEAFE' },
         ].map(({ label, value, color, bg }) => (
           <Card key={label} style={{ padding: '16px 18px' }} className="manager-kpi-card">
             <div className="manager-kpi-heading">
@@ -95,6 +101,7 @@ export default function ReportesView() {
             </div>
             <div className="manager-kpi-value" style={{ color }}>{value}</div>
             <div className="manager-kpi-label">{label}</div>
+            {label === 'Confirmadas del total' && <p className="report-kpi-note">{confirmados} de {totalReqs} solicitudes</p>}
           </Card>
         ))}
       </div>
@@ -103,25 +110,26 @@ export default function ReportesView() {
       <div className="report-analysis-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 220px 220px', gap: 18, marginBottom: 22 }}>
         {/* Bar chart */}
         <Card style={{ padding: '22px 24px' }}>
-          <SectionHead title="Requerimientos por sede" />
+          <SectionHead title="Solicitudes por sede y estado" />
+          <p className="report-chart-caption">Compara solicitudes confirmadas y enviadas pendientes de revisión. Pasa el cursor sobre una barra o selecciónala con el teclado para ver el detalle.</p>
           <div style={{ display: 'flex', gap: 16, marginBottom: 14 }}>
             {[['Confirmadas', '#059669'], ['Pendientes', '#D97706']].map(([l, c]) => (
               <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <div style={{ width: 10, height: 10, borderRadius: 3, background: c }} />
-                <span style={{ fontSize: 11.5, color: '#8B8FA8' }}>{l}</span>
+                <span style={{ fontSize: 12, color: '#64748B' }}>{l}</span>
               </div>
             ))}
           </div>
-          <BarChart data={barData} colors={['#059669', '#D97706']} labels={SEDES} height={240} />
+          <BarChart data={barData} colors={['#059669', '#D97706']} labels={SEDES} height={240} periodLabel={periodLabel} />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginTop: 16 }}>
             {SEDES.map(s => {
               const sedeReqs = filteredReqs.filter(r => r.sede === s);
               const sedeConf = sedeReqs.filter(r => r.estado === 'CONFIRMADO').length;
               return (
                 <div key={s} style={{ background: '#F8F9FF', borderRadius: 10, padding: '10px 12px', textAlign: 'center' }}>
-                  <div style={{ fontSize: 11, color: SEDE_COLOR[s], fontWeight: 700, marginBottom: 4 }}>{s}</div>
+                  <div style={{ fontSize: 12, color: SEDE_COLOR[s], fontWeight: 700, marginBottom: 4 }}>{s}</div>
                   <div style={{ fontSize: 16, fontWeight: 800, color: '#1A1D23' }}>{sedeReqs.length}</div>
-                  <div style={{ fontSize: 10, color: '#8B8FA8' }}>{sedeConf} conf.</div>
+                  <div style={{ fontSize: 12, color: '#64748B' }}>{sedeConf} conf.</div>
                 </div>
               );
             })}
@@ -130,22 +138,23 @@ export default function ReportesView() {
 
         {/* Analistas activos */}
         <Card style={{ padding: '22px 20px' }}>
-          <SectionHead title="Analistas activos" />
+          <SectionHead title="Actividad por analista" />
+          <p className="report-chart-caption">Los 4 analistas con más solicitudes en el rango elegido.</p>
           {topAnalistas.length === 0 ? (
-            <div style={{ fontSize: 12, color: '#8B8FA8', textAlign: 'center', padding: '20px 0' }}>Sin actividad</div>
+            <div style={{ fontSize: 12, color: '#64748B', textAlign: 'center', padding: '20px 0' }}>Sin actividad</div>
           ) : topAnalistas.map(([nombre, count], i) => {
             const initials = nombre.split(' ').slice(0, 2).map((w: string) => w[0]).join('').toUpperCase();
             const colors = ['#2563EB', '#059669', '#7C3AED', '#D97706'];
             const c = colors[i % colors.length];
             return (
               <ChartTooltip key={nombre} title={`Actividad · ${nombre}`} value={`${count} solicitudes`}
-                description={`${nombre} registró ${count} solicitudes en el período seleccionado. La longitud de la barra se compara con el analista con más solicitudes.`}>
+                description={`${nombre} registró ${count} solicitudes. ${periodLabel}. La longitud de la barra se compara con el analista con más solicitudes.`}>
               <div style={{ marginBottom: 14 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                  <div style={{ width: 32, height: 32, borderRadius: 10, background: `${c}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: c, flexShrink: 0 }}>{initials}</div>
+                  <div style={{ width: 32, height: 32, borderRadius: 10, background: `${c}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: c, flexShrink: 0 }}>{initials}</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: '#1A1D23', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nombre}</div>
-                    <div style={{ fontSize: 10.5, color: '#8B8FA8' }}>{count} solicitud{count !== 1 ? 'es' : ''}</div>
+                    <div style={{ fontSize: 12, color: '#64748B' }}>{count} solicitud{count !== 1 ? 'es' : ''}</div>
                   </div>
                   <span style={{ fontSize: 13, fontWeight: 800, color: c }}>{count}</span>
                 </div>
@@ -160,9 +169,10 @@ export default function ReportesView() {
         {/* Inventario por estado */}
         <Card style={{ padding: '22px 20px' }}>
           <SectionHead title="Estado del inventario" />
+          <p className="report-chart-caption">Existencias actuales. Este indicador no cambia con las fechas del reporte.</p>
           <div style={{ textAlign: 'center', marginBottom: 16 }}>
             <div style={{ fontSize: 28, fontWeight: 800, color: '#059669' }}>{stockOK}</div>
-            <div style={{ fontSize: 11, color: '#8B8FA8' }}>de {totalSKUs} SKU en óptimas condiciones</div>
+            <div style={{ fontSize: 12, color: '#64748B' }}>de {totalSKUs} materiales con stock suficiente</div>
           </div>
           {[
             { label: 'OK',      count: materials.filter(m => m.estado === 'OK').length,      color: '#059669', bg: '#CCFBF1' },
@@ -176,7 +186,7 @@ export default function ReportesView() {
                 description={`${count} de los ${totalSKUs} materiales están en estado ${label}. La barra muestra su proporción del inventario actual; no depende del período de solicitudes.`}>
               <div style={{ marginBottom: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span style={{ background: bg, color, borderRadius: 4, padding: '1px 7px', fontSize: 10.5, fontWeight: 700 }}>{label}</span>
+                  <span style={{ background: bg, color, borderRadius: 4, padding: '1px 7px', fontSize: 12, fontWeight: 700 }}>{label}</span>
                   <span style={{ fontSize: 12, fontWeight: 700, color }}>{count}</span>
                 </div>
                 <div style={{ height: 5, background: '#F0F2FF', borderRadius: 4, overflow: 'hidden' }}>
@@ -190,24 +200,25 @@ export default function ReportesView() {
 
       {/* ── Row 3: Top materiales + Estado resumen ── */}
       <Card style={{ padding: '22px 24px', marginBottom: 22 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 260px', gap: 24 }}>
+        <div className="report-material-summary" style={{ display: 'grid', gridTemplateColumns: '1fr 260px', gap: 24 }}>
           {/* Top materiales */}
           <div>
-            <SectionHead title="Materiales más solicitados" />
+            <SectionHead title="Materiales en solicitudes confirmadas" />
+            <p className="report-chart-caption">Los 5 materiales con mayor cantidad solicitada. No representa entregas ni consumo real.</p>
             {topMateriales.length === 0 ? (
-              <div style={{ fontSize: 13, color: '#8B8FA8', textAlign: 'center', padding: '20px 0' }}>Sin datos confirmados en este período</div>
-            ) : topMateriales.map(([sku, { nombre, total }], i) => {
+              <div style={{ fontSize: 13, color: '#64748B', textAlign: 'center', padding: '20px 0' }}>Sin datos confirmados en este período</div>
+            ) : topMateriales.map(([sku, { nombre, total, unidad }], i) => {
               const pct = (total / maxConsumo) * 100;
               return (
-                <ChartTooltip key={sku} title={nombre} value={`${total} unidades`}
-                  description={`Las solicitudes confirmadas del período incluyen ${total} unidades de ${nombre}. La barra compara esta cantidad con el material más solicitado (${maxConsumo} unidades).`}>
+                <ChartTooltip key={sku} title={nombre} value={`${total} ${unidad}`}
+                  description={`${periodLabel}. Las solicitudes confirmadas incluyen ${total} ${unidad} de ${nombre} (${sku}). La barra compara cantidades solicitadas, que pueden tener distintas unidades de medida; no indica consumo ni valor económico.`}>
                 <div style={{ marginBottom: 14 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                      <div style={{ width: 22, height: 22, borderRadius: 7, background: '#DBEAFE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: '#2563EB', flexShrink: 0 }}>{i + 1}</div>
+                      <div style={{ width: 22, height: 22, borderRadius: 7, background: '#DBEAFE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#2563EB', flexShrink: 0 }}>{i + 1}</div>
                       <span style={{ fontSize: 12.5, fontWeight: 600, color: '#1A1D23', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nombre}</span>
                     </div>
-                    <span style={{ fontSize: 12.5, fontWeight: 800, color: '#2563EB', flexShrink: 0, marginLeft: 8 }}>{total} UND</span>
+                    <span style={{ fontSize: 12.5, fontWeight: 800, color: '#2563EB', flexShrink: 0, marginLeft: 8 }}>{total} {unidad}</span>
                   </div>
                   <div style={{ height: 6, background: '#F0F2FF', borderRadius: 4, overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${pct}%`, background: '#2563EB', borderRadius: 4, opacity: 0.7 + 0.3 * (1 - i / topMateriales.length) }} />
@@ -249,7 +260,7 @@ export default function ReportesView() {
                 transition: 'all 0.15s', marginBottom: -1,
               }}>{label}</button>
             ))}
-            <div style={{ marginLeft: 'auto', alignSelf: 'center', fontSize: 12, color: '#8B8FA8', paddingBottom: 4 }}>
+            <div style={{ marginLeft: 'auto', alignSelf: 'center', fontSize: 12, color: '#64748B', paddingBottom: 4 }}>
               {tabReqs.length} registros
             </div>
           </div>
@@ -260,7 +271,7 @@ export default function ReportesView() {
             <thead>
               <tr style={{ borderBottom: '1px solid #F0F2FF', background: '#F8F9FF' }}>
                 {['ID', 'Proyecto', 'Sede', 'Analista', 'Técnico', 'Fecha', 'Items', 'Estado'].map(h => (
-                  <th key={h} style={{ padding: '11px 16px', fontSize: 11, fontWeight: 600, color: '#8B8FA8', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left' }}>{h}</th>
+                  <th key={h} style={{ padding: '11px 16px', fontSize: 12, fontWeight: 600, color: '#64748B', letterSpacing: 'normal', textAlign: 'left' }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -271,14 +282,14 @@ export default function ReportesView() {
                 <tr key={r.id} style={{ borderBottom: '1px solid #F8F9FF', transition: 'background 0.1s' }}
                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F8F9FF'}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
-                  <td style={{ padding: '13px 16px', fontFamily: 'monospace', fontSize: 11, color: '#2563EB', fontWeight: 700 }}>{r.id}</td>
+                  <td style={{ padding: '13px 16px', fontFamily: 'monospace', fontSize: 12, color: '#2563EB', fontWeight: 700 }}>{r.id}</td>
                   <td style={{ padding: '13px 16px', fontSize: 12.5, fontWeight: 600, color: '#1A1D23', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.proyecto}</td>
                   <td style={{ padding: '13px 16px' }}>
-                    <span style={{ background: SEDE_BG[r.sede], color: SEDE_COLOR[r.sede], borderRadius: 6, padding: '3px 9px', fontSize: 11, fontWeight: 700 }}>{r.sede}</span>
+                    <span style={{ background: SEDE_BG[r.sede], color: SEDE_COLOR[r.sede], borderRadius: 6, padding: '3px 9px', fontSize: 12, fontWeight: 700 }}>{r.sede}</span>
                   </td>
-                  <td style={{ padding: '13px 16px', fontSize: 12, color: '#8B8FA8' }}>{r.analista}</td>
-                  <td style={{ padding: '13px 16px', fontSize: 12, color: '#8B8FA8', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.tecnico}</td>
-                  <td style={{ padding: '13px 16px', fontFamily: 'monospace', fontSize: 11, color: '#8B8FA8' }}>{r.fecha}</td>
+                  <td style={{ padding: '13px 16px', fontSize: 12, color: '#64748B' }}>{r.analista}</td>
+                  <td style={{ padding: '13px 16px', fontSize: 12, color: '#64748B', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.tecnico}</td>
+                  <td style={{ padding: '13px 16px', fontFamily: 'monospace', fontSize: 12, color: '#64748B' }}>{r.fecha}</td>
                   <td style={{ padding: '13px 16px', fontFamily: 'monospace', fontSize: 12, fontWeight: 600 }}>{r.materiales.length}</td>
                   <td style={{ padding: '13px 16px' }}>
                     <span className="status-badge" style={{ background: ESTADO_BG[r.estado], color: ESTADO_COLOR[r.estado] }}>{r.estado}</span>

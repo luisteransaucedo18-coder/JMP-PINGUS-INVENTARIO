@@ -1,5 +1,5 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
-import type { ReactNode, MouseEvent, FocusEvent } from 'react';
+import type { ReactNode, MouseEvent, FocusEvent, KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 
 export function ChartTooltip({ title, value, description, children }: {
@@ -9,7 +9,7 @@ export function ChartTooltip({ title, value, description, children }: {
   const ref = useRef<HTMLDivElement>(null);
   const [point, setPoint] = useState<{ x: number; y: number; title: string; value?: string; description: string } | null>(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
-  const show = (event: MouseEvent<HTMLDivElement> | FocusEvent<HTMLDivElement>) => {
+  const show = (event: MouseEvent<HTMLDivElement> | FocusEvent<HTMLDivElement> | ReactKeyboardEvent<HTMLDivElement>) => {
     const target = event.target instanceof Element ? event.target.closest('[data-chart-title]') : null;
     const bounds = (target || event.currentTarget).getBoundingClientRect();
     setPoint({
@@ -49,7 +49,9 @@ export function ChartTooltip({ title, value, description, children }: {
       window.removeEventListener('keydown', escape);
     };
   }, [!!point]);
-  return <div onMouseEnter={show} onMouseMove={show} onMouseLeave={() => setPoint(null)}
+  return <div className="chart-explainer" onMouseEnter={show} onMouseMove={show} onMouseLeave={() => setPoint(null)}
+    onClick={event => show(event)}
+    onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); show(event); } }}
     onFocus={show} onBlur={() => setPoint(null)} tabIndex={0} aria-label={title} aria-describedby={point ? id : undefined}>
     {children}
     {point && createPortal(<div ref={ref} id={id} role="tooltip" className="chart-tooltip"
