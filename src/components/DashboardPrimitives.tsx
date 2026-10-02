@@ -11,7 +11,7 @@ export function SectionHead({ title, action, actionLabel = 'Ver todo' }: { title
 }
 
 /** Measure the plot, keeping labels in CSS pixels rather than shrinking a fixed wide SVG. */
-export function BarChart({ data, colors, labels, height = 260 }: { data: number[][]; colors: string[]; labels: string[]; height?: number }) {
+export function BarChart({ data, colors, labels, height = 260, periodLabel = 'Todo el historial disponible' }: { data: number[][]; colors: string[]; labels: string[]; height?: number; periodLabel?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(380);
   useEffect(() => {
@@ -26,7 +26,7 @@ export function BarChart({ data, colors, labels, height = 260 }: { data: number[
   const max = Math.ceil(Math.max(...data.flat(), 1) / step) * step;
   const barW = Math.min(32, plotW / Math.max(data.length * (colors.length + 2), 1));
   const gap = 5;
-  return <ChartTooltip title="Solicitudes por sede y estado" description="Compara las solicitudes confirmadas y pendientes de cada sede. Una barra más alta representa más solicitudes."><div ref={ref} className="dashboard-chart">
+  return <ChartTooltip title="Solicitudes por sede y estado" description={`${periodLabel}. Cada barra cuenta solicitudes, no materiales. Verde: confirmadas; naranja: enviadas y pendientes de revisión.`}><div ref={ref} className="dashboard-chart">
     <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height} role="img" aria-label="Solicitudes por sede y estado">
       <desc>{labels.map((label, i) => `${label}: ${data[i].join(', ')}`).join('; ')}</desc>
       {Array.from({ length: max / step + 1 }, (_, i) => i * step).map(value => {
@@ -41,8 +41,9 @@ export function BarChart({ data, colors, labels, height = 260 }: { data: number[
           const x = start + j * (barW + gap);
           const y = margin.top + plotH - h;
           const estado = j === 0 ? 'confirmadas' : 'pendientes';
-          return <g key={j} tabIndex={0} data-chart-title={`${labels[i]} · ${estado}`} data-chart-value={`${value} solicitudes`}
-            data-chart-description={`En ${labels[i]} hay ${value} solicitudes ${estado} dentro de los datos mostrados. La altura de la barra permite comparar la actividad entre sedes.`}>
+          const explanation = `${periodLabel}. ${j === 0 ? 'Solicitudes confirmadas por coordinación.' : 'Solicitudes enviadas que esperan revisión de coordinación.'} En ${labels[i]}: ${value} de ${group.reduce((a, b) => a + b, 0)} solicitudes confirmadas o pendientes.`;
+          return <g key={j} tabIndex={0} aria-label={`${labels[i]}: ${value} solicitudes ${estado}. ${explanation}`} data-chart-title={`${labels[i]} · ${estado}`} data-chart-value={`${value} solicitudes`}
+            data-chart-description={explanation}>
             <rect x={x} y={y} width={barW} height={h} rx={4} fill={colors[j]}/>
             <text x={x + barW / 2} y={y - 7} textAnchor="middle" fontSize={12} fontWeight={600} fill={colors[j]}>{value}</text>
             <rect x={x} y={Math.min(y - 20, margin.top + plotH - 12)} width={barW} height={Math.max(h + 20, 12)} fill="transparent" />

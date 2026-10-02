@@ -1,0 +1,21 @@
+.report-period { padding: 22px 24px; margin-bottom: 22px; }
+.report-period-heading { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 18px; }
+.report-period h2 { margin: 0; font-size: 18px; font-weight: 700; color: #1A1D23; }
+.report-period p, .report-chart-caption { margin: 7px 0 16px; font-size: 13px; line-height: 1.6; color: #52525B; max-width: 76ch; }
+.report-period-shortcuts { display: flex; flex-wrap: wrap; gap: 6px; }
+.report-period-shortcuts button { border: 1px solid #DBEAFE; background: #F8FAFF; color: #475569; padding: 9px 13px; border-radius: 8px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.report-period-shortcuts button[aria-pressed='true'] { background: #2563EB; color: #fff; border-color: #2563EB; }
+.report-date-fields { display: flex; align-items: end; flex-wrap: wrap; gap: 14px; margin-top: 6px; }
+.report-date-fields label { display: grid; gap: 7px; flex: 0 1 220px; min-width: 0; font-size: 13px; font-weight: 600; color: #334155; }
+.report-date-fields input { width: 100%; min-height: 44px; color: #1A1D23; color-scheme: light; }
+.report-date-fields button { min-height: 44px; }
+.report-period .report-period-result { margin-bottom: 0; margin-top: 16px; color: #334155; }
+.report-period .report-date-error { margin-bottom: 0; color: #B91C1C; }
+.report-kpi-note { margin: 5px 0 0; font-size: 12px; color: #64748B; }
+.report-period button:focus-visible, .report-period input:focus-visible { outline: 2px solid #2563EB; outline-offset: 3px; }
+@media (max-width: 640px) {
+  .report-period { padding: 18px 16px; }
+  .report-date-fields label { flex: 1 1 140px; }
+  .report-date-fields > button { width: 100%; }
+  .report-material-summary > div:last-child { border-left: 0 !important; border-top: 1px solid #E7E9F8; padding-left: 0 !important; padding-top: 18px; }
+}

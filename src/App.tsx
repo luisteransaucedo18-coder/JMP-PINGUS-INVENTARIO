@@ -208,7 +208,7 @@ function AppShell({ onLogout, loggingOut, logoutError }: { loggingOut: boolean; 
   const titles = getViewMeta(session.role, view);
 
   return (
-    <div className="app-shell" style={{ display: 'flex', height: '100dvh', overflow: 'hidden', background: 'linear-gradient(180deg, #FFFFFF 0%, #EFF6FF 48%, #2563EB 100%)', position: 'relative' }}>
+    <div className="app-shell" data-role={session.role} style={{ display: 'flex', height: '100dvh', overflow: 'hidden', background: 'linear-gradient(180deg, #FFFFFF 0%, #EFF6FF 48%, #2563EB 100%)', position: 'relative' }}>
       <Sidebar {...sidebarProps} />
       <MobileNavigation open={menuOpen} onClose={() => setMenuOpen(false)} triggerRef={menuTrigger}>
         <Sidebar {...sidebarProps} mobile onClose={() => setMenuOpen(false)} />
