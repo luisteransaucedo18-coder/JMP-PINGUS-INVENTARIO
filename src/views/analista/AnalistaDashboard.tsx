@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAppStore } from '../../store/AppContext';
 import AnalistaHelpCenter from '../../components/AnalistaHelpCenter';
+import { QuotationSummary } from '../../features/cotizaciones/CotizacionesView';
 
 const ESTADO_COLOR: Record<string, string> = {
   BORRADOR: '#A1A1AA',
@@ -139,6 +140,7 @@ export default function AnalistaDashboard({
       {/* =================================================
           KPIS
       ================================================= */}
+      <QuotationSummary onNav={onNav} />
 
       <div
         data-tour="dashboard-summary"

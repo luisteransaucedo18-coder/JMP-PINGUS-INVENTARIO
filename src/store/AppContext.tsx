@@ -1,10 +1,12 @@
 import { createContext, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import type { Entrega, Material, Proyecto, Requerimiento, RequerimientoCompra } from '../domain/types';
 import { obtenerCompras } from '../services/compraService';
-import { obtenerEntregas } from '../services/devolucionService';
+import { obtenerEntregas, obtenerDevoluciones, type Devolucion } from '../services/devolucionService';
 import { obtenerMateriales } from '../services/materialService';
 import { obtenerProyectos, obtenerRequerimientos } from '../services/requerimientoService';
 import { supabase } from '../services/supabase';
+import { obtenerCotizaciones, obtenerGastosProyecto, obtenerPlantillasCotizacion, obtenerPeriodosCotizacion } from '../services/cotizacionService';
+import type { Quote, ProjectExpense, QuoteTemplate, QuotePeriod } from '../features/cotizaciones/domain';
 import { createCoalescedTask } from '../utils/coalescedTask';
 
 interface AppState {
@@ -13,9 +15,18 @@ interface AppState {
   proyectos: Proyecto[];
   entregas: Entrega[];
   compras: RequerimientoCompra[];
+  cotizaciones: Quote[];
+  gastosProyecto: ProjectExpense[];
+  plantillasCotizacion: QuoteTemplate[];
+  cotizacionesError: string | null;
+  devoluciones: Devolucion[];
+  periodosCotizacion: QuotePeriod[];
 }
 
 type Action =
+  | { type: 'COTIZACIONES_ERROR'; payload: string }
+  | { type: 'REPLACE_DEVOLUCIONES'; payload: Devolucion[] }
+  | { type: 'REPLACE_COTIZACIONES'; payload: Pick<AppState, 'cotizaciones' | 'gastosProyecto' | 'plantillasCotizacion' | 'periodosCotizacion' | 'cotizacionesError'> }
   | { type: 'REPLACE_REQUERIMIENTOS'; payload: Requerimiento[] }
   | { type: 'REPLACE_PROYECTOS'; payload: Proyecto[] }
   | { type: 'REPLACE_MATERIALS'; payload: Material[] }
@@ -28,10 +39,16 @@ const initialState: AppState = {
   proyectos: [],
   entregas: [],
   compras: [],
+  cotizaciones: [], gastosProyecto: [], plantillasCotizacion: [], cotizacionesError: null,
+  devoluciones: [],
+  periodosCotizacion: [],
 };
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
+    case 'COTIZACIONES_ERROR': return { ...state, cotizacionesError: action.payload };
+    case 'REPLACE_DEVOLUCIONES': return { ...state, devoluciones: action.payload };
+    case 'REPLACE_COTIZACIONES': return { ...state, ...action.payload };
     case 'REPLACE_REQUERIMIENTOS': return { ...state, requerimientos: action.payload };
     case 'REPLACE_PROYECTOS': return { ...state, proyectos: action.payload };
     case 'REPLACE_MATERIALS': return { ...state, materials: action.payload };
@@ -63,10 +80,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       obtenerMateriales(),
       obtenerEntregas(),
       obtenerCompras(),
+      Promise.all([obtenerCotizaciones(), obtenerGastosProyecto(), obtenerPlantillasCotizacion(), obtenerPeriodosCotizacion()]),
+      obtenerDevoluciones(),
     ]);
     const [requirements, projects, materials, deliveries, purchases] = results;
     lastSyncComplete.current = results.every(result => result.status === 'fulfilled');
     if (!mounted.current) return;
+    const quotations = results[5];
+    if (results[6].status === 'fulfilled') dispatch({ type: 'REPLACE_DEVOLUCIONES', payload: results[6].value });
+    if (quotations.status === 'fulfilled') dispatch({ type: 'REPLACE_COTIZACIONES', payload: { cotizaciones: quotations.value[0], gastosProyecto: quotations.value[1], plantillasCotizacion: quotations.value[2], periodosCotizacion:quotations.value[3], cotizacionesError: null } });
+    else dispatch({ type: 'COTIZACIONES_ERROR', payload: 'No se pudieron cargar las cotizaciones. Verifica la conexión y la migración del módulo.' });
     if (requirements.status === 'fulfilled') dispatch({ type: 'REPLACE_REQUERIMIENTOS', payload: requirements.value });
     if (projects.status === 'fulfilled') dispatch({ type: 'REPLACE_PROYECTOS', payload: projects.value });
     if (materials.status === 'fulfilled') dispatch({ type: 'REPLACE_MATERIALS', payload: materials.value });
@@ -92,6 +115,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setInitialLoad('loading');
     void refresh();
     const channel = supabase.channel('datos-compartidos')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cotizacion_periodos' }, () => { void refresh(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'devoluciones_materiales' }, () => { void refresh(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'devolucion_items' }, () => { void refresh(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'proyecto_cotizaciones' }, () => { void refresh(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'proyecto_gastos' }, () => { void refresh(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cotizacion_plantillas' }, () => { void refresh(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'requerimientos' }, () => { void refresh(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'requerimiento_items' }, () => { void refresh(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'requerimiento_abastecimiento' }, () => { void refresh(); })

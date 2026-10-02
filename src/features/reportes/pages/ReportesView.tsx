@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAppStore } from '../../../store/AppContext';
 import { SEDES } from '../../../domain/types';
 import { ChartTooltip } from '../../../components/ChartTooltip';
+import QuotationReport from '../../cotizaciones/QuotationReport';
 import { fechaLima, inicioPeriodo, enPeriodo, describirPeriodo } from '../periodo';
 import './reportes.css';
 
@@ -60,6 +61,7 @@ export default function ReportesView() {
 
   return (
     <div className="manager-view-surface manager-reports-view" style={{ padding: 24, overflowY: 'auto', flex: 1, minHeight: '100%' }}>
+      <QuotationReport role="gerente" />
 
       <section className="panel report-period" aria-labelledby="report-period-heading">
         <div className="report-period-heading">

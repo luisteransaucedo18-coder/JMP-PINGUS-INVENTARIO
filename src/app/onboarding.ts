@@ -6,6 +6,7 @@ export type TourStatus = 'completed' | 'skipped';
 
 const descriptions: Record<Role, Record<string, string>> = {
   gerente: {
+    cotizaciones: 'Consulta presupuestos, importes presentados y aceptados, versiones y resultados de proyectos. El resultado permanece provisional hasta conciliar los costos reales y cerrar la ejecución.',
     dashboard: 'Revisa solicitudes pendientes, confirmadas y rechazadas, actividad por sede y alertas de stock. Los indicadores resumen los datos visibles del sistema.',
     reportes: 'Elige un período para comparar solicitudes por sede, actividad de analistas y materiales solicitados. El estado del inventario muestra las existencias actuales.',
     requerimientos: 'Consulta solicitudes, sus proyectos, responsables y estados. Esta vista de gerencia permite revisar la información sin aprobar ni modificar solicitudes.',
@@ -18,8 +19,9 @@ const descriptions: Record<Role, Record<string, string>> = {
     usuarios: 'Consulta el directorio de usuarios y sus roles. La administración de las cuentas corresponde al coordinador.',
   },
   analista: {
+    cotizaciones: 'Prepara la cotización por pasos y presenta la propuesta al cliente. Al aceptarla se crea el proyecto. Solicita materiales por etapas; los cambios necesitan una nueva aceptación.',
     dashboard: 'Consulta el resumen de tus solicitudes y sus estados. Los accesos directos te llevan a las tareas habituales y el centro de ayuda explica los procesos.',
-    'nueva-solicitud': 'Selecciona el proyecto, sede y técnico; describe el trabajo y agrega materiales con sus cantidades. Puedes guardar un borrador o enviar la solicitud al coordinador.',
+    'nueva-solicitud': 'Selecciona un proyecto con cotización aceptada y los materiales disponibles para esta etapa. Para un proyecto nuevo, prepara primero una cotización.',
     'mis-solicitudes': 'Filtra tus requerimientos por estado y revisa sus detalles. Consulta las observaciones si una solicitud fue rechazada y sigue el avance de las confirmadas.',
     proyectos: 'Busca y gestiona los proyectos disponibles. Revisa sede, cliente, ubicación y responsable antes de asociar una solicitud.',
     entregas: 'Registra la entrega de materiales aprobados al técnico. Identifica al responsable y las cantidades entregadas para dejar constancia de entregas parciales o completas.',
@@ -28,6 +30,7 @@ const descriptions: Record<Role, Record<string, string>> = {
     inventario: 'Busca materiales por nombre o SKU y consulta las existencias de cada sede antes de pedir materiales o solicitar una compra.',
   },
   coordinador: {
+    cotizaciones: 'Consulta cotizaciones sin aprobarlas. Atiende requerimientos de proyectos aceptados y concilia costos, consumo y devoluciones antes de cerrar.',
     dashboard: 'Revisa solicitudes por confirmar, necesidades de abastecimiento y alertas de stock. Los accesos del panel te llevan a requerimientos e inventario.',
     requerimientos: 'Revisa las solicitudes enviadas por analistas, comprueba las cantidades y la disponibilidad, y confirma o rechaza según corresponda. Atiende los faltantes con compras o traslados.',
     compras: 'Revisa las solicitudes de compra, aprueba o rechaza y confirma el ingreso de los materiales adquiridos al stock.',

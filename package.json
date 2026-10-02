@@ -5,8 +5,12 @@
   "type": "module",
   "packageManager": "pnpm@10.12.4",
   "scripts": {
+<<<<<<< HEAD
     "test": "node --test --test-concurrency=1 tests/*.test.mjs",
     "audit:consistencia": "node scripts/auditar-consistencia.mjs",
+=======
+    "test:cotizaciones": "node --test tests/cotizaciones.test.mjs",
+>>>>>>> 2fe06ba688dfefc303641d75b139caf3c61ec368
     "test:transporte": "node --test tests/transporte.test.mjs",
     "test:requerimientos": "node --test tests/requerimiento-stock.test.mjs",
     "test:materiales": "node --test tests/material-atomic.test.mjs",

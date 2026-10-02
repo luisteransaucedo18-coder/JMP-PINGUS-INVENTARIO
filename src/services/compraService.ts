@@ -3,7 +3,7 @@ import { supabase } from './supabase';
 
 export async function obtenerCompras(): Promise<RequerimientoCompra[]> {
   const { data, error } = await supabase.from('ordenes_compra').select(`
-    id,codigo,sede,fecha,motivo,estado,observaciones,fecha_aprobacion,fecha_compra,nota_compra,
+    id,codigo,requerimiento_id,sede,fecha,motivo,estado,observaciones,fecha_aprobacion,fecha_compra,nota_compra,
     analista:perfiles!ordenes_compra_analista_id_fkey(nombre),
     coordinador:perfiles!ordenes_compra_coordinador_id_fkey(nombre),
     items:orden_compra_items(material_sku,material_nombre,cantidad_solicitada,precio_unitario)
@@ -12,6 +12,7 @@ export async function obtenerCompras(): Promise<RequerimientoCompra[]> {
 
   return (data ?? []).map((row: any) => ({
     uuid: row.id,
+    requerimientoId: row.requerimiento_id ?? undefined,
     id: row.codigo,
     sede: row.sede as Sede,
     analista: row.analista?.nombre ?? 'Analista',

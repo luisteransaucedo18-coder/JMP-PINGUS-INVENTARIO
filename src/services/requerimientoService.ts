@@ -1,4 +1,4 @@
-import type { Proyecto, Requerimiento, ReqMaterial, Sede } from '../domain/types';
+import type { Proyecto, Requerimiento, Sede } from '../domain/types';
 import { supabase } from './supabase';
 
 type DbRequirement = {
@@ -57,24 +57,6 @@ export async function obtenerProyectos(): Promise<Proyecto[]> {
   return (data ?? []).map(project => ({ id: project.id, nombre: project.nombre, ubicacion: project.ubicacion,
     sede: project.sede as Sede, responsable: project.responsable, cliente: project.cliente,
     observaciones: project.observaciones ?? undefined, creadoEn: project.created_at.slice(0, 10) }));
-}
-
-export async function crearProyecto(data: Omit<Proyecto, 'id' | 'creadoEn'>): Promise<Proyecto> {
-  const { data: project, error } = await supabase.from('proyectos').insert({ nombre: data.nombre.trim(), ubicacion: data.ubicacion.trim(), sede: data.sede,
-    responsable: data.responsable.trim(), cliente: data.cliente.trim(), observaciones: data.observaciones?.trim() || null }).select('id,nombre,ubicacion,sede,responsable,cliente,observaciones,created_at').single();
-  if (error) throw error;
-  return { id: project.id, nombre: project.nombre, ubicacion: project.ubicacion, sede: project.sede as Sede,
-    responsable: project.responsable, cliente: project.cliente, observaciones: project.observaciones ?? undefined, creadoEn: project.created_at.slice(0, 10) };
-}
-
-export async function crearSolicitud(input: { proyectoId: string; sede: Sede; ubicacion: string; descripcion: string; tecnico: string; materiales: ReqMaterial[]; borrador: boolean }): Promise<string> {
-  const { data, error } = await supabase.rpc('crear_requerimiento', {
-    p_proyecto_id: input.proyectoId, p_sede: input.sede, p_ubicacion: input.ubicacion.trim(), p_descripcion: input.descripcion.trim(),
-    p_tecnico: input.tecnico.trim(), p_materiales: input.materiales.map(item => ({ material_sku: item.skuId, material_nombre: item.nombre, cantidad: item.cantidad })),
-    p_enviar: !input.borrador,
-  });
-  if (error) throw error;
-  return data as string;
 }
 
 export async function enviarSolicitud(id: string) {
