@@ -3,8 +3,9 @@ import { useAppStore } from '../../../store/AppContext';
 import { crearProyecto } from '../../../services/requerimientoService';
 import { Proyecto, Requerimiento, Role, SEDES, Sede } from '../../../domain/types';
 import RequirementStatusTimeline from '../../../components/RequirementStatusTimeline';
+import CotizacionesView from '../../cotizaciones/CotizacionesView';
 
-interface Props { role: Role; onToast: (msg: string) => void; }
+interface Props { role: Role; onToast: (msg: string) => void; onNav?: (view: string) => void; }
 
 const SEDE_COLOR: Record<Sede, string> = { Chiclayo: '#2563EB', Chimbote: '#059669', Trujillo: '#7C3AED' };
 const SEDE_BG: Record<Sede, string> = { Chiclayo: '#DBEAFE', Chimbote: '#CCFBF1', Trujillo: '#F3E8FF' };
@@ -90,7 +91,8 @@ function NewProyectoModal({ onSave, onClose }: { onSave: (p: Omit<Proyecto, 'id'
   );
 }
 
-function ProjectDetail({ proyecto, onBack, managerSurface = false }: { proyecto: Proyecto; onBack: () => void; managerSurface?: boolean }) {
+function ProjectDetail({ proyecto, onBack, role, onToast, onNav, managerSurface = false }: { proyecto: Proyecto; onBack: () => void; role: Role; onToast: (msg: string) => void; onNav?: (view: string) => void; managerSurface?: boolean }) {
+  const [showQuotes, setShowQuotes] = useState(false);
   const { state } = useAppStore();
   const [search, setSearch] = useState('');
   const [estadoFilter, setEstadoFilter] = useState('');
@@ -106,6 +108,8 @@ function ProjectDetail({ proyecto, onBack, managerSurface = false }: { proyecto:
 
   const confirmados = reqs.filter(r => r.estado === 'CONFIRMADO').length;
   const pendientes = reqs.filter(r => r.estado === 'ENVIADO').length;
+
+  if (showQuotes) return <div style={{ flex: 1, overflowY: 'auto' }}><div style={{ padding: '18px 24px 0' }}><button className="btn btn-ghost" onClick={() => setShowQuotes(false)}>← Volver a {proyecto.nombre}</button></div><CotizacionesView role={role} onToast={onToast} onNav={onNav} projectId={proyecto.id} /></div>;
 
   return (
     <div className={managerSurface ? 'manager-view-surface manager-projects-view' : undefined} style={{ padding: 24, overflowY: 'auto', flex: 1 }}>
@@ -146,6 +150,7 @@ function ProjectDetail({ proyecto, onBack, managerSurface = false }: { proyecto:
       </div>
 
       {/* Requerimientos list */}
+      <button className="btn btn-primary" style={{ marginBottom: 18 }} onClick={() => setShowQuotes(true)}>Cotizaciones, presupuesto y costos de este proyecto →</button>
       <div className="panel">
         <div style={{ padding: '14px 16px', borderBottom: '1px solid #E4E4E7', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
           <input className="input-field" style={{ maxWidth: 260 }}
@@ -271,7 +276,7 @@ function ProjectDetail({ proyecto, onBack, managerSurface = false }: { proyecto:
   );
 }
 
-export default function ProyectosView({ role, onToast }: Props) {
+export default function ProyectosView({ role, onToast, onNav }: Props) {
   const { state, refreshRemoteData } = useAppStore();
   const [search, setSearch] = useState('');
   const [sedeFilter, setSedeFilter] = useState('');
@@ -294,7 +299,7 @@ export default function ProyectosView({ role, onToast }: Props) {
     void refreshRemoteData().catch(() => onToast('El proyecto fue creado; la lista se actualizará al recargar.'));
   };
 
-  if (selected) return <ProjectDetail proyecto={selected} onBack={() => setSelected(null)} managerSurface={role === 'gerente'} />;
+  if (selected) return <ProjectDetail proyecto={selected} onBack={() => setSelected(null)} managerSurface={role === 'gerente'} role={role} onToast={onToast} onNav={onNav} />;
 
   return (
     <div className={role === 'gerente' ? 'manager-view-surface manager-projects-view' : undefined} style={{ padding: 24, overflowY: 'auto', flex: 1 }}>

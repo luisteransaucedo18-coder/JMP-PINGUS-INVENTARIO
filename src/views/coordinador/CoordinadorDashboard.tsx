@@ -1,6 +1,7 @@
 import { useAppStore } from '../../store/AppContext';
 import { SEDES } from '../../domain/types';
 import { obtenerFaltantesRequerimiento } from '../../utils/requirementStock';
+import { QuotationSummary } from '../../features/cotizaciones/CotizacionesView';
 
 const SEDE_COLOR: Record<string, string> = { Chiclayo: '#2563EB', Chimbote: '#059669', Trujillo: '#7C3AED' };
 
@@ -16,6 +17,7 @@ export default function CoordinadorDashboard({ onNav }: Props) {
 
   return (
     <div className="coordinator-dashboard" style={{ padding: 24, overflowY: 'auto', flex: 1 }}>
+      <QuotationSummary onNav={onNav} />
       <div className="panel" style={{ padding: 16, marginBottom: 20, display: 'flex', gap: 16, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
         <div><strong>Transporte interno de mercadería</strong><p style={{ fontSize: 13, color: '#52525B', marginTop: 4 }}>Envíos, recepciones y comprobantes entre sedes.</p></div>
         <button className="btn btn-primary" onClick={() => onNav('transporte')}>Transporte interno →</button>

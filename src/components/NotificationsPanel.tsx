@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '../store/AppContext';
 import { Role } from '../domain/types';
 import { obtenerFaltantesRequerimiento } from '../utils/requirementStock';
+import { ESTADO_LABELS } from '../features/cotizaciones/domain';
 
 /* ── Notification shape ── */
 export interface Notif {
@@ -39,6 +40,9 @@ const TYPE_BG: Record<Notif['type'], string> = {
 export function useNotifications(role: Role, userName: string): Notif[] {
   const { state } = useAppStore();
   const notifs: Notif[] = [];
+  state.cotizaciones.filter(q => role === 'coordinador' ? q.estado === 'EN_REVISION' : ['OBSERVADA','APROBADA','ACEPTADA','CERRADA'].includes(q.estado)).slice(0, 5).forEach(q => {
+    notifs.push({ id: `cotizacion-${q.id}-${q.revision}`, type: q.estado === 'OBSERVADA' ? 'warning' : q.estado === 'EN_REVISION' ? 'info' : 'success', title: `${q.codigo} · ${ESTADO_LABELS[q.estado]}`, body: `${q.proyecto_snapshot.nombre}. ${q.observaciones ?? 'Consulta el módulo Cotizaciones para revisar el siguiente paso.'}`, date: q.updated_at, ref: q.codigo });
+  });
 
   if (role === 'coordinador') {
     const shortageReqs = state.requerimientos.filter(

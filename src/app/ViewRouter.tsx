@@ -19,6 +19,7 @@ import TransporteInternoView from '../features/transporte/pages/TransporteIntern
 import RequerimientosView from '../features/requerimientos/pages/RequerimientosView';
 import ComprasView from '../features/compras/pages/ComprasView';
 import UsuariosView from '../features/usuarios/pages/UsuariosView';
+import CotizacionesView from '../features/cotizaciones/CotizacionesView';
 
 type Props = {
   role: Role;
@@ -36,6 +37,7 @@ const MANAGER_DATA_VIEWS: ConsultaGerente[] = [
 
 export default function ViewRouter({ role, view, onToast, onNav, userName, userEmail, onStartTour }: Props) {
   if (!canAccessView(role, view)) return <ViewMessage message="No tienes acceso a esta vista." />;
+  if (view === 'cotizaciones') return <CotizacionesView role={role} onToast={onToast} onNav={onNav} />;
   if (view === 'perfil') return <ProfileView role={role} userName={userName} userEmail={userEmail} onToast={onToast} />;
   if (view === 'manual') return <ManualUsuarioView role={role} onNav={onNav} onStartTour={onStartTour} />;
 
@@ -43,7 +45,7 @@ export default function ViewRouter({ role, view, onToast, onNav, userName, userE
     if (view === 'dashboard') return <GerenteDashboard onNav={onNav} />;
     if (view === 'inventario') return <InventarioView role={role} onToast={onToast} />;
     if (view === 'reportes') return <ReportesView />;
-    if (view === 'proyectos') return <ProyectosView role={role} onToast={onToast} />;
+    if (view === 'proyectos') return <ProyectosView role={role} onToast={onToast} onNav={onNav} />;
     if (MANAGER_DATA_VIEWS.includes(view as ConsultaGerente)) return <ConsultaGerenteView type={view as ConsultaGerente} />;
   }
 
@@ -51,7 +53,7 @@ export default function ViewRouter({ role, view, onToast, onNav, userName, userE
     if (view === 'dashboard') return <AnalistaDashboard usuario={userName} onNav={onNav} />;
     if (view === 'nueva-solicitud') return <NuevaSolicitudView onToast={onToast} onNav={onNav} />;
     if (view === 'mis-solicitudes') return <MisSolicitudesView usuario={userName} onToast={onToast} onNav={onNav} />;
-    if (view === 'proyectos') return <ProyectosView role={role} onToast={onToast} />;
+    if (view === 'proyectos') return <ProyectosView role={role} onToast={onToast} onNav={onNav} />;
     if (view === 'entregas') return <EntregasView onToast={onToast} usuario={userName} />;
     if (view === 'devoluciones') return <DevolucionesView onToast={onToast} />;
     if (view === 'inventario') return <InventarioView role={role} onToast={onToast} />;
@@ -63,7 +65,7 @@ export default function ViewRouter({ role, view, onToast, onNav, userName, userE
     if (view === 'dashboard') return <CoordinadorDashboard onNav={onNav} />;
     if (view === 'transporte') return <TransporteInternoView onToast={onToast} />;
     if (view === 'requerimientos') return <RequerimientosView onToast={onToast} onNav={onNav} />;
-    if (view === 'proyectos') return <ProyectosView role={role} onToast={onToast} />;
+    if (view === 'proyectos') return <ProyectosView role={role} onToast={onToast} onNav={onNav} />;
     if (view === 'entregas') return <EntregasView onToast={onToast} usuario={userName} />;
     if (view === 'devoluciones') return <DevolucionesView onToast={onToast} />;
     if (view === 'inventario') return <InventarioView role={role} onToast={onToast} />;

@@ -254,7 +254,26 @@ interface Props {
 }
 
 export default function ManualUsuarioView({ role, onNav, onStartTour }: Props) {
-  const manual = MANUAL_BY_ROLE[role];
+  const original = MANUAL_BY_ROLE[role];
+  const manual = { ...original, sections: [...original.sections, {
+    title: 'Cotizaciones y costos de proyectos',
+    summary: 'Conecta presupuesto, revisión interna, propuesta al cliente, ejecución y cierre con un historial por versión.',
+    tasks: role === 'analista' ? [
+      'Crea una cotización asociada al proyecto, modalidad, ciudad, puntos, materiales y servicios; revisa unidades y costos sin IGV.',
+      'Envía el presupuesto a revisión. Si fue observado, corrígelo; después de aprobado registra el importe presentado y la aceptación con evidencia.',
+      'Genera requerimientos por etapas desde el saldo de materiales. Sigue faltantes, compras, entregas y devoluciones en sus módulos habituales.',
+      'Registra costos reales sin IGV y comprobantes; distingue material consumido de material entregado. Crea una nueva versión para cambiar un presupuesto aprobado.',
+    ] : role === 'coordinador' ? [
+      'Revisa y aprueba u observa presupuestos enviados por analistas. Los porcentajes quedan guardados en cada versión.',
+      'Configura plantillas por modalidad, ciudad, tipo y puntos desde Cotizaciones. El analista debe aplicarlas expresamente al borrador.',
+      'Atiende las solicitudes generadas y sus faltantes mediante compras o traslados; registra entregas y devoluciones.',
+      'Concilia costos reales, consumo, devoluciones y comprobantes antes de cerrar. La anulación de gastos conserva el registro y exige un motivo.',
+    ] : [
+      'Consulta presupuestos, versiones, importes comerciales y evidencia de aceptación sin modificar registros.',
+      'Compara costos previstos con costos reales, separados por moneda; no se suman soles y dólares.',
+      'El resultado es provisional hasta completar costos y conciliación. El cierre guarda la observación final de coordinación.',
+    ],
+  }] };
 
   return (
     <div style={{ padding: 24, overflowY: 'auto', flex: 1, minWidth: 0 }}>

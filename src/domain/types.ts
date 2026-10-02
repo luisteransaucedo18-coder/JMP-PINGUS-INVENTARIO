@@ -27,6 +27,7 @@ export interface CompraItem {
 }
 
 export interface RequerimientoCompra {
+  requerimientoId?: string
   uuid?: string
 
   id: string

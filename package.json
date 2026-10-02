@@ -5,6 +5,7 @@
   "type": "module",
   "packageManager": "pnpm@10.12.4",
   "scripts": {
+    "test:cotizaciones": "node --test tests/cotizaciones.test.mjs",
     "test:transporte": "node --test tests/transporte.test.mjs",
     "test:requerimientos": "node --test tests/requerimiento-stock.test.mjs",
     "test:materiales": "node --test tests/material-atomic.test.mjs",

@@ -2,6 +2,7 @@ import { Card, SectionHead, BarChart } from '../../components/DashboardPrimitive
 import { useAppStore } from '../../store/AppContext';
 import { SEDES, Sede } from '../../domain/types';
 import { ChartTooltip } from '../../components/ChartTooltip';
+import { QuotationSummary } from '../../features/cotizaciones/CotizacionesView';
 
 const SEDE_COLOR: Record<Sede, string> = { Chiclayo: '#2563EB', Chimbote: '#059669', Trujillo: '#7C3AED' };
 const SEDE_BG: Record<Sede, string>    = { Chiclayo: '#DBEAFE', Chimbote: '#CCFBF1', Trujillo: '#F3E8FF' };
@@ -68,6 +69,7 @@ export default function GerenteDashboard({ onNav }: Props) {
 
   return (
     <div className="manager-view-surface gerente-dashboard" style={{ padding: 24, overflowY: 'auto', flex: 1, minHeight: '100%' }}>
+      <QuotationSummary onNav={onNav} />
 
       {/* ── Row 1: KPI strip ── */}
       <div data-tour="dashboard-summary" className="dashboard-kpi-grid manager-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 14, marginBottom: 22 }}>

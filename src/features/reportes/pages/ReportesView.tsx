@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useAppStore } from '../../../store/AppContext';
 import { SEDES, Sede } from '../../../domain/types';
 import { ChartTooltip } from '../../../components/ChartTooltip';
+import QuotationReport from '../../cotizaciones/QuotationReport';
 
 const SEDE_COLOR: Record<Sede, string> = { Chiclayo: '#2563EB', Chimbote: '#059669', Trujillo: '#7C3AED' };
 const SEDE_BG: Record<Sede, string>    = { Chiclayo: '#DBEAFE', Chimbote: '#CCFBF1', Trujillo: '#F3E8FF' };
@@ -62,6 +63,7 @@ export default function ReportesView() {
 
   return (
     <div className="manager-view-surface manager-reports-view" style={{ padding: 24, overflowY: 'auto', flex: 1, minHeight: '100%' }}>
+      <QuotationReport role="gerente" />
 
       {/* Period selector */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
