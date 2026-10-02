@@ -5,6 +5,8 @@
   "type": "module",
   "packageManager": "pnpm@10.12.4",
   "scripts": {
+    "test": "node --test --test-concurrency=1 tests/*.test.mjs",
+    "audit:consistencia": "node scripts/auditar-consistencia.mjs",
     "test:transporte": "node --test tests/transporte.test.mjs",
     "test:requerimientos": "node --test tests/requerimiento-stock.test.mjs",
     "test:materiales": "node --test tests/material-atomic.test.mjs",

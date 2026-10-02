@@ -77,6 +77,3 @@ try {
     await page.close();
   }
 } finally { await browser.close(); }
-
-
-
