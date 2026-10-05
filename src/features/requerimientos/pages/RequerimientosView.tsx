@@ -3,6 +3,7 @@ import { useAppStore } from '../../../store/AppContext';
 import { Requerimiento, SEDES, Material } from '../../../domain/types';
 import MaterialPreviewModal, { PreviewBtn } from '../../../components/MaterialPreviewModal';
 import RequirementStatusTimeline from '../../../components/RequirementStatusTimeline';
+import QuoteProjectInfo, { quoteForRequirement } from '../../cotizaciones/QuoteProjectInfo';
 import { planificarAbastecimiento, revisarSolicitud } from '../../../services/requerimientoService';
 import { obtenerFaltantesRequerimiento, sedesConStockParaTraslado, sugerirSedeOrigen } from '../../../utils/requirementStock';
 
@@ -16,6 +17,7 @@ export default function RequerimientosView({ onToast, onNav }: Props) {
   const [sedeFilter, setSedeFilter] = useState('');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Requerimiento | null>(null);
+  const selectedQuote = selected ? quoteForRequirement(state.cotizaciones, selected.id) : undefined;
   const [obsModal, setObsModal] = useState('');
   const [action, setAction] = useState<'confirm' | 'reject' | null>(null);
   const [previewMat, setPreviewMat] = useState<Material | null>(null);
@@ -222,6 +224,7 @@ export default function RequerimientosView({ onToast, onNav }: Props) {
             </div>
 
             <RequirementStatusTimeline requirement={selected} />
+            {selectedQuote && <div style={{ padding: '16px 22px 0' }}><QuoteProjectInfo quote={selectedQuote} /></div>}
 
             <div style={{ padding: '18px 22px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               {[['Sede', selected.sede], ['Ubicación', selected.ubicacion], ['Analista', selected.analista], ['Técnico responsable', selected.tecnico], ['Fecha solicitud', selected.fecha]].map(([k, v]) => (

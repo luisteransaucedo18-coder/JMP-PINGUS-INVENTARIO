@@ -22,6 +22,26 @@ const { newBudget, calculateQuote, remainingMaterial, executionSummary, quoteVal
     `data:text/javascript;base64,${Buffer.from(outputText).toString("base64")}`
   )
 const id = (n) => `40000000-0000-4000-8000-${String(n).padStart(12, "0")}`
+test('ubigeo de Perú: provincias, distritos y localidades históricas sin ambigüedad', async () => {
+  const data = JSON.parse(readFileSync(new URL('../src/features/cotizaciones/peruUbigeo.json', import.meta.url), 'utf8'))
+  const old = JSON.parse(readFileSync(new URL('../src/features/cotizaciones/peruLocations.json', import.meta.url), 'utf8'))
+  const locationSource = readFileSync(new URL('../src/features/cotizaciones/locations.ts', import.meta.url), 'utf8')
+    .replace('import locations from "./peruLocations.json"', `const locations = ${JSON.stringify(old)}`)
+    .replace('import ubigeo from "./peruUbigeo.json"', `const ubigeo = ${JSON.stringify(data)}`)
+  const compiled = ts.transpileModule(locationSource, {compilerOptions:{module:ts.ModuleKind.ESNext}}).outputText
+  const {provincesForDepartment, districtsForProvince, validPeruLocation, resolveLegacyLocation} = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`)
+  assert.equal(Object.keys(data).length, 25)
+  const districts = Object.values(data).flatMap(provinces => Object.values(provinces).flat())
+  assert.equal(districts.length, 1892)
+  assert.equal(new Set(districts.map(d => d.ubigeo)).size, districts.length)
+  assert.deepEqual(provincesForDepartment('Lambayeque'), ['Chiclayo', 'Ferreñafe', 'Lambayeque'])
+  assert.ok(validPeruLocation('Áncash', 'Santa', 'Chimbote'))
+  assert.ok(validPeruLocation('Callao', 'Callao', 'Ventanilla'))
+  assert.ok(!validPeruLocation('Lambayeque', 'Ferreñafe', 'Chiclayo'))
+  assert.deepEqual(districtsForProvince('Lambayeque', ''), [])
+  assert.deepEqual(resolveLegacyLocation('Áncash', 'Chimbote'), {provincia:'Santa', distrito:'Chimbote'})
+  assert.deepEqual(resolveLegacyLocation('Lima', 'San Antonio'), {provincia:'', distrito:''})
+})
 test('porcentajes predeterminados del Excel y relación departamento/ciudad', async () => {
   assert.deepEqual(defaultQuoteRates('COBRE','Chiclayo'),{utilidad:22,generales:10,comision:5,igv:18,financiamientoMensual:2.5,meses:1});
   assert.equal(defaultQuoteRates('COBRE','Piura').comision,6);
@@ -39,7 +59,7 @@ test('porcentajes predeterminados del Excel y relación departamento/ciudad', as
 const budget = {
   ...newBudget(),
   ciudad: "Chiclayo",
-  excel: {...newBudget().excel,departamento:"Lambayeque"},
+  excel: {...newBudget().excel,departamento:"Lambayeque",provincia:"Chiclayo",distrito:"Chiclayo"},
   tecnico: "Técnico",
   alcance: "Instalación de prueba",
   vigencia: "2099-12-31",
@@ -102,6 +122,30 @@ test('PDF comercial paginado sin costos internos ni utilidad',async()=>{
   assert.ok(text.includes('354.00')); assert.ok(text.includes('Construcción')); assert.ok(text.includes('DATOS DEL PROYECTO Y CLIENTE')); assert.ok(text.includes('JM-PINGUS SAC')); assert.equal(text.split('COTIZACIÓN DE PROYECTO').length-1,pdf.numPages); assert.ok(!text.includes('BONO SECRETO')); assert.ok(!text.includes('COSTO INTERNO')); assert.ok(!text.includes('Utilidad')); }
   finally{await loadingTask.destroy();}
 });
+
+test('PDF del requerimiento conserva dirección y ubicación heredada', async () => {
+  const require = createRequire(import.meta.url)
+  const source = readFileSync(new URL('../src/utils/requirementPdf.ts', import.meta.url), 'utf8')
+    .replace("'pdf-lib'", JSON.stringify(pathToFileURL(require.resolve('pdf-lib')).href))
+  const compiled = ts.transpileModule(source, {compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText
+  const {createRequirementPdf} = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`)
+  const requirement = {id:id(20),codigo:'REQ-QA',estado:'CONFIRMADO',proyecto:'Proyecto QA',sede:'Chiclayo',ubicacion:'Av. José Balta 123, interior 2 — Lambayeque / Chiclayo / Chiclayo',descripcion:'Instalación de gas',analista:'Analista QA',tecnico:'Técnico QA',fecha:'2026-10-05',materiales:[]}
+  const bytes = await createRequirementPdf(requirement, [], [], new Uint8Array(readFileSync(new URL('../public/templates/pedido-materiales-logo.jpg',import.meta.url))))
+  const {getDocument} = await import('pdfjs-dist/legacy/build/pdf.mjs')
+  const loadingTask = getDocument({data:new Uint8Array(bytes),useSystemFonts:true})
+  try {
+    const pdf = await loadingTask.promise
+    let text = ''
+    for(let i=1;i<=pdf.numPages;i++) {
+      const page = await pdf.getPage(i)
+      text += (await page.getTextContent()).items.map(x=>x.str??'').join(' ')
+    }
+    assert.ok(text.includes('Dirección del proyecto:'))
+    assert.ok(text.includes('Av. José Balta 123, interior 2'))
+    assert.ok(text.includes('Lambayeque / Chiclayo / Chiclayo'))
+    assert.ok(text.includes('Instalación de gas'))
+  } finally { await loadingTask.destroy() }
+})
 
 test("cálculo comercial y FISE, conversiones y resultado sin duplicar compras", () => {
   const t = calculateQuote(budget)
@@ -202,6 +246,8 @@ test("migración: permisos, estados, versiones, saldos idempotentes, gastos y ci
     )
     await db.exec(readFileSync(new URL('../supabase/migrations/20261002215459_cotizacion_guiada_proyecto_al_aceptar.sql',import.meta.url),'utf8'));
     await db.exec(readFileSync(new URL('../supabase/migrations/20261002222328_validar_cotizacion_ubicacion_y_duplicados.sql',import.meta.url),'utf8'));
+    await db.exec(readFileSync(new URL('../supabase/migrations/20261005135953_cotizacion_provincia_distrito_peru.sql',import.meta.url),'utf8'));
+    await db.exec(readFileSync(new URL('../supabase/migrations/20261005141612_requerimiento_direccion_cotizada.sql',import.meta.url),'utf8'));
     assert.equal((await db.query('select codigo from public.cotizaciones')).rows[0].codigo,'COT-ANTERIOR');
     assert.equal((await db.query("select public.operar_cotizacion(null,'consulta',1) result")).rows[0].result,'anterior');
     const as = async (user, sql, params = []) => {
@@ -250,6 +296,14 @@ test("migración: permisos, estados, versiones, saldos idempotentes, gastos y ci
           ])
 
         await calculate(budget)
+
+        await calculate({...budget, ciudad: 'Jose Leonardo Ortiz', excel: {...budget.excel, distrito: 'Jose Leonardo Ortiz'}})
+        await assert.rejects(calculate({...budget, excel: {...budget.excel, provincia: 'Ferreñafe'}}), /provincia/)
+        await assert.rejects(calculate({...budget, excel: {...budget.excel, distrito: ''}}), /distrito/)
+        const legacyExcel = {...budget.excel}
+        delete legacyExcel.provincia
+        delete legacyExcel.distrito
+        await calculate({...budget, excel: legacyExcel})
 
         await assert.rejects(
           calculate({ ...budget, ciudad: "Chimbote" }),
@@ -406,6 +460,10 @@ test("migración: permisos, estados, versiones, saldos idempotentes, gastos y ci
         const rev = (await get()).revision
         await request(1, 20, 6, rev)
         await request(1, 20, 6, rev)
+        const inherited = (await db.query('select ubicacion,tecnico,descripcion from public.requerimientos where id=$1', [id(20)])).rows[0]
+        assert.equal(inherited.ubicacion, 'Dirección — Lambayeque / Chiclayo / Chiclayo')
+        assert.equal(inherited.tecnico, budget.tecnico)
+        assert.ok(inherited.descripcion.includes(budget.alcance))
         assert.equal(
           (await db.query("select count(*) n from public.requerimientos"))
             .rows[0].n,

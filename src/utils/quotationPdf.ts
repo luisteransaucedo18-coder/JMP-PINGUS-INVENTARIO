@@ -136,8 +136,10 @@ export async function buildQuotationPdf(quote: Quote, logoBytes?: Uint8Array) {
   section('DATOS DEL PROYECTO Y CLIENTE')
   detail('PROYECTO', quote.proyecto_snapshot.nombre)
   detail('CLIENTE', quote.proyecto_snapshot.cliente)
-  detail('UBICACIÓN', quote.proyecto_snapshot.ubicacion)
-  detail('CIUDAD', quote.presupuesto.ciudad)
+  detail('DIRECCIÓN DEL PROYECTO', quote.proyecto_snapshot.ubicacion)
+  detail('DEPARTAMENTO', quote.presupuesto.excel.departamento)
+  if (quote.presupuesto.excel.provincia) detail('PROVINCIA', quote.presupuesto.excel.provincia)
+  detail(quote.presupuesto.excel.distrito ? 'DISTRITO' : 'LOCALIDAD', quote.presupuesto.excel.distrito || quote.presupuesto.ciudad)
   detail('MODALIDAD / PUNTOS', `${quote.presupuesto.modalidad} / ${quote.presupuesto.puntos}`)
   detail('VIGENCIA', quote.presupuesto.vigencia.replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$3/$2/$1'))
   top += 10

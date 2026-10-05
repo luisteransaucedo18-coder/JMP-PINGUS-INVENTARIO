@@ -6,9 +6,11 @@ import NumericInput from "../../components/NumericInput"
 
 import {
   DEPARTAMENTOS,
-  PERU_LOCATIONS,
+  provincesForDepartment,
+  districtsForProvince,
+  resolveLegacyLocation,
   departmentForCity,
-  validLocation,
+  validPeruLocation,
 } from "./locations"
 
 import { searchMaterials } from "../../utils/materialSearch"
@@ -275,6 +277,14 @@ export default function QuoteEditor({
     if (!DEPARTAMENTOS.includes(initial.excel.departamento))
       initial.excel.departamento = departmentForCity(initial.ciudad)
 
+    if (!initial.excel.provincia || !initial.excel.distrito) {
+      const legacy = resolveLegacyLocation(initial.excel.departamento, initial.ciudad)
+      initial.excel.provincia ??= legacy.provincia
+      initial.excel.distrito ??= legacy.distrito
+      // New budgets have empty fields; infer only unambiguous historic locations.
+      if (!initial.excel.provincia && !initial.excel.distrito) Object.assign(initial.excel, legacy)
+    }
+    if (initial.excel.distrito) initial.ciudad = initial.excel.distrito
     return initial
   })
 
@@ -329,12 +339,12 @@ export default function QuoteEditor({
     const messages: string[] = []
 
     if (step === 0) {
-      if (!validLocation(budget.excel.departamento, budget.ciudad))
-        messages.push("Selecciona el departamento y una ciudad de su listado.")
+      if (!validPeruLocation(budget.excel.departamento, budget.excel.provincia ?? "", budget.excel.distrito ?? ""))
+        messages.push("Selecciona departamento, provincia y distrito de sus listados.")
 
       if (!templateMode && Object.values(project).some((v) => !v.trim()))
         messages.push(
-          "Completa nombre, cliente, ubicación y responsable del proyecto.",
+          "Completa nombre, cliente, dirección y responsable del proyecto.",
         )
 
       if (templateMode && !templateName.trim())
@@ -346,7 +356,7 @@ export default function QuoteEditor({
         !budget.alcance.trim()
       )
         messages.push(
-          "Completa ciudad, técnico y alcance de los trabajos.",
+          "Completa distrito, técnico y alcance de los trabajos.",
         )
     }
 
@@ -378,12 +388,12 @@ export default function QuoteEditor({
 
         const validation = quoteValidation(budget)
 
-        if (!validLocation(budget.excel.departamento, budget.ciudad))
-          validation.unshift("Selecciona un departamento y una ciudad válidos.")
+        if (!validPeruLocation(budget.excel.departamento, budget.excel.provincia ?? "", budget.excel.distrito ?? ""))
+          validation.unshift("Selecciona departamento, provincia y distrito válidos.")
 
         if (!templateMode && Object.values(project).some((v) => !v.trim()))
           validation.unshift(
-            "Completa nombre, cliente, ubicación y responsable del proyecto.",
+            "Completa nombre, cliente, dirección y responsable del proyecto.",
           )
 
         if (templateMode && !templateName.trim())
@@ -448,7 +458,7 @@ export default function QuoteEditor({
           {
             [
               templateMode
-                ? "Identifica la tarifa, su ciudad y modalidad. Los analistas podrán aplicarla a sus cotizaciones."
+                ? "Identifica la tarifa, su ubicación en Perú y modalidad. Los analistas podrán aplicarla a sus cotizaciones."
                 : "Describe el trabajo y el cliente. El proyecto se creará cuando el cliente acepte la cotización.",
 
               "Selecciona los materiales y agrega los costos que correspondan. Conservamos los nombres del Excel para ayudarte.",
@@ -493,8 +503,6 @@ export default function QuoteEditor({
 
                   "cliente",
 
-                  "ubicacion",
-
                   "responsable",
                 ] as const).map((key) => (
                   <Field
@@ -504,8 +512,6 @@ export default function QuoteEditor({
                         nombre: "Nombre del proyecto",
 
                         cliente: "Cliente",
-
-                        ubicacion: "Ubicación del proyecto",
 
                         responsable: "Responsable del proyecto",
                       }[key]
@@ -526,8 +532,9 @@ export default function QuoteEditor({
                   </Field>
                 ))
               )}
-              <Field label="DEPARTAMENTO">
+              <Field label="Departamento">
                 <select
+                  aria-label="Departamento"
                   className="select-field"
                   required
                   value={budget.excel.departamento}
@@ -535,7 +542,7 @@ export default function QuoteEditor({
                     setBudget((b) => ({
                       ...b,
                       ciudad: "",
-                      excel: { ...b.excel, departamento: e.target.value },
+                      excel: { ...b.excel, departamento: e.target.value, provincia: "", distrito: "" },
                     }))
                   }
                 >
@@ -545,42 +552,60 @@ export default function QuoteEditor({
                   ))}
                 </select>
               </Field>
-              <Field label={EXCEL_LABELS.ciudad}>
+              <Field label="Provincia">
                 <select
+                  aria-label="Provincia"
                   className="select-field"
                   required
                   disabled={!budget.excel.departamento}
-                  value={budget.ciudad}
+                  value={budget.excel.provincia ?? ""}
+                  onChange={(e) => setBudget((b) => ({
+                    ...b,
+                    ciudad: "",
+                    excel: { ...b.excel, provincia: e.target.value, distrito: "" },
+                  }))}
+                >
+                  <option value="">{budget.excel.departamento ? "Selecciona una provincia" : "Primero selecciona el departamento"}</option>
+                  {provincesForDepartment(budget.excel.departamento).map((p) => <option key={p}>{p}</option>)}
+                </select>
+              </Field>
+              <Field label="Distrito">
+                <select
+                  aria-label="Distrito"
+                  className="select-field"
+                  required
+                  disabled={!budget.excel.provincia}
+                  value={budget.excel.distrito ?? ""}
                   onChange={(e) => {
-                    const ciudad = e.target.value
+                    const distrito = e.target.value
                     setBudget((b) => ({
                       ...b,
-                      ciudad,
+                      ciudad: distrito,
+                      excel: { ...b.excel, distrito },
                       tasas: {
                         ...b.tasas,
-                        comision: editedRates.comision
-                          ? b.tasas.comision
-                          : defaultQuoteRates(
-                              b.modalidad,
-                              ciudad,
-                              b.excel.departamento,
-                            ).comision,
+                        comision: editedRates.comision ? b.tasas.comision
+                          : defaultQuoteRates(b.modalidad, distrito, b.excel.departamento).comision,
                       },
                     }))
                   }}
                 >
-                  <option value="">
-                    {budget.excel.departamento
-                      ? "Selecciona una ciudad"
-                      : "Primero selecciona el departamento"}
-                  </option>
-                  {(PERU_LOCATIONS[budget.excel.departamento] ?? []).map(
-                    (c) => (
-                      <option key={c}>{c}</option>
-                    ),
-                  )}
+                  <option value="">{budget.excel.provincia ? "Selecciona un distrito" : "Primero selecciona la provincia"}</option>
+                  {districtsForProvince(budget.excel.departamento, budget.excel.provincia ?? "").map((d) => <option key={d.ubigeo} value={d.nombre}>{d.nombre}</option>)}
                 </select>
               </Field>
+              {!templateMode && <Field label="Dirección del proyecto">
+                <input
+                  className="input-field"
+                  aria-label="Dirección del proyecto"
+                  autoComplete="street-address"
+                  placeholder="Ej. Av. José Balta 123, interior 2"
+                  required
+                  readOnly={Boolean(quote?.proyecto_id)}
+                  value={project.ubicacion}
+                  onChange={(e) => setProject(p => ({ ...p, ubicacion: e.target.value }))}
+                />
+              </Field>}
               <Field label="Sede de abastecimiento">
                 <select
                   className="select-field"
@@ -1332,6 +1357,7 @@ export default function QuoteEditor({
               {budget.materiales.length} materiales · {budget.gastos.length}{" "}
               partidas de costo · {EXCEL_MODALIDADES[budget.modalidad]}
             </p>
+            <p>Departamento: {budget.excel.departamento} · Provincia: {budget.excel.provincia} · Distrito: {budget.excel.distrito}</p>
             <div className="quote-review-grid">
               {budget.materiales.map((m) => (
                 <div className="quote-review-item" key={m.id}>

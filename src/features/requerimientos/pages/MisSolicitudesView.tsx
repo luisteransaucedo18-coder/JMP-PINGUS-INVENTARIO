@@ -4,6 +4,7 @@ import { Requerimiento } from '../../../domain/types';
 import RequirementStatusTimeline from '../../../components/RequirementStatusTimeline';
 import RequirementPdfModal from '../../../components/RequirementPdfModal';
 import { enviarSolicitud } from '../../../services/requerimientoService';
+import QuoteProjectInfo, { quoteForRequirement } from '../../cotizaciones/QuoteProjectInfo';
 
 const BADGE: Record<string, string> = { BORRADOR: 'gray', ENVIADO: 'amber', CONFIRMADO: 'green', RECHAZADO: 'red' };
 
@@ -19,6 +20,7 @@ export default function MisSolicitudesView({ usuario, onToast, onNav }: Props) {
   const { state, refreshRemoteData } = useAppStore();
   const [filter, setFilter] = useState('');
   const [selected, setSelected] = useState<Requerimiento | null>(null);
+  const selectedQuote = selected ? quoteForRequirement(state.cotizaciones, selected.id) : undefined;
   const [pdfId, setPdfId] = useState<string | null>(null);
   const pdfRequirement = state.requerimientos.find(r => r.id === pdfId && r.estado === 'CONFIRMADO');
 
@@ -117,6 +119,7 @@ export default function MisSolicitudesView({ usuario, onToast, onNav }: Props) {
               <span className={`badge status-badge badge-${BADGE[selected.estado]}`}>{selected.estado}</span>
             </div>
             <RequirementStatusTimeline requirement={selected} />
+            {selectedQuote && <div style={{ padding: '16px 22px 0' }}><QuoteProjectInfo quote={selectedQuote} /></div>}
             <div style={{ padding: '20px 22px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               {[['Sede', selected.sede], ['Ubicación', selected.ubicacion], ['Técnico', selected.tecnico], ['Fecha', selected.fecha]].map(([k, v]) => (
                 <div key={String(k)}>

@@ -7,6 +7,7 @@ import { useAppStore } from "../../store/AppContext"
 import { useUserProfile } from "../../store/UserProfileContext"
 
 import { operarCotizacion } from "../../services/cotizacionService"
+import QuoteProjectInfo from './QuoteProjectInfo'
 
 import QuoteEditor, { Field, NumberField, Totals } from "./QuoteEditor"
 
@@ -237,7 +238,7 @@ export default function CotizacionesView({
       (!projectFilter || q.proyecto_id === projectFilter) &&
       (!filter || q.estado === filter) &&
       (!search ||
-        `${q.codigo} ${q.proyecto_snapshot.nombre} ${q.proyecto_snapshot.cliente} ${q.presupuesto.ciudad}`
+        `${q.codigo} ${q.proyecto_snapshot.nombre} ${q.proyecto_snapshot.cliente} ${q.presupuesto.excel.departamento} ${q.presupuesto.excel.provincia ?? ""} ${q.presupuesto.excel.distrito ?? q.presupuesto.ciudad}`
 
           .toLocaleLowerCase()
 
@@ -484,6 +485,7 @@ export default function CotizacionesView({
           )}
           {operation.action === "requerimiento" && (
             <>
+              <QuoteProjectInfo quote={quote} />
               <p>
                 Se enviará una solicitud al coordinador. Las cantidades usan la
                 unidad de inventario. El stock se confirma mediante el flujo
@@ -733,7 +735,7 @@ export default function CotizacionesView({
         </div>
         <section className="panel quote-section">
           <div className="quote-form-grid">
-            <Field label="Buscar cotización, cliente o ciudad">
+            <Field label="Buscar cotización, cliente o ubicación">
               <input
                 className="input-field"
                 value={search}
@@ -821,7 +823,7 @@ export default function CotizacionesView({
                 </div>
                 <h3>{q.proyecto_snapshot.nombre}</h3>
                 <p>
-                  {q.proyecto_snapshot.cliente} · {q.presupuesto.ciudad}
+                  {q.proyecto_snapshot.cliente} · {[q.presupuesto.excel.departamento, q.presupuesto.excel.provincia, q.presupuesto.excel.distrito || q.presupuesto.ciudad].filter(Boolean).join(" / ")}
                 </p>
                 <p>
                   {q.presupuesto.modalidad} · {q.presupuesto.puntos} puntos ·{" "}
@@ -1055,7 +1057,7 @@ export default function CotizacionesView({
         <section className="panel quote-section">
           <h3>
             {EXCEL_MODALIDADES[quote.presupuesto.modalidad]} ·{" "}
-            {quote.presupuesto.ciudad} ·{" "}
+            {[quote.presupuesto.excel.departamento, quote.presupuesto.excel.provincia, quote.presupuesto.excel.distrito || quote.presupuesto.ciudad].filter(Boolean).join(" / ")} ·{" "}
             {quote.presupuesto.tipo === "TIPICO" ? "Típico" : "No típico"} ·{" "}
             {quote.presupuesto.puntos} puntos
           </h3>
@@ -1063,7 +1065,7 @@ export default function CotizacionesView({
             Técnico: {quote.presupuesto.tecnico} · Sede:{" "}
             {quote.presupuesto.sede} · Moneda: {quote.presupuesto.moneda}
           </p>
-          <p>{quote.presupuesto.alcance}</p>
+          <QuoteProjectInfo quote={quote} />
           <BudgetContext budget={quote.presupuesto} />
           <div className="quote-table-wrap">
             <table className="quote-table">

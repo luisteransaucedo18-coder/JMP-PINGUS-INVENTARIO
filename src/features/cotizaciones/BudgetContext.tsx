@@ -2,7 +2,7 @@ import type { QuoteBudget } from './domain';
 
 export default function BudgetContext({ budget:b }: { budget:QuoteBudget }) {
   const values: [string,string|number][] = [
-    ['DEPARTAMENTO',b.excel.departamento],['CONSECION',b.excel.concesion],['Muretes Interiores Cachimbo:',b.excel.muretesCachimbo],['Muretes Interiores Valvula:',b.excel.muretesValvula],['DIAS PROYECTADOS',b.excel.diasProyectados],['PLAZO',b.excel.plazo],['Dia',b.excel.dia],['Horario',b.excel.horario],['Tiempo',b.excel.tiempo],['Administracion de caja Chica',b.excel.cajaChica],
+    ['Departamento',b.excel.departamento],['Provincia',b.excel.provincia ?? ''],['Distrito',b.excel.distrito ?? ''],['CONSECION',b.excel.concesion],['Muretes Interiores Cachimbo:',b.excel.muretesCachimbo],['Muretes Interiores Valvula:',b.excel.muretesValvula],['DIAS PROYECTADOS',b.excel.diasProyectados],['PLAZO',b.excel.plazo],['Dia',b.excel.dia],['Horario',b.excel.horario],['Tiempo',b.excel.tiempo],['Administracion de caja Chica',b.excel.cajaChica],
     ['GASTOS DE FINANCIAMIENTO: (%/MES)',b.tasas.financiamientoMensual],['MESES DE FINANCIAMIENTO',b.tasas.meses],['GASTOS GENERALES (%)',b.tasas.generales],['Utilidad (%):',b.tasas.utilidad],['Comision Venta (%):',b.tasas.comision],['IGV (%):',b.tasas.igv],
   ];
   if(b.modalidad==='FISE')values.push(['Configuración FISE',b.fise.configuracion],['Configuración interna',b.fise.configuracionInterna],['Presión de artefactos (23 - 340)',`${b.fise.presionArtefactos} mbar`],['Instalación interna',b.fise.instalacion],['Acometida',b.fise.acometida],['INGRESO CONVENIO FISE (SIN IGV)',b.fise.ingresoSinIgv],['Utilidad FISE','Derivada del ingreso del convenio menos costos y cargos']);

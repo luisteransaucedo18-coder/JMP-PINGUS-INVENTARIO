@@ -265,7 +265,7 @@ export default function ManualUsuarioView({ role, onNav, onStartTour }: Props) {
       'Edita una cotización aceptada creando una nueva versión. Los cambios se activan tras una nueva aceptación del cliente. Puedes eliminar una cotización rechazada que nunca haya sido aceptada.',
     ] : role === 'coordinador' ? [
       'Consulta las cotizaciones y sus versiones; la presentación y aceptación corresponden al analista autor y no requieren aprobación de coordinación.',
-      'Configura plantillas por modalidad, ciudad, tipo y puntos desde Cotizaciones. El analista debe aplicarlas expresamente al borrador.',
+      'Configura plantillas por modalidad, departamento, provincia, distrito, tipo y puntos desde Cotizaciones. El analista debe aplicarlas expresamente al borrador.',
       'Atiende las solicitudes generadas y sus faltantes mediante compras o traslados; registra entregas y devoluciones.',
       'Concilia costos reales, consumo, devoluciones y comprobantes antes de cerrar. La anulación de gastos conserva el registro y exige un motivo.',
     ] : [

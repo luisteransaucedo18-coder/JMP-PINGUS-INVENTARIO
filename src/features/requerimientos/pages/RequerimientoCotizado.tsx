@@ -10,6 +10,7 @@ import { remainingMaterial } from "../../cotizaciones/domain"
 
 import { Field } from "../../cotizaciones/QuoteEditor"
 import NumericInput from "../../../components/NumericInput"
+import QuoteProjectInfo from '../../cotizaciones/QuoteProjectInfo'
 
 export default function RequerimientoCotizado({
   onToast,
@@ -101,11 +102,9 @@ export default function RequerimientoCotizado({
           </p>
         )}
         {quote && (
-          <div className="quote-note">
-            <strong>{quote.proyecto_snapshot.cliente}</strong>
-            <p>
-              {quote.proyecto_snapshot.ubicacion} · {quote.presupuesto.sede}
-            </p>
+          <div>
+            <QuoteProjectInfo quote={quote} />
+            <p>Sede de abastecimiento: {quote.presupuesto.sede}</p>
             <p>Técnico: {quote.presupuesto.tecnico}</p>
           </div>
         )}

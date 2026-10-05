@@ -134,6 +134,8 @@ export type QuoteBudget = {
   }
   excel: {
     departamento: string
+    provincia?: string
+    distrito?: string
     concesion: string
     muretesCachimbo: "SI" | "NO"
     muretesValvula: "SI" | "NO"
@@ -308,6 +310,8 @@ export function newBudget(sede: Sede = "Chiclayo"): QuoteBudget {
     },
     excel: {
       departamento: "",
+      provincia: "",
+      distrito: "",
       concesion: "",
       muretesCachimbo: "NO",
       muretesValvula: "NO",
@@ -401,7 +405,7 @@ export function quoteValidation(b: QuoteBudget): string[] {
   const number = (v: number, min = 0, max = 100000000) =>
     Number.isFinite(v) && v >= min && v < max
   if (!b.ciudad.trim() || !b.alcance.trim() || !b.tecnico.trim())
-    errors.push("Completa ciudad, alcance y técnico responsable.")
+    errors.push("Completa ubicación, alcance y técnico responsable.")
   if (!/^\d{4}-\d{2}-\d{2}$/.test(b.vigencia))
     errors.push("Indica una fecha de vigencia.")
   if (!number(b.puntos, 1, 10001) || !Number.isInteger(b.puntos))

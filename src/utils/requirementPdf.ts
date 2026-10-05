@@ -154,7 +154,7 @@ export async function createRequirementPdf(
   footer();
 
   // Long comments continue on additional pages rather than shrinking or truncating them.
-  const comments = [requirement.descripcion, requirement.observaciones ? `Observación del coordinador: ${requirement.observaciones}` : ''].filter(Boolean).join('\n');
+  const comments = [requirement.ubicacion ? `Dirección del proyecto: ${requirement.ubicacion}` : '', requirement.descripcion, requirement.observaciones ? `Observación del coordinador: ${requirement.observaciones}` : ''].filter(Boolean).join('\n');
   const commentLines = wrap(comments, WIDTH - 6, regular, 7);
   if (comments && commentLines.length <= 6) {
     cell(comments, LEFT, 746, WIDTH, 65);
