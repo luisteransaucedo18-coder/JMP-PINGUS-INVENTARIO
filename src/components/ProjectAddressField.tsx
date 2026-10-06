@@ -34,7 +34,7 @@ export default function ProjectAddressField(props: Props) {
   return <div className="quote-field project-address-field">
     <label htmlFor="project-address">Dirección del proyecto</label>
     <div className="project-address-control">
-      <ExpandingTextField id="project-address" className="input-field" autoComplete="street-address" placeholder="Ej. Av. José Balta 123, interior 2" required readOnly={props.readOnly} value={props.value} onChange={e => props.onChange(e.target.value)} />
+      <ExpandingTextField maxLength={300} id="project-address" className="input-field" autoComplete="street-address" placeholder="Ej. Av. José Balta 123, interior 2" required readOnly={props.readOnly} value={props.value} onChange={e => props.onChange(e.target.value)} />
       <button type="button" className="project-address-map-button" aria-label="Seleccionar ubicación en el mapa" title={ready ? 'Seleccionar ubicación en el mapa' : 'Selecciona departamento, provincia y distrito'} disabled={!ready || props.readOnly} onClick={() => setOpen(true)}>
         <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="m9 18-6 3V6l6-3 6 3 6-3v8M9 3v15M3 6l6-3 6 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/><path d="M22 16c0 3-4 6-4 6s-4-3-4-6a4 4 0 0 1 8 0Z" stroke="currentColor" strokeWidth="1.6"/><circle cx="18" cy="16" r="1" fill="currentColor"/></svg>
       </button>
@@ -116,7 +116,7 @@ function AddressMap({ value, onChange, departamento, provincia, distrito, onClos
     {!located && !loading && <button type="button" className="btn btn-ghost" onClick={() => setAttempt(a => a + 1)}>Reintentar</button>}
     <button type="button" className="btn btn-ghost" disabled={!located || loading} onClick={() => map.current && select.current(map.current.getCenter())}>Colocar puntero en el centro del mapa</button>
     {point && <small>Coordenadas: {point.lat.toFixed(6)}, {point.lng.toFixed(6)}</small>}
-    <label className="quote-field">Dirección exacta<ExpandingTextField className="input-field" value={address} disabled={!point || loading} onChange={e => setAddress(e.target.value)} placeholder="Completa calle, número, interior y referencias" /></label>
-    <div className="project-map-actions"><button type="button" className="btn btn-ghost" onClick={onClose}>Cancelar</button><button type="button" className="btn btn-primary" disabled={!point || loading || !address.trim()} onClick={() => { onChange(address.trim()); onClose(); }}>Usar esta dirección</button></div>
+    <label className="quote-field">Dirección exacta<ExpandingTextField maxLength={300} className="input-field" value={address} disabled={!point || loading} onChange={e => setAddress(e.target.value)} placeholder="Completa calle, número, interior y referencias" /></label>
+    <div className="project-map-actions"><button type="button" className="btn btn-ghost" onClick={onClose}>Cancelar</button><button type="button" className="btn btn-primary" disabled={!point || loading || !address.trim() || address.trim().length > 300} onClick={() => { onChange(address.trim()); onClose(); }}>Usar esta dirección</button></div>
   </dialog>, document.body);
 }

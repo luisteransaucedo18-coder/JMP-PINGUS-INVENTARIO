@@ -502,11 +502,7 @@ export default function QuoteEditor({
             <div className="quote-form-grid">
               {templateMode ? (
                 <Field label="Nombre de la plantilla">
-<<<<<<< HEAD
-                  <input maxLength={100}
-=======
-                  <ExpandingTextField
->>>>>>> ff6b307512d87b53d4466c5693a62c5e6e949834
+                  <ExpandingTextField maxLength={100}
                     className="input-field"
                     required
                     value={templateName}
@@ -533,11 +529,7 @@ export default function QuoteEditor({
                       }[key]
                     }
                   >
-<<<<<<< HEAD
-                    <input maxLength={key === "nombre" ? 100 : 150}
-=======
-                    <ExpandingTextField
->>>>>>> ff6b307512d87b53d4466c5693a62c5e6e949834
+                    <ExpandingTextField maxLength={key === "nombre" ? 100 : 150}
                       className="input-field"
                       required
                       readOnly={Boolean(quote?.proyecto_id)}
@@ -615,20 +607,6 @@ export default function QuoteEditor({
                   {districtsForProvince(budget.excel.departamento, budget.excel.provincia ?? "").map((d) => <option key={d.ubigeo} value={d.nombre}>{d.nombre}</option>)}
                 </select>
               </Field>
-<<<<<<< HEAD
-              {!templateMode && <Field label="Dirección del proyecto">
-                <input maxLength={300}
-                  className="input-field"
-                  aria-label="Dirección del proyecto"
-                  autoComplete="street-address"
-                  placeholder="Ej. Av. José Balta 123, interior 2"
-                  required
-                  readOnly={Boolean(quote?.proyecto_id)}
-                  value={project.ubicacion}
-                  onChange={(e) => setProject(p => ({ ...p, ubicacion: e.target.value }))}
-                />
-              </Field>}
-=======
               {!templateMode && <ProjectAddressField
                 value={project.ubicacion}
                 onChange={ubicacion => setProject(p => ({ ...p, ubicacion }))}
@@ -637,7 +615,6 @@ export default function QuoteEditor({
                 distrito={budget.excel.distrito ?? ""}
                 readOnly={Boolean(quote?.proyecto_id)}
               />}
->>>>>>> ff6b307512d87b53d4466c5693a62c5e6e949834
               <Field label="Sede de abastecimiento">
                 <select
                   className="select-field"
@@ -652,11 +629,7 @@ export default function QuoteEditor({
                 </select>
               </Field>
               <Field label="Técnico responsable">
-<<<<<<< HEAD
-                <input maxLength={150}
-=======
-                <ExpandingTextField
->>>>>>> ff6b307512d87b53d4466c5693a62c5e6e949834
+                <ExpandingTextField maxLength={150}
                   className="input-field"
                   required
                   value={budget.tecnico}
@@ -735,11 +708,7 @@ export default function QuoteEditor({
                 onChange={(v) => set("puntos", v)}
               />
               <Field label="CONSECION">
-<<<<<<< HEAD
-                <input maxLength={150}
-=======
-                <ExpandingTextField
->>>>>>> ff6b307512d87b53d4466c5693a62c5e6e949834
+                <ExpandingTextField maxLength={150}
                   className="input-field"
                   placeholder="GDP / GDN"
                   value={budget.excel.concesion}
@@ -871,11 +840,7 @@ export default function QuoteEditor({
                       }[key]
                     }
                   >
-<<<<<<< HEAD
-                    <input maxLength={150}
-=======
-                    <ExpandingTextField
->>>>>>> ff6b307512d87b53d4466c5693a62c5e6e949834
+                    <ExpandingTextField maxLength={150}
                       className="input-field"
                       value={budget.excel[key]}
                       onChange={(e) =>
@@ -889,11 +854,7 @@ export default function QuoteEditor({
             <details className="quote-line">
               <summary>Bono Administrativo: y caja chica</summary>
               <Field label="Administracion de caja Chica">
-<<<<<<< HEAD
-                <input maxLength={150}
-=======
-                <ExpandingTextField
->>>>>>> ff6b307512d87b53d4466c5693a62c5e6e949834
+                <ExpandingTextField maxLength={150}
                   className="input-field"
                   placeholder="Nombre del comercio"
                   value={budget.excel.cajaChica}
@@ -998,11 +959,7 @@ export default function QuoteEditor({
                       }
                     />
                     <Field label="UND">
-<<<<<<< HEAD
-                      <input maxLength={20}
-=======
-                      <ExpandingTextField
->>>>>>> ff6b307512d87b53d4466c5693a62c5e6e949834
+                      <ExpandingTextField maxLength={20}
                         className="input-field"
                         required
                         value={m.unidadCotizada}
@@ -1143,11 +1100,7 @@ export default function QuoteEditor({
                         : "Descripción"
                     }
                   >
-<<<<<<< HEAD
-                    <input maxLength={150}
-=======
-                    <ExpandingTextField
->>>>>>> ff6b307512d87b53d4466c5693a62c5e6e949834
+                    <ExpandingTextField maxLength={150}
                       className="input-field"
                       required
                       readOnly={Boolean(g.variableExcel)}
@@ -1248,11 +1201,7 @@ export default function QuoteEditor({
                 />
               </Field>
               <Field label="Nombre de la propuesta o alternativa">
-<<<<<<< HEAD
-                <input maxLength={150}
-=======
-                <ExpandingTextField
->>>>>>> ff6b307512d87b53d4466c5693a62c5e6e949834
+                <ExpandingTextField maxLength={150}
                   className="input-field"
                   value={budget.alternativa}
                   onChange={(e) => set("alternativa", e.target.value)}
@@ -1335,11 +1284,7 @@ export default function QuoteEditor({
                       }[key]
                     }
                   >
-<<<<<<< HEAD
-                    <input maxLength={150}
-=======
-                    <ExpandingTextField
->>>>>>> ff6b307512d87b53d4466c5693a62c5e6e949834
+                    <ExpandingTextField maxLength={150}
                       className="input-field"
                       required
                       placeholder={
