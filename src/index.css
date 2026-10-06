@@ -2764,3 +2764,29 @@ body {
 .auth-control > .inline-control { flex: 1; }
 .field-validation-message { display: block; margin-top: 4px; }
 .input-field[aria-invalid='true'], .select-field[aria-invalid='true'] { border-color: #dc2626; background-color: #fff7f7; }
+/* Material selection: identity, quoted balance and requested quantity. */
+.material-request-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(150px, auto) 200px; align-items: center; gap: 24px; padding: 18px 20px; margin-top: 12px; border: 1px solid #e4e6f0; border-radius: 12px; background: #fff; }
+.material-request-row.is-selected { border-color: #93c5fd; background: #f5f9ff; box-shadow: inset 3px 0 0 #2563eb; }
+.material-request-identity { display: flex; align-items: center; gap: 12px; min-width: 0; cursor: pointer; }
+.material-request-identity input { width: 18px; height: 18px; margin: 0; flex-shrink: 0; accent-color: #2563eb; }
+.material-request-name { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.material-request-name strong { font-size: 14px; font-weight: 600; line-height: 1.45; color: #18181b; overflow-wrap: anywhere; }
+.material-request-name small { font-size: 12px; color: #71717a; }
+.material-request-name small span { font-family: ui-monospace, monospace; color: #52525b; }
+.material-request-balance { display: flex; flex-direction: column; gap: 5px; padding-right: 24px; border-right: 1px solid #e4e6f0; }
+.material-request-balance > span { font-size: 12px; color: #71717a; }
+.material-request-balance strong { color: #334155; font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.material-request-balance small { color: #71717a; font-size: 11px; font-weight: 400; }
+.material-request-quantity { min-width: 0; }
+.material-request-quantity .quote-field { margin: 0; }
+.material-request-quantity .quote-field-label { position: relative; }
+.material-request-quantity .input-field { padding-right: 62px; font-variant-numeric: tabular-nums; }
+.material-request-quantity .material-request-unit { position: absolute; right: 12px; bottom: 13px; color: #71717a; font-size: 11px; pointer-events: none; }
+.material-request-row.is-exhausted { background: #fafafa; }
+.material-request-row.is-exhausted .material-request-identity { cursor: default; }
+.material-request-row:focus-within { outline: 2px solid #2563eb; outline-offset: 2px; }
+@media (max-width: 720px) {
+  .material-request-row { grid-template-columns: minmax(0, 1fr) minmax(120px, 1fr); padding: 16px; gap: 18px 16px; }
+  .material-request-identity { grid-column: 1 / -1; }
+  .material-request-balance { padding-right: 12px; }
+}

@@ -155,8 +155,8 @@ export default function RequerimientoCotizado({
                   state.requerimientos,
                 )
                 return (
-                  <div key={m.id} className="quote-review-item">
-                    <label>
+                  <div key={m.id} className={`material-request-row${(amounts[m.id] ?? 0) > 0 ? ' is-selected' : ''}${remaining <= 0 ? ' is-exhausted' : ''}`}>
+                    <label className="material-request-identity">
                       <input
                         type="checkbox"
                         disabled={remaining <= 0}
@@ -169,18 +169,17 @@ export default function RequerimientoCotizado({
                               : 0,
                           }))
                         }
-                      />{" "}
-                      <strong>{m.nombre}</strong>
-                      <small className="quote-muted">
-                        {" "}
-                        · {m.sku} · disponible {remaining} {m.unidadCatalogo}
-                      </small>
+                      />
+                      <span className="material-request-name"><strong>{m.nombre}</strong><small>SKU <span>{m.sku}</span></small></span>
                     </label>
-                    <Field label={`Cantidad de ${m.nombre}`} error={!items.length && m.id===quote.presupuesto.materiales[0]?.id ? selectionWarning : undefined}>
+                    <div className="material-request-balance"><span>Saldo por solicitar</span><strong>{new Intl.NumberFormat('es-PE', { maximumFractionDigits: 3 }).format(remaining)} <small>{m.unidadCatalogo}</small></strong>{remaining <= 0 && <small>Ya solicitado</small>}</div>
+                    <div className="material-request-quantity"><Field label="Cantidad a solicitar" error={!items.length && m.id===quote.presupuesto.materiales[0]?.id ? selectionWarning : undefined}>
                       <NumericInput
                         className="input-field"
                         min={0}
                         max={remaining}
+                        disabled={remaining <= 0}
+                        aria-label={`Cantidad de ${m.nombre}`}
                         value={amounts[m.id] ?? 0}
                         onValueChange={(value) =>
                           setAmounts((a) => ({
@@ -189,7 +188,8 @@ export default function RequerimientoCotizado({
                           }))
                         }
                       />
-                    </Field>
+                      <span className="material-request-unit" aria-hidden="true">{m.unidadCatalogo}</span>
+                    </Field></div>
                   </div>
                 )
               })}
