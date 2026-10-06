@@ -2,6 +2,10 @@ import { useEffect, useRef, useState, type ReactNode } from "react"
 
 import { SEDES, type Material, type Proyecto } from "../../domain/types"
 
+import ExpandingTextField from "../../components/ExpandingTextField"
+
+import ProjectAddressField from "../../components/ProjectAddressField"
+
 import NumericInput from "../../components/NumericInput"
 
 import {
@@ -490,7 +494,7 @@ export default function QuoteEditor({
             <div className="quote-form-grid">
               {templateMode ? (
                 <Field label="Nombre de la plantilla">
-                  <input
+                  <ExpandingTextField
                     className="input-field"
                     required
                     value={templateName}
@@ -517,7 +521,7 @@ export default function QuoteEditor({
                       }[key]
                     }
                   >
-                    <input
+                    <ExpandingTextField
                       className="input-field"
                       required
                       readOnly={Boolean(quote?.proyecto_id)}
@@ -594,18 +598,14 @@ export default function QuoteEditor({
                   {districtsForProvince(budget.excel.departamento, budget.excel.provincia ?? "").map((d) => <option key={d.ubigeo} value={d.nombre}>{d.nombre}</option>)}
                 </select>
               </Field>
-              {!templateMode && <Field label="Dirección del proyecto">
-                <input
-                  className="input-field"
-                  aria-label="Dirección del proyecto"
-                  autoComplete="street-address"
-                  placeholder="Ej. Av. José Balta 123, interior 2"
-                  required
-                  readOnly={Boolean(quote?.proyecto_id)}
-                  value={project.ubicacion}
-                  onChange={(e) => setProject(p => ({ ...p, ubicacion: e.target.value }))}
-                />
-              </Field>}
+              {!templateMode && <ProjectAddressField
+                value={project.ubicacion}
+                onChange={ubicacion => setProject(p => ({ ...p, ubicacion }))}
+                departamento={budget.excel.departamento}
+                provincia={budget.excel.provincia ?? ""}
+                distrito={budget.excel.distrito ?? ""}
+                readOnly={Boolean(quote?.proyecto_id)}
+              />}
               <Field label="Sede de abastecimiento">
                 <select
                   className="select-field"
@@ -620,7 +620,7 @@ export default function QuoteEditor({
                 </select>
               </Field>
               <Field label="Técnico responsable">
-                <input
+                <ExpandingTextField
                   className="input-field"
                   required
                   value={budget.tecnico}
@@ -699,7 +699,7 @@ export default function QuoteEditor({
                 onChange={(v) => set("puntos", v)}
               />
               <Field label="CONSECION">
-                <input
+                <ExpandingTextField
                   className="input-field"
                   placeholder="GDP / GDN"
                   value={budget.excel.concesion}
@@ -831,7 +831,7 @@ export default function QuoteEditor({
                       }[key]
                     }
                   >
-                    <input
+                    <ExpandingTextField
                       className="input-field"
                       value={budget.excel[key]}
                       onChange={(e) =>
@@ -845,7 +845,7 @@ export default function QuoteEditor({
             <details className="quote-line">
               <summary>Bono Administrativo: y caja chica</summary>
               <Field label="Administracion de caja Chica">
-                <input
+                <ExpandingTextField
                   className="input-field"
                   placeholder="Nombre del comercio"
                   value={budget.excel.cajaChica}
@@ -882,7 +882,7 @@ export default function QuoteEditor({
                 referencia y no convierte precios automáticamente.
               </p>
               <Field label="Buscar material por nombre o SKU">
-                <input
+                <ExpandingTextField
                   className="input-field"
                   value={materialQuery}
                   placeholder="Escribe el nombre del material…"
@@ -950,7 +950,7 @@ export default function QuoteEditor({
                       }
                     />
                     <Field label="UND">
-                      <input
+                      <ExpandingTextField
                         className="input-field"
                         required
                         value={m.unidadCotizada}
@@ -1091,7 +1091,7 @@ export default function QuoteEditor({
                         : "Descripción"
                     }
                   >
-                    <input
+                    <ExpandingTextField
                       className="input-field"
                       required
                       readOnly={Boolean(g.variableExcel)}
@@ -1192,7 +1192,7 @@ export default function QuoteEditor({
                 />
               </Field>
               <Field label="Nombre de la propuesta o alternativa">
-                <input
+                <ExpandingTextField
                   className="input-field"
                   value={budget.alternativa}
                   onChange={(e) => set("alternativa", e.target.value)}
@@ -1275,7 +1275,7 @@ export default function QuoteEditor({
                       }[key]
                     }
                   >
-                    <input
+                    <ExpandingTextField
                       className="input-field"
                       required
                       placeholder={
