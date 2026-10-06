@@ -1,3 +1,4 @@
+import StrictNumberInput from "../../../components/StrictNumberInput"
 import { useEffect, useRef, useState } from "react"
 import { useAppStore } from "../../../store/AppContext"
 import {
@@ -296,7 +297,7 @@ export default function TransporteInternoView({
             </label>
             <label>
               Transportista
-              <input
+              <input maxLength={150}
                 value={datos.transportista}
                 onChange={(e) =>
                   setDatos({ ...datos, transportista: e.target.value })
@@ -305,7 +306,7 @@ export default function TransporteInternoView({
             </label>
             <label>
               Número de guía
-              <input
+              <input maxLength={150}
                 value={datos.guia}
                 onChange={(e) => setDatos({ ...datos, guia: e.target.value })}
               />
@@ -378,7 +379,7 @@ export default function TransporteInternoView({
                         </td>
                         <td>{m.stock}</td>
                         <td>
-                          <input
+                          <StrictNumberInput
                             aria-label={`Cantidad de ${m.nombre}`}
                             required
                             type="number"
@@ -431,7 +432,7 @@ export default function TransporteInternoView({
             <legend>Costo del transporte</legend>
             <label>
               Costo de envío
-              <input
+              <StrictNumberInput
                 required
                 type="number"
                 min="0"
@@ -455,7 +456,7 @@ export default function TransporteInternoView({
             </label>
             <label>
               Número de comprobante
-              <input
+              <input maxLength={150}
                 required={datos.costo > 0}
                 value={datos.numero_comprobante}
                 onChange={(e) =>
@@ -502,7 +503,7 @@ export default function TransporteInternoView({
           </fieldset>
           <label>
             Observaciones
-            <textarea
+            <textarea maxLength={1000}
               value={datos.observaciones}
               disabled={busy}
               onChange={(e) =>
@@ -599,7 +600,7 @@ export default function TransporteInternoView({
                     <td>{i.cantidad}</td>
                     <td>
                       {puedeRecibir ? (
-                        <input
+                        <StrictNumberInput
                           disabled={busy}
                           aria-label={`Recibido ${i.nombre}`}
                           type="number"
@@ -621,7 +622,7 @@ export default function TransporteInternoView({
                     </td>
                     <td>
                       {puedeRecibir ? (
-                        <input
+                        <StrictNumberInput
                           disabled={busy}
                           aria-label={`Dañado ${i.nombre}`}
                           type="number"
@@ -673,7 +674,7 @@ export default function TransporteInternoView({
           {!["RECIBIDO", "CANCELADO"].includes(seleccionado.estado) && (
             <label>
               Observaciones de la operación / resolución
-              <textarea
+              <textarea maxLength={1000}
                 disabled={busy}
                 value={nota}
                 onChange={(e) => setNota(e.target.value)}

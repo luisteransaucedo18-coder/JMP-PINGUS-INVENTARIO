@@ -528,7 +528,7 @@ export default function CotizacionesView({
                 </select>
               </Field>
               <Field label="Descripción">
-                <input
+                <input maxLength={150}
                   className="input-field"
                   required
                   value={expense.descripcion}
@@ -555,7 +555,7 @@ export default function CotizacionesView({
                 />
               </Field>
               <Field label="Comprobante o referencia verificable">
-                <input
+                <input maxLength={300}
                   className="input-field"
                   required
                   placeholder="Factura, recibo, acta o enlace al documento"
@@ -657,7 +657,7 @@ export default function CotizacionesView({
                       : "Observación o motivo"
                 }
               >
-                <textarea
+                <textarea maxLength={1000}
                   className="input-field"
                   rows={4}
                   required={

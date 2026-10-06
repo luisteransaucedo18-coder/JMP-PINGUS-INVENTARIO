@@ -388,6 +388,9 @@ export function calculateQuote(budget: QuoteBudget): QuoteTotals {
 
 export function quoteValidation(b: QuoteBudget): string[] {
   const errors: string[] = []
+  if (b.tecnico.length > 150 || b.alternativa.length > 150 || b.alcance.length > 1000 || b.condiciones.length > 1000 ||
+    b.materiales.some(m => m.unidadCotizada.length > 20) || b.gastos.some(g => g.descripcion.length > 150))
+    errors.push("Revisa la longitud de los textos: nombres hasta 150, unidades hasta 20 y descripciones extensas hasta 1000 caracteres.")
   if (new Set(b.materiales.map((m) => m.sku)).size !== b.materiales.length)
     errors.push(
       "Cada material del catálogo solo puede aparecer una vez. Edita su cantidad en la partida existente.",
@@ -440,7 +443,7 @@ export function quoteValidation(b: QuoteBudget): string[] {
     )
   if (
     Object.entries(b.tasas).some(
-      ([key, value]) => !number(value, 0, key === "meses" ? 121 : 101),
+      ([key, value]) => !number(value, 0, key === "meses" ? 121 : 101) || value > (key === "meses" ? 120 : 100),
     )
   )
     errors.push(

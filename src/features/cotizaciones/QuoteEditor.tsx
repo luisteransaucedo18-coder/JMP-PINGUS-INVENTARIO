@@ -1,3 +1,4 @@
+import { validateProject } from "../../utils/formValidation"
 import { useEffect, useRef, useState, type ReactNode } from "react"
 
 import { SEDES, type Material, type Proyecto } from "../../domain/types"
@@ -339,6 +340,9 @@ export default function QuoteEditor({
     const messages: string[] = []
 
     if (step === 0) {
+      if (!templateMode) {
+        try { validateProject(project) } catch (error) { messages.push((error as Error).message) }
+      }
       if (!validPeruLocation(budget.excel.departamento, budget.excel.provincia ?? "", budget.excel.distrito ?? ""))
         messages.push("Selecciona departamento, provincia y distrito de sus listados.")
 
@@ -387,6 +391,10 @@ export default function QuoteEditor({
         }
 
         const validation = quoteValidation(budget)
+        if (!templateMode) {
+          try { validateProject(project) } catch (error) { validation.unshift((error as Error).message) }
+        }
+        if (templateName.length > 100) validation.unshift("Nombre de plantilla: máximo 100 caracteres.")
 
         if (!validPeruLocation(budget.excel.departamento, budget.excel.provincia ?? "", budget.excel.distrito ?? ""))
           validation.unshift("Selecciona departamento, provincia y distrito válidos.")
@@ -490,7 +498,7 @@ export default function QuoteEditor({
             <div className="quote-form-grid">
               {templateMode ? (
                 <Field label="Nombre de la plantilla">
-                  <input
+                  <input maxLength={100}
                     className="input-field"
                     required
                     value={templateName}
@@ -517,7 +525,7 @@ export default function QuoteEditor({
                       }[key]
                     }
                   >
-                    <input
+                    <input maxLength={key === "nombre" ? 100 : 150}
                       className="input-field"
                       required
                       readOnly={Boolean(quote?.proyecto_id)}
@@ -529,6 +537,7 @@ export default function QuoteEditor({
                           set("tecnico", e.target.value)
                       }}
                     />
+                    {key === "nombre" && <small className="quote-muted">{project.nombre.length}/100 caracteres</small>}
                   </Field>
                 ))
               )}
@@ -595,7 +604,7 @@ export default function QuoteEditor({
                 </select>
               </Field>
               {!templateMode && <Field label="Dirección del proyecto">
-                <input
+                <input maxLength={300}
                   className="input-field"
                   aria-label="Dirección del proyecto"
                   autoComplete="street-address"
@@ -620,7 +629,7 @@ export default function QuoteEditor({
                 </select>
               </Field>
               <Field label="Técnico responsable">
-                <input
+                <input maxLength={150}
                   className="input-field"
                   required
                   value={budget.tecnico}
@@ -629,7 +638,7 @@ export default function QuoteEditor({
               </Field>
             </div>
             <Field label="Alcance de los trabajos">
-              <textarea
+              <textarea maxLength={1000}
                 className="input-field"
                 rows={3}
                 required
@@ -699,7 +708,7 @@ export default function QuoteEditor({
                 onChange={(v) => set("puntos", v)}
               />
               <Field label="CONSECION">
-                <input
+                <input maxLength={150}
                   className="input-field"
                   placeholder="GDP / GDN"
                   value={budget.excel.concesion}
@@ -831,7 +840,7 @@ export default function QuoteEditor({
                       }[key]
                     }
                   >
-                    <input
+                    <input maxLength={150}
                       className="input-field"
                       value={budget.excel[key]}
                       onChange={(e) =>
@@ -845,7 +854,7 @@ export default function QuoteEditor({
             <details className="quote-line">
               <summary>Bono Administrativo: y caja chica</summary>
               <Field label="Administracion de caja Chica">
-                <input
+                <input maxLength={150}
                   className="input-field"
                   placeholder="Nombre del comercio"
                   value={budget.excel.cajaChica}
@@ -950,7 +959,7 @@ export default function QuoteEditor({
                       }
                     />
                     <Field label="UND">
-                      <input
+                      <input maxLength={20}
                         className="input-field"
                         required
                         value={m.unidadCotizada}
@@ -1091,7 +1100,7 @@ export default function QuoteEditor({
                         : "Descripción"
                     }
                   >
-                    <input
+                    <input maxLength={150}
                       className="input-field"
                       required
                       readOnly={Boolean(g.variableExcel)}
@@ -1192,7 +1201,7 @@ export default function QuoteEditor({
                 />
               </Field>
               <Field label="Nombre de la propuesta o alternativa">
-                <input
+                <input maxLength={150}
                   className="input-field"
                   value={budget.alternativa}
                   onChange={(e) => set("alternativa", e.target.value)}
@@ -1200,7 +1209,7 @@ export default function QuoteEditor({
               </Field>
             </div>
             <Field label="Condiciones comerciales, pagos y exclusiones">
-              <textarea
+              <textarea maxLength={1000}
                 className="input-field"
                 rows={2}
                 value={budget.condiciones}
@@ -1275,7 +1284,7 @@ export default function QuoteEditor({
                       }[key]
                     }
                   >
-                    <input
+                    <input maxLength={150}
                       className="input-field"
                       required
                       placeholder={
@@ -1293,7 +1302,7 @@ export default function QuoteEditor({
                   </Field>
                 ))}
                 <Field label="Presión de artefactos (23 - 340)">
-                  <input
+                  <input maxLength={150}
                     className="input-field"
                     required
                     list="excel-presiones-fise"

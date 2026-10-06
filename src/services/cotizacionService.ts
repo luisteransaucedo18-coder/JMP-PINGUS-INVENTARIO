@@ -1,3 +1,5 @@
+import { validateTextFields, validateText, validateProject, validateNumber } from "../utils/formValidation"
+import { quoteValidation, type QuoteBudget } from "../features/cotizaciones/domain"
 import { supabase } from "./supabase"
 
 export type LegacyQuote = {
@@ -84,6 +86,15 @@ export async function operarCotizacion(
   id: string,
   datos: Record<string, unknown>,
 ): Promise<string> {
+  validateTextFields(datos)
+  if (accion === "guardar" && datos.proyecto) validateProject(datos.proyecto as Record<string, unknown>)
+  if (datos.presupuesto) {
+    const errors = quoteValidation(datos.presupuesto as QuoteBudget)
+    if (errors.length) throw new Error(errors.join(" "))
+  }
+  if (datos.nombre !== undefined) validateText(datos.nombre, "Nombre de plantilla", 100, true)
+  for (const key of ["importe", "monto", "cantidad", "gastos_generales_jmp"])
+    if (datos[key] !== undefined) validateNumber(datos[key], key, key === "gastos_generales_jmp" ? 0 : 0.000001)
   const { data, error } = await supabase.rpc("operar_cotizacion_proyecto", {
     p_accion: accion,
     p_id: id,

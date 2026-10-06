@@ -1,3 +1,5 @@
+import { admiteDecimales } from "../../../services/transporteValidation"
+import StrictNumberInput from "../../../components/StrictNumberInput"
 import { useEffect, useMemo, useState } from "react"
 
 import { SEDES, Sede } from "../../../domain/types"
@@ -270,7 +272,7 @@ export default function DevolucionesView({
                     <td>{item.unidad}</td>
                     <td>{item.disponible}</td>
                     <td>
-                      <input
+                      <StrictNumberInput step={admiteDecimales(item.unidad) ? 0.001 : 1}
                         className="input-field"
                         min="0"
                         max={item.disponible}

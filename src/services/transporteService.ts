@@ -1,3 +1,4 @@
+import { validateTextFields, validateNumber, validateText } from "../utils/formValidation"
 import { validarArchivo } from "./transporteValidation"
 export {
   admiteDecimales,
@@ -141,6 +142,9 @@ export async function crearTransporte(
   datos: DatosTransporte,
   items: { material_sku: string; cantidad: number }[],
 ) {
+  validateTextFields(datos)
+  validateNumber(datos.costo, "Costo", 0, 999999999999.99)
+  items.forEach(item => validateNumber(item.cantidad, "Cantidad", 0.001))
   const { error } = await supabase.rpc("transporte_crear", {
     p_id: id,
     p_datos: datos,
@@ -154,6 +158,7 @@ export async function operarTransporte(
   nota: string,
   items: TransporteItem[] = [],
 ) {
+  validateText(nota, "Observaciones", 1000)
   const { error } = await supabase.rpc("transporte_operar", {
     p_id: id,
     p_accion: accion,

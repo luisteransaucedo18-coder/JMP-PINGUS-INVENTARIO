@@ -146,7 +146,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                 <span>Correo electrónico</span>
                 <span className="auth-control">
                   <svg aria-hidden="true" width="17" height="17" viewBox="0 0 17 17" fill="none"><rect x="1.5" y="3" width="14" height="11" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="m2.5 4.5 6 4.5 6-4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  <input type="email" placeholder="correo@jip.pe" value={email}
+                  <input maxLength={254} type="email" placeholder="correo@jip.pe" value={email}
                     onChange={e => { setEmail(e.target.value); setError(''); }} autoComplete="email" required />
                 </span>
               </label>

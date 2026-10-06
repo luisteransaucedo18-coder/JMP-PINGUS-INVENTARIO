@@ -1,3 +1,4 @@
+import { validateText } from "../utils/formValidation"
 import type { Proyecto, Requerimiento, Sede } from '../domain/types';
 import { supabase } from './supabase';
 
@@ -65,6 +66,7 @@ export async function enviarSolicitud(id: string) {
 }
 
 export async function revisarSolicitud(id: string, confirmar: boolean, observaciones?: string) {
+  if (observaciones != null) validateText(observaciones, 'Observaciones', 1000);
   const { error } = await supabase.rpc('revisar_requerimiento', { p_requerimiento_id: id, p_confirmar: confirmar, p_observaciones: observaciones?.trim() || null });
   if (error) throw error;
 }
@@ -75,6 +77,7 @@ export async function planificarAbastecimiento(
   origenSugerido?: Sede,
   observaciones?: string,
 ) {
+  if (observaciones != null) validateText(observaciones, 'Observaciones', 1000);
   const { data, error } = await supabase.rpc('planificar_abastecimiento_requerimiento', {
     p_requerimiento_id: id,
     p_tipo: tipo,

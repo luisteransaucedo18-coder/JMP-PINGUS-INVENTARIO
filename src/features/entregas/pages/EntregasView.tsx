@@ -1,3 +1,6 @@
+import { validateDocument } from "../../../utils/formValidation"
+import { admiteDecimales } from "../../../services/transporteValidation"
+import StrictNumberInput from "../../../components/StrictNumberInput"
 import { useState } from 'react';
 import { useAppStore } from '../../../store/AppContext';
 import { Requerimiento, EntregaItem, EstadoEntrega } from '../../../domain/types';
@@ -131,13 +134,16 @@ function EntregaForm({ req, usuario, onDone, onCancel }: { req: Requerimiento; u
   const [submitting, setSubmitting] = useState(false);
 
   const updateQty = (i: number, v: string) => {
-    const n = Math.max(0, Math.min(items[i].cantidadSolicitada, parseInt(v) || 0));
+    const n = Math.max(0, Math.min(items[i].cantidadSolicitada, Number(v) || 0));
     setItems(prev => prev.map((item, j) => j === i ? { ...item, cantidadEntregada: n } : item));
   };
 
   const validate = () => {
     const e: Record<string, string> = {};
     if (!tecnico.trim()) e.tecnico = 'Requerido';
+    if (tecnico.length > 150) e.tecnico = 'Máximo 150 caracteres';
+    try { validateDocument(dni) } catch (error) { e.dni = (error as Error).message }
+    if (!items.some(item => item.cantidadEntregada > 0)) e.items = 'Ingresa al menos una cantidad entregada';
     return e;
   };
 
@@ -148,6 +154,8 @@ function EntregaForm({ req, usuario, onDone, onCancel }: { req: Requerimiento; u
   };
 
   const handleSubmit = async () => {
+    const validation = validate();
+    if (Object.keys(validation).length) { setErrors(validation); setShowConfirm(false); return; }
     setSubmitting(true);
     try {
       const persistedId = await registrarEntrega(req.id, tecnico, dni, obs, items);
@@ -179,17 +187,19 @@ function EntregaForm({ req, usuario, onDone, onCancel }: { req: Requerimiento; u
         {/* Técnico & datos */}
         <div className="panel" style={{ marginBottom: 20 }}>
           <div className="section-header"><span className="section-title">Datos de la entrega</span></div>
+          {errors.items && <p role="alert" style={{ color: "#DC2626", padding: "0 22px" }}>{errors.items}</p>}
           <div style={{ padding: '20px 22px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <div style={{ gridColumn: '1/-1' }}>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#52525B', marginBottom: 6 }}>Técnico receptor <span style={{ color: '#DC2626' }}>*</span></label>
-              <input className="input-field" value={tecnico} style={{ borderColor: errors.tecnico ? '#DC2626' : undefined }}
+              <input maxLength={150} className="input-field" value={tecnico} style={{ borderColor: errors.tecnico ? '#DC2626' : undefined }}
                 onChange={e => { setTecnico(e.target.value); setErrors(p => ({ ...p, tecnico: '' })); }} />
               {errors.tecnico && <div style={{ fontSize: 11, color: '#DC2626', marginTop: 3 }}>{errors.tecnico}</div>}
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#52525B', marginBottom: 6 }}>DNI / Documento</label>
-              <input className="input-field" placeholder="Ej. 43215678" value={dni}
-                onChange={e => setDni(e.target.value)} />
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#52525B', marginBottom: 6 }}>DNI (8 dígitos)</label>
+              <input maxLength={8} inputMode="numeric" pattern="[0-9]{8}" aria-invalid={Boolean(errors.dni)} className="input-field" placeholder="Ej. 43215678" value={dni}
+                onChange={e => { if (/^\d*$/.test(e.target.value)) { setDni(e.target.value); setErrors(p => ({ ...p, dni: '' })); } }} />
+              {errors.dni && <div role="alert" style={{ color: '#DC2626', fontSize: 12 }}>{errors.dni}</div>}
             </div>
             <div>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#52525B', marginBottom: 6 }}>Responsable de entrega</label>
@@ -197,7 +207,7 @@ function EntregaForm({ req, usuario, onDone, onCancel }: { req: Requerimiento; u
             </div>
             <div style={{ gridColumn: '1/-1' }}>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#52525B', marginBottom: 6 }}>Observaciones</label>
-              <textarea className="input-field" rows={2} placeholder="Notas sobre la entrega, condiciones, etc."
+              <textarea maxLength={1000} className="input-field" rows={2} placeholder="Notas sobre la entrega, condiciones, etc."
                 style={{ resize: 'none', fontFamily: 'inherit' }}
                 value={obs} onChange={e => setObs(e.target.value)} />
             </div>
@@ -235,7 +245,7 @@ function EntregaForm({ req, usuario, onDone, onCancel }: { req: Requerimiento; u
                   </div>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <input type="number" min="0" max={item.cantidadSolicitada}
+                      <StrictNumberInput step={admiteDecimales(state.materials.find(m => m.id === item.skuId)?.unidad ?? "UND") ? 0.001 : 1} type="number" min="0" max={item.cantidadSolicitada}
                         value={item.cantidadEntregada}
                         onChange={e => updateQty(i, e.target.value)}
                         style={{ width: 70, padding: '6px 8px', border: `1px solid ${item.cantidadEntregada < item.cantidadSolicitada ? '#FDE68A' : '#BBF7D0'}`, borderRadius: 6, fontSize: 13, fontWeight: 700, textAlign: 'center', fontFamily: 'monospace', background: item.cantidadEntregada === 0 ? '#FFF5F5' : item.cantidadEntregada < item.cantidadSolicitada ? '#FFFBEB' : '#F0FDF4' }}

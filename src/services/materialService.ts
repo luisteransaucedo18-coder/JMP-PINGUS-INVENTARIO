@@ -1,3 +1,12 @@
+import { validateTextFields, validateText, validateNumber } from "../utils/formValidation"
+function validateMaterial(material: Partial<Material>) {
+  validateTextFields(material)
+  if (material.nombre !== undefined) validateText(material.nombre, "Material", 150, true)
+  if (material.categoria !== undefined) validateNumber(Number(material.categoria), "Categoría", 1, 100000000, true)
+  if (material.minimo !== undefined) validateNumber(material.minimo, "Stock mínimo")
+  if (material.precioUnitario !== undefined) validateNumber(material.precioUnitario, "Precio unitario")
+  if (material.stockSedes) Object.entries(material.stockSedes).forEach(([sede, stock]) => validateNumber(stock, `Stock ${sede}`))
+}
 import { supabase } from "./supabase"
 
 import type { Material, Sede } from "../domain/types"
@@ -154,6 +163,8 @@ export async function obtenerMateriales(): Promise<Material[]> {
 // ======================================================
 
 export async function crearMaterial(material: Material) {
+  validateText(material.id, "SKU", 50, true)
+  validateMaterial(material)
   const { data, error } = await supabase.rpc("crear_material_con_inventario", {
     p_material: {
       sku: material.id,
@@ -193,6 +204,7 @@ export async function actualizarMaterial(
 
   cambios: Partial<Material>,
 ) {
+  validateMaterial(cambios)
   const payload: Record<string, unknown> = {}
 
   if (cambios.nombre !== undefined) {

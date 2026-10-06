@@ -293,7 +293,7 @@ export default function ComprasView({ onToast }: Props) {
                       <svg width="13" height="13" viewBox="0 0 15 15" fill="none"><path d="M2 7.5l3.5 3.5 7-7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg> Aprobar orden de compra
                     </div>
                     <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#8B8FA8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Observaciones (opcional)</label>
-                    <textarea className="input-field" rows={2} style={{ resize: 'none', fontFamily: 'inherit' }}
+                    <textarea maxLength={1000} className="input-field" rows={2} style={{ resize: 'none', fontFamily: 'inherit' }}
                       placeholder="Indica condiciones, proveedor preferido, plazo estimado…"
                       value={obs} onChange={e => setObs(e.target.value)} />
                     <div style={{ display: 'flex', gap: 10, marginTop: 12, justifyContent: 'flex-end' }}>
@@ -308,7 +308,7 @@ export default function ComprasView({ onToast }: Props) {
                   <>
                     <div style={{ fontSize: 13, fontWeight: 700, color: '#DC2626', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}><svg width="12" height="12" viewBox="0 0 15 15" fill="none"><path d="M2.5 2.5l10 10M12.5 2.5l-10 10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg> Cancelar orden de compra</div>
                     <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#8B8FA8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Motivo de la cancelación <span style={{ color: '#DC2626' }}>*</span></label>
-                    <textarea className="input-field" rows={2} style={{ resize: 'none', fontFamily: 'inherit', borderColor: '#FECACA' }}
+                    <textarea maxLength={1000} className="input-field" rows={2} style={{ resize: 'none', fontFamily: 'inherit', borderColor: '#FECACA' }}
                       placeholder="Explica el motivo de la cancelación…"
                       value={obs} onChange={e => setObs(e.target.value)} />
                     <div style={{ display: 'flex', gap: 10, marginTop: 12, justifyContent: 'flex-end' }}>
@@ -346,7 +346,7 @@ export default function ComprasView({ onToast }: Props) {
                       })}
                     </div>
                     <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#8B8FA8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Nota de compra (opcional)</label>
-                    <input className="input-field" placeholder="N° factura, proveedor, fecha de recepción…"
+                    <input maxLength={150} className="input-field" placeholder="N° factura, proveedor, fecha de recepción…"
                       value={notaCompra} onChange={e => setNotaCompra(e.target.value)} />
                     <div style={{ display: 'flex', gap: 10, marginTop: 14, justifyContent: 'flex-end' }}>
                       <button className="btn btn-ghost" onClick={() => setMode('detail')}>← Volver</button>

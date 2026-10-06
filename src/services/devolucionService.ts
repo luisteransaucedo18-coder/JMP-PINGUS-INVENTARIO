@@ -1,3 +1,5 @@
+import { validateText, validateNumber, validateDocument } from "../utils/formValidation"
+import { validarCantidad } from "./transporteValidation"
 import { supabase } from './supabase';
 import { Entrega, Sede } from '../domain/types';
 
@@ -47,6 +49,10 @@ async function cargarEvidencias(id: string, files: File[]): Promise<string[]> {
 }
 
 export async function registrarDevolucion(input: { requerimientoId: string; sedeReceptora: Sede; items: DevolucionItem[]; files: File[] }): Promise<void> {
+  if (!input.items.length) throw new Error('Selecciona materiales para devolver.');
+  for (const item of input.items) {
+    if (!validarCantidad(item.cantidad, item.unidad, 100000000)) throw new Error('Cantidad de devolución inválida para la unidad del material.');
+  }
   const id = crypto.randomUUID();
   const paths = await cargarEvidencias(id, input.files);
   const { error } = await supabase.rpc('registrar_devolucion', { p_id: id, p_requerimiento_id: input.requerimientoId, p_sede_receptora: input.sedeReceptora, p_items: input.items.map(i => ({ material_sku: i.skuId, material_nombre: i.nombre, unidad: i.unidad, cantidad: i.cantidad })), p_evidencias: paths });
@@ -54,6 +60,14 @@ export async function registrarDevolucion(input: { requerimientoId: string; sede
 }
 
 export async function registrarEntrega(requerimientoId: string, tecnico: string, dni: string, observaciones: string, items: { skuId: string; nombre: string; cantidadSolicitada: number; cantidadEntregada: number }[]): Promise<string> {
+  validateText(tecnico, 'Técnico', 150, true);
+  validateDocument(dni);
+  validateText(observaciones, 'Observaciones', 1000);
+  if (!items.length || !items.some(item => item.cantidadEntregada > 0)) throw new Error('Ingresa al menos una cantidad entregada.');
+  for (const item of items) {
+    validateNumber(item.cantidadSolicitada, 'Cantidad solicitada', 0.001);
+    validateNumber(item.cantidadEntregada, 'Cantidad entregada', 0, item.cantidadSolicitada);
+  }
   const { data, error } = await supabase.rpc('registrar_entrega', { p_requerimiento_id: requerimientoId, p_tecnico: tecnico, p_dni_tecnico: dni, p_observaciones: observaciones, p_items: items.map(item => ({ material_sku: item.skuId, material_nombre: item.nombre, cantidad_solicitada: item.cantidadSolicitada, cantidad_entregada: item.cantidadEntregada })) });
   if (error) throw error;
   return data;

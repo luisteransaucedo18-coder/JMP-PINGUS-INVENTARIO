@@ -1,3 +1,4 @@
+import StrictNumberInput from "../../../components/StrictNumberInput"
 import { useRef, useState } from 'react';
 import { useAppStore } from '../../../store/AppContext';
 import { SEDES, Sede } from '../../../domain/types';
@@ -117,6 +118,11 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
   const validate = (draft: boolean) => {
     const e: Record<string, string> = {};
     if (!motivo.trim()) e.motivo = 'Describe el motivo de compra';
+    if (motivo.length > 1000) e.motivo = 'Máximo 1000 caracteres';
+    if (items.some(item => (item.skuId || item.nombre) &&
+      (!Number.isSafeInteger(item.cantidadSolicitada) || item.cantidadSolicitada < 1 || item.cantidadSolicitada > 100000000 ||
+        (item.precioUnitario != null && (!Number.isFinite(item.precioUnitario) || item.precioUnitario < 0 || item.precioUnitario > 100000000)))))
+      e.items = 'Revisa las cantidades enteras positivas y los precios entre 0 y 100000000';
     const valid = items.filter(it => (it.skuId || it.nombre) && it.cantidadSolicitada > 0);
     if (!draft && valid.length === 0) e.items = 'Agrega al menos un material con cantidad';
     if (tieneMaterialesRepetidos(valid)) e.items = 'Cada material debe aparecer una sola vez. Revisa las líneas repetidas.';
@@ -262,7 +268,7 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
                   <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#8B8FA8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 7 }}>
                     Motivo de compra <span style={{ color: '#DC2626' }}>*</span>
                   </label>
-                  <textarea className="input-field" rows={2}
+                  <textarea maxLength={1000} className="input-field" rows={2}
                     placeholder="Describe por qué se requieren estos materiales (stock insuficiente, nuevo proyecto, etc.)…"
                     style={{ resize: 'none', fontFamily: 'inherit', borderColor: errors.motivo ? '#DC2626' : undefined }}
                     value={motivo} onChange={e => { setMotivo(e.target.value); setErrors(p => ({ ...p, motivo: '' })); }} />
@@ -683,7 +689,7 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
                     alignItems: 'center',
                   }}
                 >
-                  <input
+                  <StrictNumberInput
                     className="input-field"
                     type="number"
                     min="1"
@@ -703,7 +709,7 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
                                 ...it,
 
                                 cantidadSolicitada:
-                                  parseInt(
+                                  Number(
                                     e.target.value
                                   ) || 0,
                               }
@@ -753,7 +759,7 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
                     S/.
                   </span>
 
-                  <input
+                  <StrictNumberInput
                     className="input-field"
                     type="number"
 
@@ -776,10 +782,7 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
                                 ...it,
 
                                 precioUnitario:
-                                  parseFloat(
-                                    e.target.value
-                                  ) ||
-                                  undefined,
+                                  e.target.value === '' ? undefined : Number(e.target.value),
                               }
                         )
                       )

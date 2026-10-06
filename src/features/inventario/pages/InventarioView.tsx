@@ -1,3 +1,4 @@
+import StrictNumberInput from "../../../components/StrictNumberInput"
 import { useEffect, useState } from 'react';
 import { calcularEstado, estadoPorSede, coincideEstadoSedes, MINIMO_INICIAL_INVENTARIO } from '../../../utils/inventoryStatus';
 
@@ -343,12 +344,16 @@ export default function InventarioView({
     if (
       form.minimo === '' ||
       isNaN(
-        parseFloat(form.minimo)
+        Number(form.minimo)
       )
     ) {
       e.minimo = 'Inválido';
     }
 
+    for (const key of ['minimo', 'stockChiclayo', 'stockChimbote', 'stockTrujillo'] as const) {
+      if ((key === 'minimo' && form[key] === '') || !Number.isFinite(Number(form[key])) || Number(form[key]) < 0 || Number(form[key]) > 100000000)
+        e[key] = 'Ingresa un número entre 0 y 100000000';
+    }
     return e;
   };
 
@@ -372,22 +377,22 @@ export default function InventarioView({
       try {
 
         const chiclayo =
-          parseFloat(
+          Number(
             form.stockChiclayo
           ) || 0;
 
         const chimbote =
-          parseFloat(
+          Number(
             form.stockChimbote
           ) || 0;
 
         const trujillo =
-          parseFloat(
+          Number(
             form.stockTrujillo
           ) || 0;
 
         const minimo =
-          parseFloat(
+          Number(
             form.minimo
           ) || 0;
 
@@ -504,24 +509,27 @@ export default function InventarioView({
       }
 
       try {
-
+        for (const value of [...Object.values(editStock), editMinimo]) {
+          if (!value.trim() || !Number.isFinite(Number(value)) || Number(value) < 0 || Number(value) > 100000000)
+            throw new Error('Stock y mínimo: ingresa números entre 0 y 100000000.');
+        }
         const chiclayo =
-          parseFloat(
+          Number(
             editStock.Chiclayo
           ) || 0;
 
         const chimbote =
-          parseFloat(
+          Number(
             editStock.Chimbote
           ) || 0;
 
         const trujillo =
-          parseFloat(
+          Number(
             editStock.Trujillo
           ) || 0;
 
         const minimo =
-          parseFloat(
+          Number(
             editMinimo
           ) || 0;
 
@@ -2030,7 +2038,7 @@ export default function InventarioView({
                     </label>
 
 
-                    <input
+                    <StrictNumberInput step="0.001"
                       className=
                         "input-field"
 
@@ -2089,7 +2097,7 @@ export default function InventarioView({
                 </label>
 
 
-                <input
+                <StrictNumberInput step="0.001"
                   className=
                     "input-field"
 
@@ -2202,7 +2210,7 @@ export default function InventarioView({
                   SKU *
                 </label>
 
-                <input
+                <input maxLength={50}
                   className=
                     "input-field"
 
@@ -2265,7 +2273,7 @@ export default function InventarioView({
                   Nombre del material *
                 </label>
 
-                <input
+                <input maxLength={150}
                   className=
                     "input-field"
 
@@ -2305,7 +2313,7 @@ export default function InventarioView({
                   Descripción técnica *
                 </label>
 
-                <textarea
+                <textarea maxLength={1000}
                   className=
                     "input-field"
 
@@ -2401,7 +2409,7 @@ export default function InventarioView({
                   Stock mínimo por sede
                 </label>
 
-                <input
+                <StrictNumberInput step="0.001"
                   className=
                     "input-field"
 
@@ -2497,7 +2505,7 @@ export default function InventarioView({
                             {s}
                           </label>
 
-                          <input
+                          <StrictNumberInput step="0.001"
                             className=
                               "input-field"
 

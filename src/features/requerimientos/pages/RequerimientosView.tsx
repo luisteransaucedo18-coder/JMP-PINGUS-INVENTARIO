@@ -325,7 +325,7 @@ export default function RequerimientosView({ onToast, onNav }: Props) {
                     <label style={{ display: 'block', fontSize: 12, fontWeight: 650, color: '#7C2D12', marginBottom: 6 }}>
                       Nota para coordinación (opcional)
                     </label>
-                    <textarea className="input-field" rows={2} value={obsModal} onChange={event => setObsModal(event.target.value)} placeholder="Ej. Priorizar por fecha de instalación…" style={{ resize: 'vertical', fontFamily: 'inherit' }} />
+                    <textarea maxLength={1000} className="input-field" rows={2} value={obsModal} onChange={event => setObsModal(event.target.value)} placeholder="Ej. Priorizar por fecha de instalación…" style={{ resize: 'vertical', fontFamily: 'inherit' }} />
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
                       <button className="btn btn-primary" disabled={planning} onClick={() => void handleSupplyPlan('COMPRA')}>
                         {planning ? 'Registrando…' : 'Crear orden de compra'}
@@ -361,7 +361,7 @@ export default function RequerimientosView({ onToast, onNav }: Props) {
                     <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 8, color: action === 'confirm' ? '#15803D' : '#DC2626' }}>
                       {action === 'confirm' ? 'Observaciones (opcional)' : 'Motivo del rechazo *'}
                     </label>
-                    <textarea className="input-field" rows={3} style={{ resize: 'none', fontFamily: 'inherit', borderColor: action === 'reject' ? '#FECACA' : '#BBF7D0' }}
+                    <textarea maxLength={1000} className="input-field" rows={3} style={{ resize: 'none', fontFamily: 'inherit', borderColor: action === 'reject' ? '#FECACA' : '#BBF7D0' }}
                       placeholder={action === 'confirm' ? 'Ej. Materiales aprobados. Coordinar entrega el…' : 'Explica el motivo del rechazo…'}
                       value={obsModal} onChange={e => setObsModal(e.target.value)} />
                     <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 10 }}>

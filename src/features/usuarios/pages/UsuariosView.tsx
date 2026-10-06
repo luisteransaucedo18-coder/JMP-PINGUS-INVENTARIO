@@ -1,3 +1,4 @@
+import { validEmail } from "../../../utils/formValidation"
 import { useEffect, useState } from 'react';
 import { SEDES, Sede } from '../../../domain/types';
 
@@ -126,12 +127,13 @@ export default function UsuariosView({ onToast }: Props) {
       e.nombre = 'El nombre es requerido';
     }
 
-    if (!form.email.trim() || !form.email.includes('@')) {
+    if (!validEmail(form.email)) {
       e.email = 'Email inválido';
     }
 
+    if (form.nombre.length > 150) e.nombre = 'Máximo 150 caracteres';
     const emailExiste = usuarios.find(
-      (u) => u.email.toLowerCase() === form.email.toLowerCase()
+      (u) => u.email.toLowerCase() === form.email.trim().toLowerCase()
     );
 
     if (emailExiste) {
@@ -657,7 +659,7 @@ export default function UsuariosView({ onToast }: Props) {
                   Nombre completo
                 </label>
 
-                <input
+                <input maxLength={150}
                   className="input-field"
                   type="text"
                   placeholder="Ej. María García Soto"
@@ -708,7 +710,7 @@ export default function UsuariosView({ onToast }: Props) {
                   Correo electrónico
                 </label>
 
-                <input
+                <input maxLength={254}
                   className="input-field"
                   type="email"
                   placeholder="usuario@jip.pe"

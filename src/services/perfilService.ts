@@ -1,3 +1,4 @@
+import { validateTextFields, validateText, validEmail, validatePhone } from "../utils/formValidation"
 import { supabase } from "./supabase"
 
 export interface Perfil {
@@ -59,6 +60,10 @@ export async function obtenerPerfiles() {
 // Crear perfil
 
 export async function crearPerfil(perfil: NuevoPerfil) {
+  validateTextFields(perfil)
+  if (perfil.telefono) validatePhone(perfil.telefono)
+  validateText(perfil.nombre, "Nombre", 150, true)
+  if (!validEmail(perfil.email)) throw new Error("Correo electrónico inválido.")
   const { data, error } = await supabase
 
     .from("perfiles")
@@ -81,6 +86,9 @@ export async function crearPerfil(perfil: NuevoPerfil) {
 // Actualizar perfil
 
 export async function actualizarPerfil(id: string, cambios: CambiosPerfil) {
+  validateTextFields(cambios)
+  if (cambios.telefono) validatePhone(cambios.telefono)
+  if (cambios.email !== undefined && !validEmail(cambios.email)) throw new Error("Correo electrónico inválido.")
   const { data, error } = await supabase
 
     .from("perfiles")
@@ -117,6 +125,9 @@ export async function obtenerMiPerfil(): Promise<Perfil> {
 
 export type DatosPersonales = { nombre: string; telefono: string; cargo: string; bio: string };
 export async function guardarMiPerfil(fields: DatosPersonales, fotoPath?: string): Promise<Perfil> {
+  validateTextFields(fields);
+  validateText(fields.nombre, 'Nombre', 150, true);
+  validatePhone(fields.telefono);
   const { data, error } = await supabase.rpc('actualizar_mi_perfil', {
     p_nombre: fields.nombre.trim(), p_telefono: fields.telefono.trim(), p_cargo: fields.cargo.trim(),
     p_bio: fields.bio.trim(), p_foto_path: fotoPath ?? null,

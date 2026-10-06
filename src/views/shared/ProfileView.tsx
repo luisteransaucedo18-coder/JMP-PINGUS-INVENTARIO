@@ -1,3 +1,4 @@
+import { validatePhone } from "../../utils/formValidation"
 import { useEffect, useRef, useState } from 'react';
 import UserAvatar from '../../components/UserAvatar';
 import { useUserProfile } from '../../store/UserProfileContext';
@@ -90,6 +91,7 @@ export default function ProfileView({ role, userName, userEmail, onToast }: Prop
     if (form.nombre.trim().length > 150 || form.telefono.length > 30 || form.cargo.length > 120 || form.bio.length > 1000) {
       setSaveError('Revisa la longitud de los campos antes de guardar.'); return;
     }
+    try { validatePhone(form.telefono) } catch (error) { setSaveError((error as Error).message); return; }
     savePending.current = true; setSaving(true); setSaveError(''); setSaveSuccess('');
     let uploadedPath: string | undefined;
     let committed = false;
@@ -231,7 +233,7 @@ export default function ProfileView({ role, userName, userEmail, onToast }: Prop
                     {editing ? (
                       <input id={`profile-${key}`} disabled={saving} maxLength={key === 'nombre' ? 150 : key === 'telefono' ? 30 : 120} className="input-field" type={type} placeholder={placeholder}
                         value={form[key]}
-                        onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))} />
+                        onChange={e => { if (key !== 'telefono' || /^\+?[0-9 ()-]*$/.test(e.target.value)) setForm(p => ({ ...p, [key]: e.target.value })); }} />
                     ) : (
                       <div style={{ fontSize: 14, fontWeight: 500, color: '#1A1D23', padding: '9px 0' }}>{form[key] || <span style={{ color: '#C4C6D8' }}>Sin definir</span>}</div>
                     )}
@@ -293,7 +295,7 @@ export default function ProfileView({ role, userName, userEmail, onToast }: Prop
                   <div key={key} style={{ marginBottom: 16 }}>
                     <label htmlFor={`profile-password-${key}`} style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#8B8FA8', marginBottom: 7 }}>{label}</label>
                     <div style={{ position: 'relative' }}>
-                      <input id={`profile-password-${key}`} disabled={savingPassword} autoComplete={key === 'actual' ? 'current-password' : 'new-password'} className="input-field"
+                      <input maxLength={150} id={`profile-password-${key}`} disabled={savingPassword} autoComplete={key === 'actual' ? 'current-password' : 'new-password'} className="input-field"
                         type={pwVisible[key] ? 'text' : 'password'}
                         placeholder="••••••••"
                         style={{ paddingRight: 40 }}

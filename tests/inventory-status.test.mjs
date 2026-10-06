@@ -26,6 +26,7 @@ function render(sede, filtro = '') {
   const { default: Inventory } = load(source, name => {
     if (name === 'react') return { ...React, useEffect: () => {}, useState: initial => [index < states.length ? states[index++] : initial, () => {}] };
     if (name === 'react/jsx-runtime') return jsxRuntime;
+    if (name.endsWith('/StrictNumberInput')) return load(readFileSync(new URL('../src/components/StrictNumberInput.tsx', import.meta.url), 'utf8'), () => jsxRuntime);
     if (name.endsWith('/inventoryStatus')) return status;
     if (name.endsWith('/domain/types')) return { SEDES: ['Chiclayo', 'Chimbote', 'Trujillo'] };
     if (name.endsWith('/materialService')) return {};

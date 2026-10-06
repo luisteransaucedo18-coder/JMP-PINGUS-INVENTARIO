@@ -1,3 +1,4 @@
+import { validateText, validateNumber } from "../utils/formValidation"
 import type { CompraItem, RequerimientoCompra, Sede } from '../domain/types';
 import { supabase } from './supabase';
 
@@ -34,6 +35,12 @@ export async function obtenerCompras(): Promise<RequerimientoCompra[]> {
 }
 
 export async function crearCompra(input: { sede: Sede; motivo: string; items: CompraItem[]; borrador: boolean }) {
+  validateText(input.motivo, 'Motivo', 1000, true);
+  for (const item of input.items) {
+    validateText(item.nombre, 'Material', 150, true);
+    validateNumber(item.cantidadSolicitada, 'Cantidad solicitada', 1, 100000000, true);
+    if (item.precioUnitario != null) validateNumber(item.precioUnitario, 'Precio unitario');
+  }
   const { error } = await supabase.rpc('crear_orden_compra', {
     p_sede: input.sede,
     p_motivo: input.motivo.trim(),
@@ -49,6 +56,7 @@ export async function crearCompra(input: { sede: Sede; motivo: string; items: Co
 }
 
 export async function revisarCompra(id: string, aprobar: boolean, observaciones?: string) {
+  if (observaciones != null) validateText(observaciones, 'Observaciones', 1000);
   const { error } = await supabase.rpc('revisar_orden_compra', {
     p_id: id,
     p_aprobar: aprobar,
@@ -58,6 +66,7 @@ export async function revisarCompra(id: string, aprobar: boolean, observaciones?
 }
 
 export async function confirmarCompra(id: string, notaCompra?: string) {
+  if (notaCompra != null) validateText(notaCompra, 'Nota de compra', 150);
   const { error } = await supabase.rpc('confirmar_orden_compra', {
     p_id: id,
     p_nota_compra: notaCompra?.trim() || null,
@@ -66,6 +75,7 @@ export async function confirmarCompra(id: string, notaCompra?: string) {
 }
 
 export async function cancelarCompra(id: string, motivo: string) {
+  validateText(motivo, 'Motivo', 1000, true);
   const { error } = await supabase.rpc('cancelar_orden_compra', {
     p_id: id,
     p_motivo: motivo.trim(),
