@@ -167,6 +167,7 @@ export type QuoteEvent = {
   estado_anterior: string | null
   estado_nuevo: string
   usuario_id: string
+  usuario_nombre?: string
   detalle: string
   created_at: string
 }
@@ -404,8 +405,9 @@ export function quoteValidation(b: QuoteBudget): string[] {
 
   const number = (v: number, min = 0, max = 100000000) =>
     Number.isFinite(v) && v >= min && v < max
-  if (!b.ciudad.trim() || !b.alcance.trim() || !b.tecnico.trim())
-    errors.push("Completa ubicación, alcance y técnico responsable.")
+  if (!b.ciudad.trim()) errors.push('Distrito: selecciona una opción.')
+  if (!b.alcance.trim()) errors.push('Alcance de los trabajos: describe el trabajo que se realizará.')
+  if (!b.tecnico.trim()) errors.push('Técnico responsable: completa este campo.')
   if (!/^\d{4}-\d{2}-\d{2}$/.test(b.vigencia))
     errors.push("Indica una fecha de vigencia.")
   if (!number(b.puntos, 1, 10001) || !Number.isInteger(b.puntos))
@@ -414,56 +416,31 @@ export function quoteValidation(b: QuoteBudget): string[] {
     errors.push("El tipo de cambio debe ser positivo.")
   if (!b.materiales.length && !b.gastos.length)
     errors.push("Agrega materiales o partidas de servicio.")
-  if (
-    b.materiales.some(
-      (m) =>
-        !m.sku ||
-        !number(m.cantidad, 0.000001) ||
-        !number(m.costoUnitario) ||
-        !number(m.factorStock, 0.000001) ||
-        !m.unidadCotizada.trim(),
-    )
-  )
-    errors.push(
-      "Revisa cantidades, unidades, conversiones y costos de los materiales.",
-    )
-  if (
-    b.gastos.some(
-      (g) =>
-        !g.descripcion.trim() ||
-        !number(g.cantidad, 0.000001) ||
-        !number(g.costoUnitario),
-    )
-  )
-    errors.push(
-      "Completa las partidas de costos con cantidades y precios válidos.",
-    )
-  if (
-    Object.entries(b.tasas).some(
-      ([key, value]) => !number(value, 0, key === "meses" ? 121 : 101),
-    )
-  )
-    errors.push(
-      "Los porcentajes deben estar entre 0 y 100; el financiamiento, entre 0 y 120 meses.",
-    )
-  if (
-    b.modalidad === "FISE" &&
-    (!b.fise.configuracion.trim() ||
-      !b.fise.instalacion.trim() ||
-      !b.fise.acometida.trim() ||
-      !number(b.fise.ingresoSinIgv, 0.01))
-  )
-    errors.push(
-      "Completa la configuración FISE y su ingreso de convenio sin IGV.",
-    )
-  if (
-    b.modalidad === "FISE" &&
-    (!b.fise.configuracionInterna.trim() ||
-      !/^(23|340)(\s*-\s*(23|340))*$/.test(b.fise.presionArtefactos) || b.fise.presionArtefactos.split('-').length!==b.puntos)
-  )
-    errors.push(
-      "Completa Configuración interna y Presión de artefactos (23 - 340).",
-    )
+  b.materiales.forEach((m, index) => {
+    const label = `Material ${m.sku || index + 1}`
+    if (!m.sku) errors.push(`${label}: selecciona un material del catálogo.`)
+    if (!number(m.cantidad, 0.000001)) errors.push(`${label} · Cantidad: ingresa un valor positivo.`)
+    if (!number(m.costoUnitario)) errors.push(`${label} · Costo unitario: ingresa un valor válido mayor o igual a cero.`)
+    if (!number(m.factorStock, 0.000001)) errors.push(`${label} · Factor de conversión: ingresa un valor positivo.`)
+    if (!m.unidadCotizada.trim()) errors.push(`${label} · Unidad cotizada: completa este campo.`)
+  })
+  b.gastos.forEach((g, index) => {
+    const label = `Partida ${index + 1}${g.descripcion.trim() ? ` (${g.descripcion})` : ''}`
+    if (!g.descripcion.trim()) errors.push(`${label} · Descripción: completa este campo.`)
+    if (!number(g.cantidad, 0.000001)) errors.push(`${label} · Cantidad: ingresa un valor positivo.`)
+    if (!number(g.costoUnitario)) errors.push(`${label} · Costo unitario: ingresa un valor válido mayor o igual a cero.`)
+  })
+  const rateLabels: Record<string, string> = { utilidad: 'Utilidad', generales: 'Gastos generales', comision: 'Comisión', igv: 'IGV', financiamientoMensual: 'Financiamiento mensual', meses: 'Meses de financiamiento' }
+  Object.entries(b.tasas).forEach(([key, value]) => {
+    if (!number(value, 0, key === 'meses' ? 121 : 101)) errors.push(`${rateLabels[key] ?? key}: ingresa un valor entre 0 y ${key === 'meses' ? 120 : 100}.`)
+  })
+  if (b.modalidad === 'FISE') {
+    for (const [key, label] of [['configuracion','Configuración FISE'],['configuracionInterna','Configuración interna'],['instalacion','Instalación interna'],['acometida','Acometida']] as const) {
+      if (!b.fise[key].trim()) errors.push(`${label}: completa este campo.`)
+    }
+    if (!number(b.fise.ingresoSinIgv,0.01)) errors.push('Ingreso de convenio sin IGV: ingresa un importe positivo.')
+    if (!/^(23|340)(\s*-\s*(23|340))*$/.test(b.fise.presionArtefactos) || b.fise.presionArtefactos.split('-').length !== b.puntos) errors.push(`Presión de artefactos: ingresa ${b.puntos} valores de 23 o 340, separados por guiones (uno por punto).`)
+  }
   if (!number(b.excel.diasProyectados, 0, 10001))
     errors.push("Revisa DIAS PROYECTADOS.")
   const active = b.gastos.filter((g) => g.cantidad * g.costoUnitario > 0)

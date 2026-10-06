@@ -29,13 +29,14 @@ export async function obtenerCotizaciones(): Promise<Quote[]> {
   const { data, error } = await supabase
     .from("proyecto_cotizaciones")
     .select(
-      "*,eventos:cotizacion_eventos(*),asignaciones:cotizacion_asignaciones(*)",
+      "*,eventos:cotizacion_eventos(*,usuario:perfiles!cotizacion_eventos_usuario_id_fkey(nombre)),asignaciones:cotizacion_asignaciones(*)",
     )
     .is('eliminada_en', null)
     .order("updated_at", { ascending: false })
   if (error) throw error
   return (data ?? []).map((row) => ({
     ...row,
+    eventos: (row.eventos ?? []).map((event: { usuario?: { nombre?: string } | null }) => ({ ...event, usuario_nombre: event.usuario?.nombre ?? 'Usuario no disponible' })),
     importe_presentado:
       row.importe_presentado == null ? null : Number(row.importe_presentado),
     importe_aceptado:

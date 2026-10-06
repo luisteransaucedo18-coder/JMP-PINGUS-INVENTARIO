@@ -2,8 +2,8 @@ import type { Proyecto, Requerimiento, Sede } from '../domain/types';
 import { supabase } from './supabase';
 
 type DbRequirement = {
-  id: string; codigo: string; sede: Sede; ubicacion: string; descripcion: string; tecnico: string;
-  fecha: string; estado: Requerimiento['estado']; observaciones: string | null; fecha_confirmacion: string | null;
+  id: string; codigo: string; analista_id: string; sede: Sede; ubicacion: string; descripcion: string; tecnico: string;
+  fecha: string; estado: Requerimiento['estado']; observaciones: string | null; fecha_confirmacion: string | null; confirmado_por: string | null;
   proyecto: { id: string; nombre: string } | null;
   analista: { nombre: string } | null;
   coordinador: { nombre: string } | null;
@@ -17,7 +17,7 @@ type DbRequirement = {
   } | null;
 };
 
-const REQUIREMENT_SELECT = `id,codigo,sede,ubicacion,descripcion,tecnico,fecha,estado,observaciones,fecha_confirmacion,
+const REQUIREMENT_SELECT = `id,codigo,analista_id,sede,ubicacion,descripcion,tecnico,fecha,estado,observaciones,fecha_confirmacion,confirmado_por,
   proyecto:proyectos!requerimientos_proyecto_id_fkey(id,nombre),
   analista:perfiles!requerimientos_analista_id_fkey(nombre),
   coordinador:perfiles!requerimientos_confirmado_por_fkey(nombre),
@@ -26,10 +26,11 @@ const REQUIREMENT_SELECT = `id,codigo,sede,ubicacion,descripcion,tecnico,fecha,e
 
 function mapRequirement(row: DbRequirement): Requerimiento {
   return {
-    id: row.id, codigo: row.codigo, proyectoId: row.proyecto?.id ?? '', proyecto: row.proyecto?.nombre ?? 'Proyecto eliminado',
+    id: row.id, codigo: row.codigo, analistaId: row.analista_id, proyectoId: row.proyecto?.id ?? '', proyecto: row.proyecto?.nombre ?? 'Proyecto eliminado',
     sede: row.sede, ubicacion: row.ubicacion, descripcion: row.descripcion, tecnico: row.tecnico,
     analista: row.analista?.nombre ?? 'Analista', fecha: row.fecha, estado: row.estado,
     observaciones: row.observaciones ?? undefined, confirmadoPor: row.coordinador?.nombre ?? undefined,
+    confirmadoPorId: row.confirmado_por ?? undefined,
     fechaConfirmacion: row.fecha_confirmacion ?? undefined,
     materiales: (row.items ?? []).map(item => ({ skuId: item.material_sku, nombre: item.material_nombre,
       cantidad: Number(item.cantidad), unidad: item.unidad ?? undefined, marca: item.marca ?? undefined,

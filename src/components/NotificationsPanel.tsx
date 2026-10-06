@@ -1,3 +1,6 @@
+import { useUserProfile } from "../store/UserProfileContext";
+import { ownedBy } from "../utils/recordOwner";
+import { publicCode } from "../utils/publicCode";
 import React, { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '../store/AppContext';
 import { Role } from '../domain/types';
@@ -38,6 +41,7 @@ const TYPE_BG: Record<Notif['type'], string> = {
 
 /* ── Derive notifications from app state ── */
 export function useNotifications(role: Role, userName: string): Notif[] {
+  const { profile } = useUserProfile();
   const { state } = useAppStore();
   const notifs: Notif[] = [];
   state.cotizaciones.filter(q => role === 'coordinador' ? ['ACEPTADA','CERRADA'].includes(q.estado) : ['PRESENTADA','ACEPTADA','RECHAZADA','CERRADA'].includes(q.estado)).slice(0, 5).forEach(q => {
@@ -59,7 +63,7 @@ export function useNotifications(role: Role, userName: string): Notif[] {
         title: `${shortageReqs.length} requerimiento${shortageReqs.length === 1 ? '' : 's'} sin stock suficiente`,
         body: `${totalItems} material${totalItems === 1 ? '' : 'es'} requieren compra o traslado interno antes de confirmar.`,
         date: shortageReqs[0]?.fecha ?? '',
-        ref: shortageReqs.map(r => r.codigo ?? r.id).join(', '),
+        ref: shortageReqs.map(r => publicCode(r)).join(', '),
       });
     }
     /* Pending reqs */
@@ -71,7 +75,7 @@ export function useNotifications(role: Role, userName: string): Notif[] {
         title: `${pendingReqs.length} requerimiento${pendingReqs.length > 1 ? 's' : ''} pendiente${pendingReqs.length > 1 ? 's' : ''}`,
         body: `Solicitudes de ${[...new Set(pendingReqs.map(r => r.analista))].slice(0,2).join(', ')} esperan tu confirmación.`,
         date: pendingReqs[0]?.fecha ?? '',
-        ref: pendingReqs.map(r => r.id).join(', '),
+        ref: pendingReqs.map(r => publicCode(r)).join(', '),
       });
     }
     /* Pending purchase orders */
@@ -97,15 +101,15 @@ export function useNotifications(role: Role, userName: string): Notif[] {
       });
     }
     /* Recently confirmed reqs */
-    const recentConf = state.requerimientos.filter(r => r.estado === 'CONFIRMADO' && r.confirmadoPor === userName).slice(0,3);
+    const recentConf = state.requerimientos.filter(r => r.estado === 'CONFIRMADO' && (r.confirmadoPorId ? r.confirmadoPorId === profile.id : r.confirmadoPor === userName)).slice(0,3);
     recentConf.forEach(r => {
       notifs.push({
         id: `coord-conf-${r.id}`,
         type: 'success',
         title: `Requerimiento confirmado`,
-        body: `${r.id} · ${r.proyecto} — confirmado por ti.`,
+        body: `${publicCode(r)} · ${r.proyecto} — confirmado por ti.`,
         date: r.fechaConfirmacion ?? r.fecha,
-        ref: r.id,
+        ref: publicCode(r),
       });
     });
     /* Stock alerts */
@@ -133,42 +137,42 @@ export function useNotifications(role: Role, userName: string): Notif[] {
 
   if (role === 'analista') {
     /* Own reqs confirmed */
-    const myConf = state.requerimientos.filter(r => r.analista === userName && r.estado === 'CONFIRMADO');
+    const myConf = state.requerimientos.filter(r => ownedBy(r, profile) && r.estado === 'CONFIRMADO');
     myConf.slice(0,3).forEach(r => {
       notifs.push({
         id: `ana-conf-${r.id}`,
         type: 'success',
         title: 'Solicitud confirmada',
-        body: `${r.id} · ${r.proyecto} fue aprobada por ${r.confirmadoPor ?? 'el coordinador'}.`,
+        body: `${publicCode(r)} · ${r.proyecto} fue aprobada por ${r.confirmadoPor ?? 'el coordinador'}.`,
         date: r.fechaConfirmacion ?? r.fecha,
-        ref: r.id,
+        ref: publicCode(r),
       });
     });
     /* Own reqs rejected */
-    const myRej = state.requerimientos.filter(r => r.analista === userName && r.estado === 'RECHAZADO');
+    const myRej = state.requerimientos.filter(r => ownedBy(r, profile) && r.estado === 'RECHAZADO');
     myRej.slice(0,3).forEach(r => {
       notifs.push({
         id: `ana-rej-${r.id}`,
         type: 'danger',
         title: 'Solicitud rechazada',
-        body: `${r.id} · ${r.proyecto}${r.observaciones ? ': ' + r.observaciones : ''}.`,
+        body: `${publicCode(r)} · ${r.proyecto}${r.observaciones ? ': ' + r.observaciones : ''}.`,
         date: r.fecha,
-        ref: r.id,
+        ref: publicCode(r),
       });
     });
     /* Own reqs pending (sent, waiting) */
-    const myPending = state.requerimientos.filter(r => r.analista === userName && r.estado === 'ENVIADO');
+    const myPending = state.requerimientos.filter(r => ownedBy(r, profile) && r.estado === 'ENVIADO');
     if (myPending.length > 0) {
       notifs.push({
         id: 'ana-pending',
         type: 'info',
         title: `${myPending.length} solicitud${myPending.length > 1 ? 'es' : ''} en revisión`,
-        body: `${myPending.map(r => r.id).join(', ')} esperan confirmación del coordinador.`,
+        body: `${myPending.map(r => publicCode(r)).join(', ')} esperan confirmación del coordinador.`,
         date: myPending[0]?.fecha ?? '',
       });
     }
     /* Purchase orders approved */
-    const myPurchApproved = state.compras.filter(c => c.analista === userName && c.estado === 'APROBADO');
+    const myPurchApproved = state.compras.filter(c => ownedBy(c, profile) && c.estado === 'APROBADO');
     myPurchApproved.slice(0,2).forEach(c => {
       notifs.push({
         id: `ana-compra-aprov-${c.id}`,
@@ -180,7 +184,7 @@ export function useNotifications(role: Role, userName: string): Notif[] {
       });
     });
     /* Purchase orders completed — stock updated */
-    const myPurchDone = state.compras.filter(c => c.analista === userName && c.estado === 'COMPRADO');
+    const myPurchDone = state.compras.filter(c => ownedBy(c, profile) && c.estado === 'COMPRADO');
     myPurchDone.slice(0,2).forEach(c => {
       notifs.push({
         id: `ana-compra-done-${c.id}`,
@@ -192,7 +196,7 @@ export function useNotifications(role: Role, userName: string): Notif[] {
       });
     });
     /* Purchase orders rejected */
-    const myPurchRej = state.compras.filter(c => c.analista === userName && c.estado === 'RECHAZADO');
+    const myPurchRej = state.compras.filter(c => ownedBy(c, profile) && c.estado === 'RECHAZADO');
     myPurchRej.slice(0,2).forEach(c => {
       notifs.push({
         id: `ana-compra-rej-${c.id}`,
@@ -267,7 +271,7 @@ export function useNotifications(role: Role, userName: string): Notif[] {
         id: 'ger-recent-conf',
         type: 'success',
         title: `${recentConf.length} solicitud${recentConf.length > 1 ? 'es' : ''} confirmada${recentConf.length > 1 ? 's' : ''} recientemente`,
-        body: recentConf.map(r => r.id + ' · ' + r.proyecto).join(' | '),
+        body: recentConf.map(r => publicCode(r) + ' · ' + r.proyecto).join(' | '),
         date: recentConf[0]?.fechaConfirmacion ?? recentConf[0]?.fecha ?? '',
       });
     }

@@ -1,3 +1,5 @@
+import FieldError, { InlineValidationError } from "../../../components/FieldError";
+import ValidatedForm from "../../../components/ValidatedForm";
 import { useEffect, useRef, useState } from "react"
 import { useAppStore } from "../../../store/AppContext"
 import {
@@ -61,6 +63,7 @@ export default function TransporteInternoView({
   const [busqueda, setBusqueda] = useState("")
   const [factura, setFactura] = useState<File | null>(null)
   const [borradorId, setBorradorId] = useState(() => crypto.randomUUID())
+  const [fieldWarnings, setFieldWarnings] = useState<Record<string,string>>({});
   const [nota, setNota] = useState("")
   const [recepcion, setRecepcion] = useState<TransporteItem[]>([])
   const [enlace, setEnlace] = useState<{ url: string; nombre: string } | null>(
@@ -118,7 +121,7 @@ export default function TransporteInternoView({
       setSuccess(message)
       onToast(message)
     } catch (e) {
-      setError(mensajeTransporte(e))
+      if (!(e instanceof InlineValidationError)) setError(mensajeTransporte(e))
     } finally {
       lock.current = false
       setBusy(false)
@@ -129,7 +132,7 @@ export default function TransporteInternoView({
     await refreshRemoteData()
   }
   async function guardar() {
-    if (!items.length) throw new Error("Selecciona al menos un material.")
+    if (!items.length) { setFieldWarnings({materiales:"Selecciona al menos un material."}); throw new InlineValidationError(); }
     for (const i of items) {
       const m = materiales.find((m) => m.sku === i.material_sku)
       if (!m || !validarCantidad(i.cantidad, m.unidad, m.stock))
@@ -152,6 +155,7 @@ export default function TransporteInternoView({
     setBorradorId(crypto.randomUUID())
     setDatos(inicial())
     setItems([])
+    setFieldWarnings({})
     setFactura(null)
     setBusqueda("")
     setNuevo(true)
@@ -161,14 +165,15 @@ export default function TransporteInternoView({
   }
   async function accion(tipo: string) {
     if (!seleccionado) return
-    if (["RECIBIR", "RESOLVER"].includes(tipo)) {
-      for (const i of recepcion)
-        if (
-          !validarCantidad(i.recibida, i.unidad, i.cantidad, true) ||
-          !validarCantidad(i.danada, i.unidad, i.recibida, true)
-        )
-          throw new Error(`Revisa las cantidades de ${i.nombre}.`)
-    }
+    const warnings: Record<string,string> = {};
+    if(['RECIBIR','RESOLVER'].includes(tipo)) recepcion.forEach(i => {
+      if(!validarCantidad(i.recibida,i.unidad,i.cantidad,true)) warnings[`recibida-${i.material_sku}`] = `Ingresa una cantidad válida entre 0 y ${i.cantidad}.`;
+      if(!validarCantidad(i.danada,i.unidad,i.recibida,true)) warnings[`danada-${i.material_sku}`] = 'La cantidad dañada debe estar entre cero y la cantidad recibida.';
+    });
+    const differences = recepcion.some(i => i.recibida < i.cantidad || i.danada > 0);
+    if(!nota.trim() && (!['DESPACHAR','RECIBIR'].includes(tipo) || (tipo==='RECIBIR' && differences))) warnings.nota = 'Explica el motivo de la operación, los faltantes o daños.';
+    setFieldWarnings(warnings);
+    if(Object.keys(warnings).length) throw new InlineValidationError();
     await operarTransporte(seleccionado.id, tipo, nota, recepcion)
     await actualizar()
   }
@@ -177,6 +182,7 @@ export default function TransporteInternoView({
     campo: "recibida" | "danada",
     value: number,
   ) {
+    setFieldWarnings(previous => { const next = {...previous}; delete next[`${campo}-${sku}`]; return next; });
     setRecepcion((prev) =>
       prev.map((i) => {
         if (i.material_sku !== sku) return i
@@ -251,7 +257,7 @@ export default function TransporteInternoView({
         </p>
       )}
       {nuevo ? (
-        <form
+        <ValidatedForm
           className="panel transporte-panel"
           onSubmit={(e) => {
             e.preventDefault()
@@ -321,6 +327,7 @@ export default function TransporteInternoView({
                 onChange={(e) => setBusqueda(e.target.value)}
                 placeholder="Buscar material…"
               />
+<FieldError message={fieldWarnings.materiales} />
             </label>
             {busqueda.trim() && (
               <ul className="transporte-results">
@@ -486,14 +493,16 @@ export default function TransporteInternoView({
                     void validarArchivo(f)
                       .then(() => {
                         setFactura(f)
+                        setFieldWarnings(previous => ({...previous,factura:""}))
                         setError("")
                       })
                       .catch((err) => {
                         e.target.value = ""
-                        setError(mensajeTransporte(err))
+                        setFieldWarnings(previous => ({...previous,factura:mensajeTransporte(err)}))
                       })
                 }}
               />
+              <FieldError message={fieldWarnings.factura} />
               <small>
                 PDF, JPG, PNG o WebP · hasta 10 MB. Obligatorio antes del
                 despacho si hay costo.
@@ -527,7 +536,7 @@ export default function TransporteInternoView({
               Volver al listado
             </button>
           </div>
-        </form>
+        </ValidatedForm>
       ) : seleccionado ? (
         <div className="panel transporte-panel">
           <button
@@ -599,7 +608,7 @@ export default function TransporteInternoView({
                     <td>{i.cantidad}</td>
                     <td>
                       {puedeRecibir ? (
-                        <input
+                        <><input aria-invalid={fieldWarnings[`recibida-${i.material_sku}`] ? true : undefined}
                           disabled={busy}
                           aria-label={`Recibido ${i.nombre}`}
                           type="number"
@@ -614,14 +623,14 @@ export default function TransporteInternoView({
                               e.target.valueAsNumber,
                             )
                           }
-                        />
+                        /><FieldError message={fieldWarnings[`recibida-${i.material_sku}`]} /></>
                       ) : (
                         i.recibida
                       )}
                     </td>
                     <td>
                       {puedeRecibir ? (
-                        <input
+                        <><input aria-invalid={fieldWarnings[`danada-${i.material_sku}`] ? true : undefined}
                           disabled={busy}
                           aria-label={`Dañado ${i.nombre}`}
                           type="number"
@@ -636,7 +645,7 @@ export default function TransporteInternoView({
                               e.target.valueAsNumber,
                             )
                           }
-                        />
+                        /><FieldError message={fieldWarnings[`danada-${i.material_sku}`]} /></>
                       ) : (
                         i.danada
                       )}
@@ -675,10 +684,12 @@ export default function TransporteInternoView({
               Observaciones de la operación / resolución
               <textarea
                 disabled={busy}
+                aria-invalid={fieldWarnings.nota ? true : undefined}
                 value={nota}
-                onChange={(e) => setNota(e.target.value)}
+                onChange={(e) => { setNota(e.target.value); setFieldWarnings(previous => ({...previous,nota:""})); }}
                 placeholder="Explica diferencias, resolución o motivo de cancelación. Para revertir, confirma el retorno físico completo."
               />
+<FieldError message={fieldWarnings.nota} />
             </label>
           )}
           <div className="transporte-actions">
@@ -906,7 +917,7 @@ export default function TransporteInternoView({
             <table>
               <thead>
                 <tr>
-                  <th>Traslado</th>
+                  <th>Guía / comprobante</th>
                   <th>Ruta</th>
                   <th>Fecha de envío</th>
                   <th>Estado</th>
@@ -917,7 +928,7 @@ export default function TransporteInternoView({
               <tbody>
                 {visibles.map((t) => (
                   <tr key={t.id}>
-                    <td title={t.id}>{t.id.slice(0, 8).toUpperCase()}</td>
+                    <td>{t.guia || t.numero_comprobante || 'Sin guía'}</td>
                     <td>
                       {t.origen} → {t.destino}
                     </td>

@@ -1,3 +1,4 @@
+import FieldError from "../../../components/FieldError";
 import { COMPRA_COLOR as E_COLOR, COMPRA_BG as E_BG } from '../../../config/visualTokens';
 import { useState } from 'react';
 import { useAppStore } from '../../../store/AppContext';
@@ -20,6 +21,7 @@ export default function ComprasView({ onToast }: Props) {
   const [search,       setSearch]       = useState('');
   const [selected,     setSelected]     = useState<RequerimientoCompra | null>(null);
   const [mode,         setMode]         = useState<ModalMode>('detail');
+  const [obsWarning,setObsWarning] = useState('');
   const [obs,          setObs]          = useState('');
   const [notaCompra,   setNotaCompra]   = useState('');
   const [previewMat,   setPreviewMat]   = useState<Material | null>(null);
@@ -46,7 +48,7 @@ export default function ComprasView({ onToast }: Props) {
     }
   };
   const doReject = async (c: RequerimientoCompra) => {
-    if (!obs.trim()) { onToast('⚠ Indica el motivo de la cancelación'); return; }
+    if (!obs.trim()) { setObsWarning('Completa el motivo de la cancelación.'); return; }
     if (!c.uuid) return onToast('La orden no tiene un identificador persistido. Actualiza la lista.');
     try {
       await revisarCompra(c.uuid, false, obs);
@@ -71,7 +73,7 @@ export default function ComprasView({ onToast }: Props) {
   };
 
   const openModal = (c: RequerimientoCompra, m: ModalMode) => {
-    setSelected(c); setMode(m); setObs(''); setNotaCompra('');
+    setSelected(c); setMode(m); setObs(''); setObsWarning(''); setNotaCompra('');
   };
   const closeModal = () => { setSelected(null); };
 
@@ -141,7 +143,7 @@ export default function ComprasView({ onToast }: Props) {
         <div style={{ overflowX: 'auto' }}>
           <table className="data-table">
             <thead>
-              <tr><th>ID</th><th>Analista</th><th>Sede</th><th>Items</th><th>Total est.</th><th>Fecha</th><th>Estado</th><th>Acciones</th></tr>
+              <tr><th>Código</th><th>Analista</th><th>Sede</th><th>Items</th><th>Total est.</th><th>Fecha</th><th>Estado</th><th>Acciones</th></tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
@@ -293,9 +295,10 @@ export default function ComprasView({ onToast }: Props) {
                       <svg width="13" height="13" viewBox="0 0 15 15" fill="none"><path d="M2 7.5l3.5 3.5 7-7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg> Aprobar orden de compra
                     </div>
                     <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#8B8FA8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Observaciones (opcional)</label>
-                    <textarea className="input-field" rows={2} style={{ resize: 'none', fontFamily: 'inherit' }}
+                    <textarea aria-invalid={obsWarning ? true : undefined} className="input-field" rows={2} style={{ resize: 'none', fontFamily: 'inherit' }}
                       placeholder="Indica condiciones, proveedor preferido, plazo estimado…"
-                      value={obs} onChange={e => setObs(e.target.value)} />
+                      value={obs} onChange={e => { setObs(e.target.value); setObsWarning(""); }} />
+<FieldError message={obsWarning} />
                     <div style={{ display: 'flex', gap: 10, marginTop: 12, justifyContent: 'flex-end' }}>
                       <button className="btn btn-ghost" onClick={() => setMode('detail')}>← Volver</button>
                       <button className="btn btn-primary" style={{ background: '#059669', boxShadow: '0 2px 8px rgba(5,150,105,0.3)', padding: '9px 22px', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => doApprove(selected)}>
@@ -308,9 +311,10 @@ export default function ComprasView({ onToast }: Props) {
                   <>
                     <div style={{ fontSize: 13, fontWeight: 700, color: '#DC2626', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}><svg width="12" height="12" viewBox="0 0 15 15" fill="none"><path d="M2.5 2.5l10 10M12.5 2.5l-10 10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg> Cancelar orden de compra</div>
                     <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#8B8FA8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Motivo de la cancelación <span style={{ color: '#DC2626' }}>*</span></label>
-                    <textarea className="input-field" rows={2} style={{ resize: 'none', fontFamily: 'inherit', borderColor: '#FECACA' }}
+                    <textarea aria-invalid={obsWarning ? true : undefined} className="input-field" rows={2} style={{ resize: 'none', fontFamily: 'inherit', borderColor: '#FECACA' }}
                       placeholder="Explica el motivo de la cancelación…"
-                      value={obs} onChange={e => setObs(e.target.value)} />
+                      value={obs} onChange={e => { setObs(e.target.value); setObsWarning(""); }} />
+<FieldError message={obsWarning} />
                     <div style={{ display: 'flex', gap: 10, marginTop: 12, justifyContent: 'flex-end' }}>
                       <button className="btn btn-ghost" onClick={() => setMode('detail')}>← Volver</button>
                       <button className="btn btn-danger" style={{ padding: '9px 22px', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => doReject(selected)}><svg width="12" height="12" viewBox="0 0 15 15" fill="none"><path d="M2.5 2.5l10 10M12.5 2.5l-10 10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg> Cancelar orden</button>

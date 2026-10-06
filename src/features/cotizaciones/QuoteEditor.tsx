@@ -1,4 +1,7 @@
-import { useEffect, useRef, useState, type ReactNode } from "react"
+import { Children, cloneElement, isValidElement, useContext, useEffect, useId, useRef, useState, type ReactNode, type ReactElement } from "react"
+import { collectFieldIssues, type FieldIssue } from '../../utils/formValidation'
+
+import { FieldValidationContext as ValidationContext } from '../../components/FieldValidationContext'
 
 import { SEDES, type Material, type Proyecto } from "../../domain/types"
 
@@ -41,20 +44,33 @@ import {
 
 export function Field({
   label,
+  error: explicitError,
 
   children,
 }: {
   label: string
+  error?: string
 
   children: ReactNode
 }) {
+  const generatedId = useId()
+  const errors = useContext(ValidationContext)
+  const child = Children.toArray(children).find(isValidElement) as ReactElement<{ id?: string }> | undefined
+  const id = child?.props.id ?? generatedId
+  const error = explicitError ?? errors[id]
   return (
-    <label className="quote-field">
+    <div className="quote-field" data-field-label={label}>
+      <label className="quote-field-label">
       <span>{label}</span>
-      {children}
-    </label>
+      {Children.map(children, node => isValidElement(node) && (typeof node.type !== 'string' || ['input','select','textarea'].includes(node.type))
+        ? cloneElement(node as ReactElement<{ id?: string; 'aria-invalid'?: boolean; 'aria-describedby'?: string }>, { id, 'aria-invalid': error ? true : undefined, 'aria-describedby': error ? `${id}-error` : undefined }) : node)}
+      </label>
+      {error && <small id={`${id}-error`} className="field-validation-message">{error}</small>}
+    </div>
   )
 }
+
+Object.assign(Field, { inlineValidationField: true })
 
 export function NumberField({
   label,
@@ -305,6 +321,24 @@ export default function QuoteEditor({
   )
 
   const [errors, setErrors] = useState<string[]>([])
+  const form = useRef<HTMLFormElement>(null)
+  const [fieldIssues, setFieldIssues] = useState<FieldIssue[]>([])
+  const [validationAttempted, setValidationAttempted] = useState(false)
+  const [focusIssue, setFocusIssue] = useState<string | null>(null)
+  useEffect(() => {
+    if (!focusIssue) return
+    const control = document.getElementById(focusIssue)
+    control?.focus()
+    control?.scrollIntoView({ block: 'center', behavior: 'auto' })
+    setFocusIssue(null)
+  }, [focusIssue, step])
+  const validateFields = (currentStep?: number) => {
+    const issues = form.current ? collectFieldIssues(form.current, currentStep) : []
+    setValidationAttempted(true)
+    setFieldIssues(issues)
+    if (issues.length) { setStep(issues[0].step); setFocusIssue(issues[0].id) }
+    return issues
+  }
 
   const set = <K extends keyof QuoteBudget>(key: K, value: QuoteBudget[K]) =>
     setBudget((b) => ({ ...b, [key]: value }))
@@ -340,28 +374,13 @@ export default function QuoteEditor({
   }
 
   const nextStep = () => {
+    if (validateFields(step).length) { setErrors([]); return }
     const messages: string[] = []
 
     if (step === 0) {
       if (!validPeruLocation(budget.excel.departamento, budget.excel.provincia ?? "", budget.excel.distrito ?? ""))
         messages.push("Selecciona departamento, provincia y distrito de sus listados.")
 
-      if (!templateMode && Object.values(project).some((v) => !v.trim()))
-        messages.push(
-          "Completa nombre, cliente, dirección y responsable del proyecto.",
-        )
-
-      if (templateMode && !templateName.trim())
-        messages.push("Indica el nombre de la plantilla.")
-
-      if (
-        !budget.ciudad.trim() ||
-        !budget.tecnico.trim() ||
-        !budget.alcance.trim()
-      )
-        messages.push(
-          "Completa distrito, técnico y alcance de los trabajos.",
-        )
     }
 
     if (step === 1 && !budget.materiales.length && !budget.gastos.length)
@@ -373,11 +392,17 @@ export default function QuoteEditor({
 
     setErrors(messages)
 
-    if (!messages.length) setStep((s) => s + 1)
+    if (!messages.length) { setValidationAttempted(false); setFieldIssues([]); setStep((s) => s + 1) }
   }
 
   return (
-    <form
+    <ValidationContext.Provider value={Object.fromEntries(fieldIssues.map(issue => [issue.id, issue.message]))}><form
+      ref={form}
+      onChangeCapture={() => {
+        if (!validationAttempted) return
+        requestAnimationFrame(() => { if (form.current) setFieldIssues(collectFieldIssues(form.current, step)) })
+        setErrors([])
+      }}
       className="quote-editor"
       noValidate
       onSubmit={async (e) => {
@@ -391,14 +416,14 @@ export default function QuoteEditor({
         }
 
         const validation = quoteValidation(budget)
+        if (validateFields().length) { setErrors([]); return }
 
         if (!validPeruLocation(budget.excel.departamento, budget.excel.provincia ?? "", budget.excel.distrito ?? ""))
           validation.unshift("Selecciona departamento, provincia y distrito válidos.")
 
-        if (!templateMode && Object.values(project).some((v) => !v.trim()))
-          validation.unshift(
-            "Completa nombre, cliente, dirección y responsable del proyecto.",
-          )
+        if (!templateMode) for (const [key, label] of [['nombre','Nombre del proyecto'],['cliente','Cliente'],['ubicacion','Dirección del proyecto'],['responsable','Responsable del proyecto']] as const) {
+          if (!project[key].trim()) validation.unshift(`${label}: completa este campo.`)
+        }
 
         if (templateMode && !templateName.trim())
           validation.unshift("Indica el nombre de la plantilla.")
@@ -476,15 +501,11 @@ export default function QuoteEditor({
           }
         </p>
       </div>
-      {errors.length > 0 && (
-        <div role="alert" className="quote-error">
-          {errors.map((error) => (
-            <p key={error}>{error}</p>
-          ))}
-        </div>
-      )}
+      {errors.length > 0 && <div role="alert" className="quote-error">
+        {[...new Set(errors)].map(error => <p key={error}>{error}</p>)}
+      </div>}
       <fieldset disabled={saving}>
-        <div hidden={step !== 0}>
+        <div hidden={step !== 0} data-form-step="0">
           <section className="panel quote-section">
             <h3>
               {templateMode
@@ -599,6 +620,7 @@ export default function QuoteEditor({
                 </select>
               </Field>
               {!templateMode && <ProjectAddressField
+                error={fieldIssues.find(issue => issue.id === 'project-address')?.message}
                 value={project.ubicacion}
                 onChange={ubicacion => setProject(p => ({ ...p, ubicacion }))}
                 departamento={budget.excel.departamento}
@@ -639,7 +661,7 @@ export default function QuoteEditor({
             </Field>
           </section>
         </div>
-        <div hidden={step !== 1}>
+        <div hidden={step !== 1} data-form-step="1">
           <section className="panel quote-section">
             <h3>Configuración del presupuesto</h3>
             <div className="quote-form-grid">
@@ -1160,7 +1182,7 @@ export default function QuoteEditor({
             ))}
           </section>
         </div>
-        <div hidden={step !== 2}>
+        <div hidden={step !== 2} data-form-step="2">
           <section className="panel quote-section">
             <h3>Condiciones comerciales</h3>
             <div className="quote-form-grid">
@@ -1347,7 +1369,7 @@ export default function QuoteEditor({
             </section>
           )}
         </div>
-        <div hidden={step !== 3}>
+        <div hidden={step !== 3} data-form-step="3">
           <section className="panel quote-section">
             <h3>{project.nombre || templateName || "Resumen del proyecto"}</h3>
             <p>
@@ -1409,6 +1431,8 @@ export default function QuoteEditor({
                 setStep((s) => s - 1)
 
                 setErrors([])
+                setFieldIssues([])
+                setValidationAttempted(false)
               }}
             >
               Anterior
@@ -1433,6 +1457,6 @@ export default function QuoteEditor({
           )}
         </div>
       </fieldset>
-    </form>
+    </form></ValidationContext.Provider>
   )
 }

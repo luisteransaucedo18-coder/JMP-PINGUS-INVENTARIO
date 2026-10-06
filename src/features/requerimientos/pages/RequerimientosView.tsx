@@ -1,3 +1,5 @@
+import FieldError from "../../../components/FieldError";
+import { publicCode } from "../../../utils/publicCode";
 import { useEffect, useState } from 'react';
 import { useAppStore } from '../../../store/AppContext';
 import { Requerimiento, SEDES, Material } from '../../../domain/types';
@@ -18,6 +20,8 @@ export default function RequerimientosView({ onToast, onNav }: Props) {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Requerimiento | null>(null);
   const selectedQuote = selected ? quoteForRequirement(state.cotizaciones, selected.id) : undefined;
+  const [obsWarning,setObsWarning] = useState('');
+  const [sourceWarning,setSourceWarning] = useState('');
   const [obsModal, setObsModal] = useState('');
   const [action, setAction] = useState<'confirm' | 'reject' | null>(null);
   const [previewMat, setPreviewMat] = useState<Material | null>(null);
@@ -29,7 +33,7 @@ export default function RequerimientosView({ onToast, onNav }: Props) {
     .filter(r =>
       (!estadoFilter || r.estado === estadoFilter) &&
       (!sedeFilter || r.sede === sedeFilter) &&
-      (!search || r.proyecto.toLowerCase().includes(search.toLowerCase()) || r.id.toLowerCase().includes(search.toLowerCase()) || r.analista.toLowerCase().includes(search.toLowerCase()))
+      (!search || r.proyecto.toLowerCase().includes(search.toLowerCase()) || publicCode(r).toLowerCase().includes(search.toLowerCase()) || r.analista.toLowerCase().includes(search.toLowerCase()))
     )
     .sort((a, b) => b.fecha.localeCompare(a.fecha));
 
@@ -38,19 +42,19 @@ export default function RequerimientosView({ onToast, onNav }: Props) {
     try {
       await revisarSolicitud(r.id, true, obsModal || undefined);
       await refreshRemoteData();
-      onToast(`✓ ${r.codigo ?? r.id} confirmada — inventario actualizado`);
+      onToast(`✓ ${publicCode(r)} confirmada — inventario actualizado`);
       setSelected(null); setObsModal(''); setAction(null);
     } catch (error) { onToast(error instanceof Error ? error.message : 'No se pudo confirmar la solicitud'); }
     finally { setReviewing(false); }
   };
 
   const handleReject = async (r: Requerimiento) => {
-    if (!obsModal.trim()) { onToast('⚠ Indica el motivo del rechazo'); return; }
+    if (!obsModal.trim()) { setObsWarning('Completa el motivo del rechazo.'); return; }
     setReviewing(true);
     try {
       await revisarSolicitud(r.id, false, obsModal);
       await refreshRemoteData();
-      onToast(`${r.codigo ?? r.id} rechazada — analista notificado`);
+      onToast(`${publicCode(r)} rechazada — analista notificado`);
       setSelected(null); setObsModal(''); setAction(null);
     } catch (error) { onToast(error instanceof Error ? error.message : 'No se pudo rechazar la solicitud'); }
     finally { setReviewing(false); }
@@ -81,7 +85,7 @@ export default function RequerimientosView({ onToast, onNav }: Props) {
   const handleSupplyPlan = async (type: 'COMPRA' | 'TRASLADO') => {
     if (!selected) return;
     if (type === 'TRASLADO' && !sourceSede) {
-      onToast('Selecciona una sede con existencias disponibles');
+      setSourceWarning('Selecciona una sede con existencias disponibles.');
       return;
     }
     setPlanning(true);
@@ -168,7 +172,7 @@ export default function RequerimientosView({ onToast, onNav }: Props) {
         <div style={{ overflowX: 'auto' }}>
           <table className="data-table">
             <thead>
-              <tr><th>ID</th><th>Proyecto</th><th>Sede</th><th>Analista</th><th>Técnico</th><th>Fecha</th><th>Materiales</th><th>Estado</th><th>Acciones</th></tr>
+              <tr><th>Código</th><th>Proyecto</th><th>Sede</th><th>Analista</th><th>Técnico</th><th>Fecha</th><th>Materiales</th><th>Estado</th><th>Acciones</th></tr>
             </thead>
             <tbody>
               {filtered.length === 0
@@ -177,7 +181,7 @@ export default function RequerimientosView({ onToast, onNav }: Props) {
                   const shortages = obtenerFaltantesRequerimiento(r, state.materials);
                   return (
                   <tr key={r.id} style={{ cursor: 'pointer' }} onClick={() => { setSelected(r); setAction(null); }}>
-                    <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#2563EB' }}>{r.codigo ?? r.id}</td>
+                    <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#2563EB' }}>{publicCode(r)}</td>
                     <td style={{ fontWeight: 500, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.proyecto}</td>
                     <td style={{ fontSize: 12 }}>{r.sede}</td>
                     <td style={{ fontSize: 12, color: '#71717A' }}>{r.analista}</td>
@@ -217,7 +221,7 @@ export default function RequerimientosView({ onToast, onNav }: Props) {
           <div className="modal" style={{ width: 720, maxHeight: '92vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <div style={{ fontSize: 11, color: '#71717A', fontFamily: 'monospace', marginBottom: 3 }}>{selected.codigo ?? selected.id}</div>
+                <div style={{ fontSize: 11, color: '#71717A', fontFamily: 'monospace', marginBottom: 3 }}>{publicCode(selected)}</div>
                 <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#18181B' }}>{selected.proyecto}</h2>
               </div>
               <span className={`badge status-badge badge-${BADGE[selected.estado]}`}>{selected.estado}</span>
@@ -309,7 +313,7 @@ export default function RequerimientosView({ onToast, onNav }: Props) {
                     <label style={{ display: 'block', fontSize: 12, fontWeight: 650, color: '#7C2D12', marginBottom: 6 }}>
                       Sede sugerida para traslado
                     </label>
-                    <select className="select-field" value={sourceSede} onChange={event => setSourceSede(event.target.value)} style={{ width: '100%', marginBottom: 10 }}>
+                    <select className="select-field" value={sourceSede} onChange={event => { setSourceSede(event.target.value); setSourceWarning(""); }} style={{ width: '100%', marginBottom: 10 }}>
                       <option value="">No hay una sede seleccionada</option>
                       {availableSources.map(branch => (
                         <option key={branch} value={branch}>
@@ -317,6 +321,7 @@ export default function RequerimientosView({ onToast, onNav }: Props) {
                         </option>
                       ))}
                     </select>
+<FieldError message={sourceWarning} />
                     {availableSources.length === 0 && (
                       <div role="status" style={{ margin: '-2px 0 10px', padding: '10px 12px', borderRadius: 8, background: '#FEF2F2', border: '1px solid #FECACA', color: '#991B1B', fontSize: 12 }}>
                         Ninguna sede tiene existencias de estos materiales. En este momento corresponde crear una orden de compra.
@@ -325,7 +330,8 @@ export default function RequerimientosView({ onToast, onNav }: Props) {
                     <label style={{ display: 'block', fontSize: 12, fontWeight: 650, color: '#7C2D12', marginBottom: 6 }}>
                       Nota para coordinación (opcional)
                     </label>
-                    <textarea className="input-field" rows={2} value={obsModal} onChange={event => setObsModal(event.target.value)} placeholder="Ej. Priorizar por fecha de instalación…" style={{ resize: 'vertical', fontFamily: 'inherit' }} />
+                    <textarea aria-invalid={obsWarning ? true : undefined} className="input-field" rows={2} value={obsModal} onChange={event => setObsModal(event.target.value)} placeholder="Ej. Priorizar por fecha de instalación…" style={{ resize: 'vertical', fontFamily: 'inherit' }} />
+<FieldError message={obsWarning} />
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
                       <button className="btn btn-primary" disabled={planning} onClick={() => void handleSupplyPlan('COMPRA')}>
                         {planning ? 'Registrando…' : 'Crear orden de compra'}
@@ -361,9 +367,10 @@ export default function RequerimientosView({ onToast, onNav }: Props) {
                     <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 8, color: action === 'confirm' ? '#15803D' : '#DC2626' }}>
                       {action === 'confirm' ? 'Observaciones (opcional)' : 'Motivo del rechazo *'}
                     </label>
-                    <textarea className="input-field" rows={3} style={{ resize: 'none', fontFamily: 'inherit', borderColor: action === 'reject' ? '#FECACA' : '#BBF7D0' }}
+                    <textarea aria-invalid={obsWarning ? true : undefined} className="input-field" rows={3} style={{ resize: 'none', fontFamily: 'inherit', borderColor: action === 'reject' ? '#FECACA' : '#BBF7D0' }}
                       placeholder={action === 'confirm' ? 'Ej. Materiales aprobados. Coordinar entrega el…' : 'Explica el motivo del rechazo…'}
-                      value={obsModal} onChange={e => setObsModal(e.target.value)} />
+                      value={obsModal} onChange={e => { setObsModal(e.target.value); setObsWarning(""); }} />
+<FieldError message={obsWarning} />
                     <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 10 }}>
                       <button className="btn btn-ghost" onClick={() => setAction(null)}>← Volver</button>
                       {action === 'confirm'

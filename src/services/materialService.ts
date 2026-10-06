@@ -1,4 +1,5 @@
 import { supabase } from "./supabase"
+import { estadoGeneral } from '../utils/inventoryStatus'
 
 import type { Material, Sede } from "../domain/types"
 
@@ -137,14 +138,14 @@ export async function obtenerMateriales(): Promise<Material[]> {
     stockPorSku.set(row.material_sku, stock)
   }
 
-  return (data ?? []).map((material) => ({
-    ...mapMaterialDBToMaterial(material),
-    stockSedes: stockPorSku.get(material.sku) ?? {
+  return (data ?? []).map((material) => {
+    const mapped = { ...mapMaterialDBToMaterial(material), stockSedes: stockPorSku.get(material.sku) ?? {
       Chiclayo: 0,
       Chimbote: 0,
       Trujillo: 0,
-    },
-  }))
+    } }
+    return { ...mapped, estado: estadoGeneral(mapped) }
+  })
 }
 
 // ======================================================

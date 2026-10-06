@@ -1,8 +1,11 @@
+import { publicCode } from "../../../utils/publicCode";
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useAppStore } from '../../../store/AppContext';
-import { obtenerDevoluciones, type Devolucion } from '../../../services/devolucionService';
 import { obtenerPerfiles } from '../../../services/perfilService';
 import { obtenerTransportes, type Transporte } from '../../../services/transporteService';
+import { supabase } from '../../../services/supabase';
+import { createCoalescedTask } from '../../../utils/coalescedTask';
+import { limaDate } from '../../../utils/limaDate';
 
 export type ConsultaGerente = 'requerimientos' | 'compras' | 'entregas' | 'devoluciones' | 'transporte' | 'usuarios';
 
@@ -38,10 +41,10 @@ const CONFIG: Record<ConsultaGerente, { heading: string; description: string }> 
 
 const HEADERS: Record<ConsultaGerente, string[]> = {
   requerimientos: ['Código', 'Proyecto', 'Sede', 'Analista', 'Fecha', 'Materiales', 'Estado'],
-  compras: ['Orden', 'Sede', 'Analista', 'Fecha', 'Motivo', 'Unidades', 'Estado'],
-  entregas: ['Entrega', 'Proyecto', 'Técnico', 'Fecha', 'Responsable', 'Unidades', 'Estado'],
-  devoluciones: ['Código', 'Proyecto', 'Sede receptora', 'Analista', 'Fecha', 'Unidades', 'Estado'],
-  transporte: ['Origen', 'Destino', 'Fecha de envío', 'Transportista', 'Guía', 'Unidades', 'Estado'],
+  compras: ['Orden', 'Sede', 'Analista', 'Fecha', 'Motivo', 'Materiales', 'Estado'],
+  entregas: ['Entrega', 'Proyecto', 'Técnico', 'Fecha', 'Responsable', 'Materiales', 'Estado'],
+  devoluciones: ['Código', 'Proyecto', 'Sede receptora', 'Analista', 'Fecha', 'Materiales', 'Estado'],
+  transporte: ['Origen', 'Destino', 'Fecha de envío', 'Transportista', 'Guía', 'Materiales', 'Estado'],
   usuarios: ['Código', 'Nombre', 'Email', 'Rol', 'Sede', 'Estado'],
 };
 
@@ -57,9 +60,6 @@ function Status({ value }: { value: string }) {
   return <span className={`badge badge-${color}`}>{value.replace(/_/g, ' ')}</span>;
 }
 
-function shortId(value: string) {
-  return value.length > 12 ? value.slice(0, 8).toUpperCase() : value;
-}
 
 export default function ConsultaGerenteView({ type }: { type: ConsultaGerente }) {
   const { state } = useAppStore();
@@ -68,7 +68,6 @@ export default function ConsultaGerenteView({ type }: { type: ConsultaGerente })
   const [sedeFilter, setSedeFilter] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
-  const [devoluciones, setDevoluciones] = useState<Devolucion[]>([]);
   const [transportes, setTransportes] = useState<Transporte[]>([]);
   const [usuarios, setUsuarios] = useState<UsuarioConsulta[]>([]);
   const [loading, setLoading] = useState(false);
@@ -81,33 +80,37 @@ export default function ConsultaGerenteView({ type }: { type: ConsultaGerente })
     setDateFrom('');
     setDateTo('');
     setError('');
-    if (!['devoluciones', 'transporte', 'usuarios'].includes(type)) return;
+    if (!['transporte', 'usuarios'].includes(type)) return;
 
     let active = true;
     setLoading(true);
-    const load = async () => {
-      if (type === 'devoluciones') setDevoluciones(await obtenerDevoluciones());
-      if (type === 'usuarios') setUsuarios((await obtenerPerfiles()) as UsuarioConsulta[]);
-      if (type === 'transporte') setTransportes(await obtenerTransportes());
-    };
-    void load()
-      .catch(() => { if (active) setError('No se pudieron cargar los datos. Intenta actualizar la vista.'); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
+    const load = createCoalescedTask(async () => {
+      try {
+        if (type === 'usuarios') { const data = await obtenerPerfiles(); if (active) setUsuarios(data as UsuarioConsulta[]); }
+        if (type === 'transporte') { const data = await obtenerTransportes(); if (active) setTransportes(data); }
+        if (active) setError('');
+      } catch { if (active) setError('No se pudieron actualizar los datos. Los registros mostrados pueden estar desactualizados.'); }
+      finally { if (active) setLoading(false); }
+    });
+    void load();
+    const table = type === 'usuarios' ? 'perfiles' : 'traslados';
+    const channel = supabase.channel(`consulta-gerente-${type}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table }, () => { void load(); }).subscribe();
+    return () => { active = false; void supabase.removeChannel(channel); };
   }, [type]);
 
   const rows = useMemo<Row[]>(() => {
     if (type === 'requerimientos') return state.requerimientos.map(item => ({
       id: item.dbId ?? item.id,
-      cells: [item.codigo ?? item.id, item.proyecto, item.sede, item.analista, item.fecha, `${item.materiales.length} SKU`, <Status value={item.estado} />],
-      search: `${item.codigo} ${item.proyecto} ${item.sede} ${item.analista} ${item.estado}`,
+      cells: [publicCode(item), item.proyecto, item.sede, item.analista, item.fecha, `${item.materiales.length} SKU`, <Status value={item.estado} />],
+      search: `${publicCode(item)} ${item.proyecto} ${item.sede} ${item.analista} ${item.estado}`,
       status: item.estado,
       sede: item.sede,
       date: item.fecha,
     }));
     if (type === 'compras') return state.compras.map(item => ({
       id: item.uuid ?? item.id,
-      cells: [item.id, item.sede, item.analista, item.fecha, item.motivo, item.items.reduce((sum, row) => sum + row.cantidadSolicitada, 0), <Status value={item.estado} />],
+      cells: [item.id, item.sede, item.analista, item.fecha, item.motivo, item.items.length, <Status value={item.estado} />],
       search: `${item.id} ${item.sede} ${item.analista} ${item.motivo} ${item.estado}`,
       status: item.estado,
       sede: item.sede,
@@ -115,23 +118,23 @@ export default function ConsultaGerenteView({ type }: { type: ConsultaGerente })
     }));
     if (type === 'entregas') return state.entregas.map(item => ({
       id: item.id,
-      cells: [shortId(item.id), item.proyectoNombre, item.tecnico, `${item.fecha} ${item.hora}`, item.responsableEntrega, item.items.reduce((sum, row) => sum + row.cantidadEntregada, 0), <Status value={item.estado} />],
-      search: `${item.id} ${item.proyectoNombre} ${item.tecnico} ${item.responsableEntrega} ${item.estado}`,
+      cells: [publicCode(item), item.proyectoNombre, item.tecnico, `${item.fecha} ${item.hora}`, item.responsableEntrega, item.items.length, <Status value={item.estado} />],
+      search: `${publicCode(item)} ${item.proyectoNombre} ${item.tecnico} ${item.responsableEntrega} ${item.estado}`,
       status: item.estado,
       sede: state.requerimientos.find(req => req.id === item.requerimientoId || req.dbId === item.requerimientoId)?.sede ?? '',
       date: item.fecha,
     }));
-    if (type === 'devoluciones') return devoluciones.map(item => ({
+    if (type === 'devoluciones') return state.devoluciones.map(item => ({
       id: item.id,
-      cells: [item.codigo, item.proyecto, item.sedeReceptora, item.analista, new Date(item.createdAt).toLocaleDateString('es-PE'), item.items.reduce((sum, row) => sum + row.cantidad, 0), <Status value={item.estado} />],
-      search: `${item.codigo} ${item.proyecto} ${item.sedeReceptora} ${item.analista} ${item.estado}`,
+      cells: [item.codigo, item.proyecto, item.sedeReceptora, item.analista, limaDate(new Date(item.createdAt)), item.items.length, <Status value={item.estado} />],
+      search: `${publicCode(item)} ${item.proyecto} ${item.sedeReceptora} ${item.analista} ${item.estado}`,
       status: item.estado,
       sede: item.sedeReceptora,
-      date: item.createdAt.slice(0, 10),
+      date: limaDate(new Date(item.createdAt)),
     }));
     if (type === 'transporte') return transportes.map(item => ({
       id: item.id,
-      cells: [item.origen, item.destino, item.fecha_envio, item.transportista || 'Sin registrar', item.guia || 'Sin guía', item.traslado_items.reduce((sum, row) => sum + Number(row.cantidad), 0), <Status value={item.estado} />],
+      cells: [item.origen, item.destino, item.fecha_envio, item.transportista || 'Sin registrar', item.guia || 'Sin guía', item.traslado_items.length, <Status value={item.estado} />],
       search: `${item.origen} ${item.destino} ${item.transportista} ${item.guia} ${item.estado}`,
       status: item.estado,
       sede: `${item.origen}|${item.destino}`,
@@ -139,13 +142,13 @@ export default function ConsultaGerenteView({ type }: { type: ConsultaGerente })
     }));
     return usuarios.map(item => ({
       id: item.id,
-      cells: [item.codigo ?? shortId(item.id), item.nombre, item.email, item.rol, item.sede, <Status value={item.estado} />],
+      cells: [publicCode(item), item.nombre, item.email, item.rol, item.sede, <Status value={item.estado} />],
       search: `${item.codigo} ${item.nombre} ${item.email} ${item.rol} ${item.sede} ${item.estado}`,
       status: item.estado,
       sede: item.sede,
       date: '',
     }));
-  }, [devoluciones, state.compras, state.entregas, state.requerimientos, transportes, type, usuarios]);
+  }, [state.devoluciones, state.compras, state.entregas, state.requerimientos, transportes, type, usuarios]);
 
   const statuses = [...new Set(rows.map(row => row.status).filter(Boolean))].sort();
   const sedes = [...new Set(rows.flatMap(row => row.sede.split('|')).filter(Boolean))].sort();

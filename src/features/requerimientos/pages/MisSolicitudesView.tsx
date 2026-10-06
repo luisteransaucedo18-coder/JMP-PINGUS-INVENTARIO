@@ -1,3 +1,6 @@
+import { useUserProfile } from "../../../store/UserProfileContext";
+import { ownedBy } from "../../../utils/recordOwner";
+import { publicCode } from "../../../utils/publicCode";
 import { useState } from 'react';
 import { useAppStore } from '../../../store/AppContext';
 import { Requerimiento } from '../../../domain/types';
@@ -16,7 +19,8 @@ const DOCUMENT_STATUS: Record<string, { label: string; color: string; descriptio
 
 interface Props { usuario: string; onToast: (msg: string) => void; onNav: (v: string) => void; }
 
-export default function MisSolicitudesView({ usuario, onToast, onNav }: Props) {
+export default function MisSolicitudesView({ onToast, onNav }: Props) {
+  const { profile } = useUserProfile();
   const { state, refreshRemoteData } = useAppStore();
   const [filter, setFilter] = useState('');
   const [selected, setSelected] = useState<Requerimiento | null>(null);
@@ -25,7 +29,7 @@ export default function MisSolicitudesView({ usuario, onToast, onNav }: Props) {
   const pdfRequirement = state.requerimientos.find(r => r.id === pdfId && r.estado === 'CONFIRMADO');
 
   const misReqs = state.requerimientos
-    .filter(r => r.analista === usuario || r.analista.includes(usuario.split(' ')[0]))
+    .filter(r => ownedBy(r, profile))
     .filter(r => !filter || r.estado === filter)
     .sort((a, b) => b.fecha.localeCompare(a.fecha));
 
@@ -42,7 +46,7 @@ export default function MisSolicitudesView({ usuario, onToast, onNav }: Props) {
     <div style={{ padding: 24, overflowY: 'auto', flex: 1 }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 22 }}>
         {['BORRADOR', 'ENVIADO', 'CONFIRMADO', 'RECHAZADO'].map(e => {
-          const cnt = state.requerimientos.filter(r => (r.analista === usuario || r.analista.includes(usuario.split(' ')[0])) && r.estado === e).length;
+          const cnt = state.requerimientos.filter(r => (ownedBy(r, profile)) && r.estado === e).length;
           const colors: Record<string, string> = { BORRADOR: '#71717A', ENVIADO: '#D97706', CONFIRMADO: '#059669', RECHAZADO: '#DC2626' };
           return (
             <div key={e} className="kpi-card" style={{ cursor: 'pointer', borderColor: filter === e ? colors[e] : '#E4E4E7' }} onClick={() => setFilter(filter === e ? '' : e)}>
@@ -64,14 +68,14 @@ export default function MisSolicitudesView({ usuario, onToast, onNav }: Props) {
         <div style={{ overflowX: 'auto' }}>
         <table className="data-table">
           <thead>
-            <tr><th>ID</th><th>Proyecto</th><th>Sede</th><th>Técnico</th><th>Fecha</th><th>Materiales</th><th>Estado</th><th>Documento PDF</th><th>Acciones</th></tr>
+            <tr><th>Código</th><th>Proyecto</th><th>Sede</th><th>Técnico</th><th>Fecha</th><th>Materiales</th><th>Estado</th><th>Documento PDF</th><th>Acciones</th></tr>
           </thead>
           <tbody>
             {misReqs.length === 0 ? (
               <tr className="empty-state-row"><td colSpan={9} style={{ textAlign: 'center', color: '#71717A', padding: 32 }}>Sin solicitudes{filter ? ` con estado ${filter}` : ''}</td></tr>
             ) : misReqs.map(r => (
               <tr key={r.id} style={{ cursor: 'pointer' }} onClick={() => setSelected(r)}>
-                <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#2563EB' }}>{r.codigo ?? r.id}</td>
+                <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#2563EB' }}>{publicCode(r)}</td>
                 <td style={{ fontWeight: 500, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.proyecto}</td>
                 <td style={{ fontSize: 12 }}>{r.sede}</td>
                 <td style={{ fontSize: 12, color: '#71717A', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.tecnico}</td>
@@ -81,7 +85,7 @@ export default function MisSolicitudesView({ usuario, onToast, onNav }: Props) {
                 <td onClick={e => e.stopPropagation()}>
                   {r.estado === 'CONFIRMADO' ? (
                     <button className="btn btn-ghost" style={{ fontSize: 12, whiteSpace: 'nowrap' }}
-                      aria-label={`Visualizar PDF de ${r.id}`} onClick={() => setPdfId(r.id)}>Visualizar PDF</button>
+                      aria-label={`Visualizar PDF de ${publicCode(r)}`} onClick={() => setPdfId(r.id)}>Visualizar PDF</button>
                   ) : <span
                     className={`badge badge-${DOCUMENT_STATUS[r.estado]?.color ?? 'gray'}`}
                     title={DOCUMENT_STATUS[r.estado]?.description ?? 'Documento no disponible.'}
@@ -113,7 +117,7 @@ export default function MisSolicitudesView({ usuario, onToast, onNav }: Props) {
           <div className="modal" style={{ width: 620 }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <div style={{ fontSize: 11, color: '#71717A', fontFamily: 'monospace', marginBottom: 3 }}>{selected.codigo ?? selected.id}</div>
+                <div style={{ fontSize: 11, color: '#71717A', fontFamily: 'monospace', marginBottom: 3 }}>{publicCode(selected)}</div>
                 <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#18181B' }}>{selected.proyecto}</h2>
               </div>
               <span className={`badge status-badge badge-${BADGE[selected.estado]}`}>{selected.estado}</span>

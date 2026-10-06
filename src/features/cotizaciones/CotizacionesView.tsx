@@ -1,3 +1,5 @@
+import ValidatedForm from "../../components/ValidatedForm";
+import { publicCode } from "../../utils/publicCode";
 import { useEffect, useRef, useState, type ReactNode } from "react"
 
 import type { Role } from "../../domain/types"
@@ -427,7 +429,7 @@ export default function CotizacionesView({
         if (!saving) setOperation(null)
       }}
     >
-      <form
+      <ValidatedForm
         onSubmit={async (e) => {
           e.preventDefault()
 
@@ -705,7 +707,7 @@ export default function CotizacionesView({
             </button>
           </div>
         </fieldset>
-      </form>
+      </ValidatedForm>
     </Dialog>
   )
 
@@ -1246,7 +1248,7 @@ export default function CotizacionesView({
             {linkedRequests.map((r) => (
               <div className="quote-line" key={r.id}>
                 <strong>
-                  {r.codigo ?? r.id} · {r.estado}
+                  {publicCode(r)} · {r.estado}
                 </strong>
                 <p>{r.descripcion}</p>
                 <p>
@@ -1307,7 +1309,7 @@ export default function CotizacionesView({
             <h3>Entregas vinculadas</h3>
             {deliveries.map((e) => (
               <p key={e.id}>
-                {e.id} · {e.estado} · {e.tecnico}
+                {publicCode(e)} · {e.estado} · {e.tecnico}
               </p>
             ))}
             {deliveries.length === 0 && <p>Sin entregas registradas.</p>}
@@ -1486,7 +1488,7 @@ export default function CotizacionesView({
                   </strong>
                   <p>{event.detalle}</p>
                   <small>
-                    {date(event.created_at)} · Usuario {event.usuario_id}
+                    {date(event.created_at)} · {event.usuario_nombre ?? "Usuario no disponible"}
                   </small>
                 </div>
               ))}

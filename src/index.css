@@ -2752,3 +2752,15 @@ body {
 .project-map-dialog .btn:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
 .project-map-dialog .btn:focus-visible { outline: 2px solid #2563eb; outline-offset: 3px; }
 .project-map-dialog .btn-primary:disabled:hover { background: #2563eb; box-shadow: none; }
+.field-validation-message { color: #b91c1c; font-weight: 500; font-size: 12px; line-height: 1.5; }
+.quote-editor [aria-invalid='true'] { border-color: #dc2626; background: #fff7f7; }
+.quote-editor [aria-invalid='true']:focus { box-shadow: 0 0 0 3px #fee2e2; }
+.quote-field > .quote-field-label { display: flex; flex-direction: column; gap: 6px; min-width: 0; font-weight: 400; }
+.quote-field-label > span:first-child { font-weight: 600; }
+.inline-control { display: inline-flex; flex-direction: column; gap: 5px; min-width: 0; max-width: 100%; vertical-align: top; }
+.inline-control:has(.input-field), .inline-control:has(.select-field) { width: 100%; }
+.inline-control [aria-invalid='true'] { border-color: #dc2626; background-color: #fff7f7; }
+.inline-control .field-validation-message { white-space: normal; text-align: left; }
+.auth-control > .inline-control { flex: 1; }
+.field-validation-message { display: block; margin-top: 4px; }
+.input-field[aria-invalid='true'], .select-field[aria-invalid='true'] { border-color: #dc2626; background-color: #fff7f7; }

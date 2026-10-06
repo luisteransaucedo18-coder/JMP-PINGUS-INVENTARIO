@@ -27,6 +27,7 @@ export interface CompraItem {
 }
 
 export interface RequerimientoCompra {
+  analistaId?: string
   requerimientoId?: string
   uuid?: string
 
@@ -116,6 +117,7 @@ export interface ReqMaterial {
 }
 
 export interface Requerimiento {
+  analistaId?: string
   dbId?: string
 
   id: string
@@ -145,6 +147,7 @@ export interface Requerimiento {
   observaciones?: string
 
   confirmadoPor?: string
+  confirmadoPorId?: string
 
   fechaConfirmacion?: string
 
@@ -201,6 +204,12 @@ export interface EntregaItem {
 
 export interface Entrega {
   id: string
+
+  codigo?: string
+
+  requerimientoCodigo?: string
+
+  fechaHora?: string
 
   requerimientoId: string
 

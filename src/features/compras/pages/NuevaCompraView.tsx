@@ -1,11 +1,12 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import FieldError from '../../../components/FieldError';
 import { useAppStore } from '../../../store/AppContext';
 import { SEDES, Sede } from '../../../domain/types';
 import MaterialPreviewModal, { PreviewBtn } from '../../../components/MaterialPreviewModal';
 import { Material, CompraItem } from '../../../domain/types';
-import { tieneMaterialesRepetidos } from '../../../utils/uniqueMaterials';
 import { crearCompra } from '../../../services/compraService';
 import { searchMaterials } from '../../../utils/materialSearch';
+import { estadoPorSede } from '../../../utils/inventoryStatus';
 
 
 interface Props { onToast: (m: string) => void; onNav: (v: string) => void; }
@@ -15,9 +16,9 @@ const ESTADO_BG:    Record<string, string> = { OK: '#CCFBF1', BAJO: '#FEF3C7', C
 
 export default function NuevaCompraView({ onToast, onNav }: Props) {
   const { state, refreshRemoteData } = useAppStore();
-  const materiales = state.materials;
 
   const [sede, setSede] = useState<Sede>('Chiclayo');
+  const materiales = state.materials.map(material => ({ ...material, estado: estadoPorSede(material, sede) }));
   const [motivo, setMotivo] = useState('');
   const [items, setItems] = useState<(CompraItem & { query: string; showDrop: boolean })[]>([
     { skuId: '', nombre: '', cantidadSolicitada: 0, precioUnitario: undefined, query: '', showDrop: false },
@@ -30,23 +31,8 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
   const savePending = useRef(false);
 
   /* Materials by estado for quick add */
-    const criticos = materiales.filter((m) => {
-      const stock = m.stockSedes[sede] ?? 0;
-
-      return (
-        (m.estado === 'CRÍTICO' || m.estado === 'AGOTADO') &&
-        stock < m.minimo
-      );
-    });
-
-    const bajos = materiales.filter((m) => {
-      const stock = m.stockSedes[sede] ?? 0;
-
-      return (
-        m.estado === 'BAJO' &&
-        stock < m.minimo
-      );
-    });
+    const criticos = materiales.filter(m => m.estado === 'CRÍTICO' || m.estado === 'AGOTADO');
+    const bajos = materiales.filter(m => m.estado === 'BAJO');
 
     const getMatches = (query: string) => searchMaterials(materiales, query, 8, 2);
 
@@ -118,15 +104,25 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
     const e: Record<string, string> = {};
     if (!motivo.trim()) e.motivo = 'Describe el motivo de compra';
     const valid = items.filter(it => (it.skuId || it.nombre) && it.cantidadSolicitada > 0);
-    if (!draft && valid.length === 0) e.items = 'Agrega al menos un material con cantidad';
-    if (tieneMaterialesRepetidos(valid)) e.items = 'Cada material debe aparecer una sola vez. Revisa las líneas repetidas.';
+    items.forEach((item,index) => {
+      const started = Boolean(item.query.trim() || item.skuId || item.nombre || item.cantidadSolicitada || item.precioUnitario != null);
+      if (!started && (draft || valid.length > 0)) return;
+      if (!item.skuId && !item.nombre.trim()) e[`material-${index}`] = 'Selecciona un material del catálogo.';
+      if (!Number.isFinite(item.cantidadSolicitada) || item.cantidadSolicitada <= 0) e[`cantidad-${index}`] = 'Ingresa una cantidad mayor que cero.';
+      if (item.precioUnitario != null && (!Number.isFinite(item.precioUnitario) || item.precioUnitario < 0)) e[`precio-${index}`] = 'Ingresa un precio mayor o igual a cero.';
+      if (item.skuId && items.filter(other => other.skuId === item.skuId).length > 1) e[`material-${index}`] = 'Este material ya está en otra línea.';
+    });
     return e;
   };
+  useEffect(() => {
+    const remaining = validate(false);
+    setErrors(previous => Object.fromEntries(Object.keys(previous).filter(key => remaining[key]).map(key => [key,remaining[key]])));
+  }, [items,motivo]);
 
   const handleSave = async (draft: boolean) => {
     if (savePending.current || submitted) return;
     const e = validate(draft);
-    if (Object.keys(e).length) { setErrors(e); return; }
+    if (Object.keys(e).length) { setErrors(e); const first=Object.keys(e)[0]; document.getElementById(first=== "motivo" ? "purchase-motivo" : `purchase-${first}`)?.focus(); return; }
     const valid = items.filter(it => (it.skuId || it.nombre) && it.cantidadSolicitada > 0);
     savePending.current = true;
     let stored = false;
@@ -208,12 +204,12 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
                 </select>
               </div>
               {[...criticos, ...bajos].length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '32px 0', color: '#8B8FA8', fontSize: 13 }}>No hay materiales en estado crítico o bajo en {sede}</div>
+                <div style={{ textAlign: 'center', padding: '32px 0', color: '#8B8FA8', fontSize: 13 }}>No hay materiales agotados, críticos o bajos en {sede}</div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {[...criticos, ...bajos].map(mat => {
                     const stock = mat.stockSedes[sede];
-                    const deficit = mat.minimo - stock;
+                    const deficit = Math.max(0, mat.minimo - stock);
                     const alreadyAdded = items.some(it => it.skuId === mat.id);
                     return (
                       <div key={mat.id} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto auto', gap: 14, alignItems: 'center', padding: '12px 16px', background: '#F8F9FF', borderRadius: 12, border: `1.5px solid ${alreadyAdded ? '#BBF7D0' : '#F0F2FF'}` }}>
@@ -223,11 +219,11 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
                         </div>
                         <div style={{ textAlign: 'center' }}>
                           <div style={{ fontSize: 11, color: '#8B8FA8', marginBottom: 3 }}>Stock actual</div>
-                          <span style={{ fontSize: 14, fontWeight: 800, color: ESTADO_COLOR[mat.estado] }}>{stock} UND</span>
+                          <span style={{ fontSize: 14, fontWeight: 800, color: ESTADO_COLOR[mat.estado] }}>{stock} {mat.unidad}</span>
                         </div>
                         <div style={{ textAlign: 'center' }}>
                           <div style={{ fontSize: 11, color: '#8B8FA8', marginBottom: 3 }}>Déficit</div>
-                          <span style={{ fontSize: 14, fontWeight: 800, color: '#DC2626' }}>+{deficit} UND</span>
+                          <span style={{ fontSize: 14, fontWeight: 800, color: '#DC2626' }}>{mat.minimo === 0 ? 'Mínimo sin configurar' : deficit > 0 ? `+${deficit} ${mat.unidad}` : 'Dentro del mínimo'}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <span className="status-badge" style={{ background: ESTADO_BG[mat.estado], color: ESTADO_COLOR[mat.estado], fontSize: 10.5 }}>{mat.estado}</span>
@@ -262,7 +258,7 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
                   <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#8B8FA8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 7 }}>
                     Motivo de compra <span style={{ color: '#DC2626' }}>*</span>
                   </label>
-                  <textarea className="input-field" rows={2}
+                  <textarea id="purchase-motivo" className="input-field" rows={2}
                     placeholder="Describe por qué se requieren estos materiales (stock insuficiente, nuevo proyecto, etc.)…"
                     style={{ resize: 'none', fontFamily: 'inherit', borderColor: errors.motivo ? '#DC2626' : undefined }}
                     value={motivo} onChange={e => { setMotivo(e.target.value); setErrors(p => ({ ...p, motivo: '' })); }} />
@@ -301,23 +297,6 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
       + Agregar material
     </button>
   </div>
-
-  {/* Error */}
-  {errors.items && (
-    <div
-      style={{
-        background: '#FEE2E2',
-        border: '1px solid #FECACA',
-        borderRadius: 10,
-        padding: '8px 14px',
-        fontSize: 12,
-        color: '#DC2626',
-        marginBottom: 10,
-      }}
-    >
-      {errors.items}
-    </div>
-  )}
 
   {/* Encabezados */}
   <div
@@ -492,6 +471,9 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
                   ) : (
                     <input
                       className="input-field"
+                      aria-invalid={errors[`material-${i}`] ? true : undefined}
+                      aria-describedby={errors[`material-${i}`] ? `purchase-material-${i}-error` : undefined}
+                      id={`purchase-material-${i}`}
                       placeholder="Buscar por nombre o SKU…"
                       value={item.query}
 
@@ -669,6 +651,7 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
                         )}
                       </div>
                     )}
+                  <FieldError id={`purchase-material-${i}-error`} message={errors[`material-${i}`]} />
                 </div>
 
                 {/* =========================================
@@ -677,13 +660,13 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
                 <div
                   style={{
                     width: '100%',
-                    height: 42,
-
+                    minHeight: 42,
                     display: 'flex',
-                    alignItems: 'center',
+                    flexDirection: 'column',
+                    alignItems: 'stretch',
                   }}
                 >
-                  <input
+                  <input id={`purchase-cantidad-${i}`} aria-invalid={errors[`cantidad-${i}`] ? true : undefined} aria-describedby={errors[`cantidad-${i}`] ? `purchase-cantidad-${i}-error` : undefined}
                     className="input-field"
                     type="number"
                     min="1"
@@ -722,6 +705,7 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
                         'center',
                     }}
                   />
+<FieldError id={`purchase-cantidad-${i}-error`} message={errors[`cantidad-${i}`]} />
                 </div>
 
                 {/* =========================================
@@ -753,7 +737,7 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
                     S/.
                   </span>
 
-                  <input
+                  <input aria-invalid={errors[`precio-${i}`] ? true : undefined} aria-describedby={errors[`precio-${i}`] ? `purchase-precio-${i}-error` : undefined}
                     className="input-field"
                     type="number"
 
@@ -798,6 +782,7 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
                         'right',
                     }}
                   />
+<FieldError id={`purchase-precio-${i}-error`} message={errors[`precio-${i}`]} />
                 </div>
 
                 {/* =========================================
@@ -806,10 +791,10 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
                 <div
                   style={{
                     width: '100%',
-                    height: 42,
-
+                    minHeight: 42,
                     display: 'flex',
-                    alignItems: 'center',
+                    flexDirection: 'column',
+                    alignItems: 'stretch',
                     justifyContent: 'center',
 
                     borderRadius: 8,
@@ -853,10 +838,10 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
                 <div
                   style={{
                     width: 40,
-                    height: 42,
-
+                    minHeight: 42,
                     display: 'flex',
-                    alignItems: 'center',
+                    flexDirection: 'column',
+                    alignItems: 'stretch',
                     justifyContent: 'center',
                   }}
                 >

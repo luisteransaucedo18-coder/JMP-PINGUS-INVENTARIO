@@ -1,3 +1,4 @@
+import { publicCode } from "../../../utils/publicCode";
 import { useEffect, useState } from 'react';
 import { SEDES, Sede } from '../../../domain/types';
 
@@ -126,8 +127,8 @@ export default function UsuariosView({ onToast }: Props) {
       e.nombre = 'El nombre es requerido';
     }
 
-    if (!form.email.trim() || !form.email.includes('@')) {
-      e.email = 'Email inválido';
+    if (!form.email.trim() || ! /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      e.email = 'Ingresa un correo electrónico válido.';
     }
 
     const emailExiste = usuarios.find(
@@ -475,7 +476,7 @@ export default function UsuariosView({ onToast }: Props) {
                       fontFamily: 'monospace',
                     }}
                   >
-                    {u.codigo || u.id.substring(0, 8)}
+                    {publicCode(u)}
                   </td>
 
                   {/* NOMBRE */}
@@ -657,7 +658,7 @@ export default function UsuariosView({ onToast }: Props) {
                   Nombre completo
                 </label>
 
-                <input
+                <input aria-invalid={errors.nombre ? true : undefined} aria-label="Nombre del usuario"
                   className="input-field"
                   type="text"
                   placeholder="Ej. María García Soto"
@@ -708,7 +709,7 @@ export default function UsuariosView({ onToast }: Props) {
                   Correo electrónico
                 </label>
 
-                <input
+                <input aria-invalid={errors.email ? true : undefined} aria-label="Correo del usuario"
                   className="input-field"
                   type="email"
                   placeholder="usuario@jip.pe"

@@ -1,5 +1,8 @@
+import FieldError from "../../../components/FieldError";
+import { useUserProfile } from "../../../store/UserProfileContext";
+import { ownedBy } from "../../../utils/recordOwner";
 import { COMPRA_COLOR as E_COLOR, COMPRA_BG as E_BG } from '../../../config/visualTokens';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAppStore } from '../../../store/AppContext';
 import { EstadoCompra } from '../../../domain/types';
 import { cancelarCompra } from '../../../services/compraService';
@@ -8,12 +11,13 @@ interface Props { usuario: string; onNav: (v: string) => void; onToast: (m: stri
 
 const E_LABEL: Record<EstadoCompra, string> = { BORRADOR: 'Borrador', ENVIADO: 'Enviado', APROBADO: 'Aprobado', COMPRADO: 'Comprado', RECHAZADO: 'Cancelada' };
 
-export default function MisComprasView({ usuario, onNav, onToast }: Props) {
+export default function MisComprasView({ onNav, onToast }: Props) {
+  const { profile } = useUserProfile();
   const { state, refreshRemoteData } = useAppStore();
   const [filter, setFilter] = useState<EstadoCompra | ''>('');
 
   const mis = state.compras
-    .filter(c => c.analista === usuario && (!filter || c.estado === filter))
+    .filter(c => ownedBy(c, profile) && (!filter || c.estado === filter))
     .sort((a, b) => b.fecha.localeCompare(a.fecha));
 
   const [selected, setSelected] = useState<string | null>(null);
@@ -23,11 +27,15 @@ export default function MisComprasView({ usuario, onNav, onToast }: Props) {
   const totalEst = (items: typeof mis[0]['items']) =>
     items.reduce((s, it) => s + it.cantidadSolicitada * (it.precioUnitario ?? 0), 0);
 
+  const [cancelReason,setCancelReason] = useState('');
+  const [showCancelReason,setShowCancelReason] = useState(false);
+  const [cancelWarning,setCancelWarning] = useState('');
+  useEffect(() => { setShowCancelReason(false); setCancelReason(''); setCancelWarning(''); }, [selected]);
   const cancelar = async () => {
     if (!det?.uuid || cancelando) return;
-    const motivo = window.prompt('¿Por qué deseas cancelar esta orden?');
-    if (motivo === null) return;
-    if (!motivo.trim()) { onToast('⚠ Indica el motivo de la cancelación'); return; }
+    if (!showCancelReason) { setShowCancelReason(true); return; }
+    const motivo = cancelReason;
+    if (!motivo.trim()) { setCancelWarning('Completa el motivo de la cancelación.'); return; }
     setCancelando(true);
     try {
       await cancelarCompra(det.uuid, motivo);
@@ -46,7 +54,7 @@ export default function MisComprasView({ usuario, onNav, onToast }: Props) {
         {/* KPI strip */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
           {(['ENVIADO','APROBADO','COMPRADO','RECHAZADO'] as EstadoCompra[]).map(e => {
-            const cnt = state.compras.filter(c => c.analista === usuario && c.estado === e).length;
+            const cnt = state.compras.filter(c => ownedBy(c, profile) && c.estado === e).length;
             return (
               <div key={e} className="kpi-card" style={{ cursor: 'pointer', outline: filter === e ? `2px solid ${E_COLOR[e]}` : 'none' }} onClick={() => setFilter(filter === e ? '' : e)}>
                 <div style={{ fontSize: 26, fontWeight: 800, color: E_COLOR[e], letterSpacing: '-0.03em' }}>{cnt}</div>
@@ -74,7 +82,7 @@ export default function MisComprasView({ usuario, onNav, onToast }: Props) {
           </div>
           <div style={{ overflowX: 'auto' }}>
             <table className="data-table">
-              <thead><tr><th>ID</th><th>Sede</th><th>Items</th><th>Total est.</th><th>Fecha</th><th>Estado</th><th></th></tr></thead>
+              <thead><tr><th>Código</th><th>Sede</th><th>Items</th><th>Total est.</th><th>Fecha</th><th>Estado</th><th></th></tr></thead>
               <tbody>
                 {mis.length === 0 ? (
                   <tr className="empty-state-row"><td colSpan={7} style={{ textAlign: 'center', padding: 40, color: '#8B8FA8' }}>
@@ -144,6 +152,7 @@ export default function MisComprasView({ usuario, onNav, onToast }: Props) {
                 <strong>Nota de compra:</strong> {det.notaCompra}
               </div>
             )}
+            {showCancelReason && <div style={{padding:'12px 20px'}}><label htmlFor="purchase-cancel-reason">Motivo de la cancelación</label><textarea id="purchase-cancel-reason" className="input-field" aria-invalid={cancelWarning ? true : undefined} value={cancelReason} onChange={event => {setCancelReason(event.target.value);setCancelWarning('');}} /><FieldError message={cancelWarning} /></div>}
             {(det.estado === 'BORRADOR' || det.estado === 'ENVIADO') && (
               <div style={{ padding: '14px 20px', borderTop: '1px solid #F0F2FF', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                 <span style={{ fontSize: 12, color: '#8B8FA8' }}>Si la creaste por error, puedes cancelarla mientras no haya sido aprobada.</span>

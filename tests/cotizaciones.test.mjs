@@ -125,8 +125,11 @@ test('PDF comercial paginado sin costos internos ni utilidad',async()=>{
 
 test('PDF del requerimiento conserva dirección y ubicación heredada', async () => {
   const require = createRequire(import.meta.url)
+  const publicCodeModule = ts.transpileModule(readFileSync(new URL('../src/utils/publicCode.ts', import.meta.url), 'utf8'), {compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText
+  const publicCodeUrl = `data:text/javascript;base64,${Buffer.from(publicCodeModule).toString('base64')}`
   const source = readFileSync(new URL('../src/utils/requirementPdf.ts', import.meta.url), 'utf8')
     .replace("'pdf-lib'", JSON.stringify(pathToFileURL(require.resolve('pdf-lib')).href))
+    .replace("'./publicCode'", JSON.stringify(publicCodeUrl))
   const compiled = ts.transpileModule(source, {compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText
   const {createRequirementPdf} = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`)
   const requirement = {id:id(20),codigo:'REQ-QA',estado:'CONFIRMADO',proyecto:'Proyecto QA',sede:'Chiclayo',ubicacion:'Av. José Balta 123, interior 2 — Lambayeque / Chiclayo / Chiclayo',descripcion:'Instalación de gas',analista:'Analista QA',tecnico:'Técnico QA',fecha:'2026-10-05',materiales:[]}

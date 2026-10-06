@@ -1,15 +1,13 @@
+import { publicCode } from "../../../utils/publicCode";
 import { useState } from 'react';
 import { useAppStore } from '../../../store/AppContext';
-import { Proyecto, Requerimiento, Role, SEDES, Sede } from '../../../domain/types';
+import { Proyecto, Requerimiento, Role, SEDES } from '../../../domain/types';
 import RequirementStatusTimeline from '../../../components/RequirementStatusTimeline';
 import CotizacionesView from '../../cotizaciones/CotizacionesView';
 
 interface Props { role: Role; onToast: (msg: string) => void; onNav?: (view: string) => void; }
 
-const SEDE_COLOR: Record<Sede, string> = { Chiclayo: '#2563EB', Chimbote: '#059669', Trujillo: '#7C3AED' };
-const SEDE_BG: Record<Sede, string> = { Chiclayo: '#DBEAFE', Chimbote: '#CCFBF1', Trujillo: '#F3E8FF' };
-const ESTADO_COLOR: Record<string, string> = { ENVIADO: '#D97706', CONFIRMADO: '#059669', RECHAZADO: '#DC2626', BORRADOR: '#71717A' };
-const ESTADO_BG: Record<string, string> = { ENVIADO: '#FEF3C7', CONFIRMADO: '#CCFBF1', RECHAZADO: '#FEE2E2', BORRADOR: '#F4F4F5' };
+import { SEDE_COLOR, SEDE_BG, REQUERIMIENTO_COLOR as ESTADO_COLOR, REQUERIMIENTO_BG as ESTADO_BG } from '../../../config/visualTokens';
 
 function ProjectDetail({ proyecto, onBack, role, onToast, onNav, managerSurface = false }: { proyecto: Proyecto; onBack: () => void; role: Role; onToast: (msg: string) => void; onNav?: (view: string) => void; managerSurface?: boolean }) {
   const [showQuotes, setShowQuotes] = useState(false);
@@ -18,10 +16,10 @@ function ProjectDetail({ proyecto, onBack, role, onToast, onNav, managerSurface 
   const [estadoFilter, setEstadoFilter] = useState('');
   const [selectedRequirement, setSelectedRequirement] = useState<Requerimiento | null>(null);
 
-  const reqs = state.requerimientos.filter(r => r.proyectoId === proyecto.id || r.proyecto === proyecto.nombre);
+  const reqs = state.requerimientos.filter(r => r.proyectoId === proyecto.id);
   const filtered = reqs.filter(r =>
     (!estadoFilter || r.estado === estadoFilter) &&
-    (!search || r.id.toLowerCase().includes(search.toLowerCase()) ||
+    (!search || publicCode(r).toLowerCase().includes(search.toLowerCase()) ||
       r.tecnico.toLowerCase().includes(search.toLowerCase()) ||
       r.materiales.some(m => m.nombre.toLowerCase().includes(search.toLowerCase())))
   ).sort((a, b) => b.fecha.localeCompare(a.fecha));
@@ -42,7 +40,7 @@ function ProjectDetail({ proyecto, onBack, role, onToast, onNav, managerSurface 
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: 240 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <span style={{ fontFamily: 'monospace', fontSize: 11, background: '#F4F4F5', color: '#71717A', padding: '2px 7px', borderRadius: 4 }}>{proyecto.id}</span>
+
               <span style={{ background: SEDE_BG[proyecto.sede], color: SEDE_COLOR[proyecto.sede], borderRadius: 4, padding: '2px 8px', fontSize: 11, fontWeight: 700 }}>{proyecto.sede}</span>
             </div>
             <h2 style={{ margin: '0 0 6px', fontSize: 20, fontWeight: 800, color: '#18181B', letterSpacing: '-0.01em' }}>{proyecto.nombre}</h2>
@@ -92,12 +90,12 @@ function ProjectDetail({ proyecto, onBack, role, onToast, onNav, managerSurface 
           <div style={{ overflowX: 'auto' }}>
             <table className="data-table">
               <thead>
-                <tr><th>ID</th><th>Fecha</th><th>Técnico</th><th>Materiales</th><th>Analista</th><th>Estado</th><th>Seguimiento</th></tr>
+                <tr><th>Código</th><th>Fecha</th><th>Técnico</th><th>Materiales</th><th>Analista</th><th>Estado</th><th>Seguimiento</th></tr>
               </thead>
               <tbody>
                 {filtered.map(r => (
                   <tr key={r.id}>
-                    <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#2563EB', fontWeight: 700 }}>{r.id}</td>
+                    <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#2563EB', fontWeight: 700 }}>{publicCode(r)}</td>
                     <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#71717A' }}>{r.fecha}</td>
                     <td style={{ fontSize: 12, fontWeight: 500 }}>{r.tecnico}</td>
                     <td>
@@ -134,7 +132,7 @@ function ProjectDetail({ proyecto, onBack, role, onToast, onNav, managerSurface 
           <div className="modal" style={{ width: 640 }} onClick={event => event.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <div style={{ fontSize: 11, color: '#71717A', fontFamily: 'monospace', marginBottom: 3 }}>{selectedRequirement.id}</div>
+                <div style={{ fontSize: 11, color: '#71717A', fontFamily: 'monospace', marginBottom: 3 }}>{publicCode(selectedRequirement)}</div>
                 <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#18181B' }}>{selectedRequirement.proyecto}</h2>
               </div>
               <span className="status-badge" style={{ background: ESTADO_BG[selectedRequirement.estado], color: ESTADO_COLOR[selectedRequirement.estado] }}>
@@ -217,7 +215,7 @@ export default function ProyectosView({ role, onToast, onNav }: Props) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 22 }}>
         {SEDES.map(s => {
           const cnt = state.proyectos.filter(p => p.sede === s).length;
-          const reqCnt = state.requerimientos.filter(r => state.proyectos.find(p => p.sede === s && (p.id === r.proyectoId || p.nombre === r.proyecto))).length;
+          const reqCnt = state.requerimientos.filter(r => state.proyectos.find(p => p.sede === s && p.id === r.proyectoId)).length;
           return (
             <div key={s} className="kpi-card" style={{ cursor: 'pointer', borderColor: sedeFilter === s ? SEDE_COLOR[s] : '#E4E4E7' }} onClick={() => setSedeFilter(sedeFilter === s ? '' : s)}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
@@ -254,7 +252,7 @@ export default function ProyectosView({ role, onToast, onNav }: Props) {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
           {filtered.map(p => {
-            const reqs = state.requerimientos.filter(r => r.proyectoId === p.id || r.proyecto === p.nombre);
+            const reqs = state.requerimientos.filter(r => r.proyectoId === p.id);
             const confirmados = reqs.filter(r => r.estado === 'CONFIRMADO').length;
             const pendientes = reqs.filter(r => r.estado === 'ENVIADO').length;
             const ultimo = [...reqs].sort((a, b) => b.fecha.localeCompare(a.fecha))[0];
@@ -266,7 +264,7 @@ export default function ProyectosView({ role, onToast, onNav }: Props) {
                 <div style={{ height: 4, background: SEDE_COLOR[p.sede], borderRadius: '8px 8px 0 0', margin: '-1px -1px 0' }} />
                 <div style={{ padding: '16px 18px', flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 10 }}>
-                    <span style={{ fontFamily: 'monospace', fontSize: 10.5, background: '#F4F4F5', color: '#71717A', padding: '2px 7px', borderRadius: 4 }}>{p.id}</span>
+
                     <span style={{ background: SEDE_BG[p.sede], color: SEDE_COLOR[p.sede], borderRadius: 4, padding: '2px 8px', fontSize: 11, fontWeight: 700 }}>{p.sede}</span>
                   </div>
                   <h3 style={{ margin: '0 0 4px', fontSize: 14.5, fontWeight: 700, color: '#18181B', lineHeight: 1.35 }}>{p.nombre}</h3>
@@ -302,7 +300,7 @@ export default function ProyectosView({ role, onToast, onNav }: Props) {
 
                   {ultimo && (
                     <div style={{ fontSize: 11, color: '#A1A1AA', marginBottom: 14 }}>
-                      Último req: <span style={{ fontFamily: 'monospace', color: '#2563EB' }}>{ultimo.id}</span> · {ultimo.fecha}
+                      Último req: <span style={{ fontFamily: 'monospace', color: '#2563EB' }}>{publicCode(ultimo)}</span> · {ultimo.fecha}
                     </div>
                   )}
                 </div>

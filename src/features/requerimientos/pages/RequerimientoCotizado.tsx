@@ -1,3 +1,4 @@
+import ValidatedForm from "../../../components/ValidatedForm";
 import { useState } from "react"
 
 import { useAppStore } from "../../../store/AppContext"
@@ -29,6 +30,7 @@ export default function RequerimientoCotizado({
 
   const [saving, setSaving] = useState(false)
 
+  const [selectionWarning, setSelectionWarning] = useState('');
   const [error, setError] = useState("")
 
   const [requestId, setRequestId] = useState(() => crypto.randomUUID())
@@ -110,16 +112,17 @@ export default function RequerimientoCotizado({
         )}
       </section>
       {quote && (
-        <form
+        <ValidatedForm
           onSubmit={async (e) => {
             e.preventDefault()
             if (saving) return
             if (!items.length) {
-              setError("Selecciona al menos un material e indica su cantidad.")
+              setSelectionWarning("Selecciona este material e indica una cantidad mayor que cero, o elige otro material.")
               return
             }
             setSaving(true)
             setError("")
+            setSelectionWarning("")
             try {
               await operarCotizacion("requerimiento", quote.id, {
                 revision: expectedRevision,
@@ -173,7 +176,7 @@ export default function RequerimientoCotizado({
                         · {m.sku} · disponible {remaining} {m.unidadCatalogo}
                       </small>
                     </label>
-                    <Field label={`Cantidad de ${m.nombre}`}>
+                    <Field label={`Cantidad de ${m.nombre}`} error={!items.length && m.id===quote.presupuesto.materiales[0]?.id ? selectionWarning : undefined}>
                       <NumericInput
                         className="input-field"
                         min={0}
@@ -212,13 +215,13 @@ export default function RequerimientoCotizado({
               <button
                 className="btn btn-primary"
                 type="submit"
-                disabled={!items.length}
+                disabled={saving}
               >
                 {saving ? "Enviando…" : "Enviar requerimiento"}
               </button>
             </section>
           </fieldset>
-        </form>
+        </ValidatedForm>
       )}
     </div>
   )

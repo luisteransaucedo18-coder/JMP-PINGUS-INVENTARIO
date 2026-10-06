@@ -1,3 +1,4 @@
+import FieldError from "../../../components/FieldError";
 import { useEffect, useState } from 'react';
 import { calcularEstado, estadoPorSede, coincideEstadoSedes, MINIMO_INICIAL_INVENTARIO } from '../../../utils/inventoryStatus';
 
@@ -325,19 +326,19 @@ export default function InventarioView({
       Record<string, string> = {};
 
     if (!form.id.trim()) {
-      e.id = 'Requerido';
+      e.id = 'Completa el código SKU.';
     }
 
     if (!form.nombre.trim()) {
-      e.nombre = 'Requerido';
+      e.nombre = 'Completa el nombre del material.';
     }
 
     if (!form.descripcion.trim()) {
-      e.descripcion = 'Requerido';
+      e.descripcion = 'Completa la descripción técnica.';
     }
 
     if (!form.categoria.trim()) {
-      e.categoria = 'Requerido';
+      e.categoria = 'Selecciona una categoría.';
     }
 
     if (
@@ -346,11 +347,17 @@ export default function InventarioView({
         parseFloat(form.minimo)
       )
     ) {
-      e.minimo = 'Inválido';
+      e.minimo = 'Ingresa un stock mínimo válido.';
     }
 
+    if (Number(form.minimo) < 0) e.minimo = 'Ingresa un valor mayor o igual a cero.';
     return e;
   };
+
+  useEffect(() => {
+    const validation = validateAdd();
+    setErrors(previous => Object.fromEntries(Object.keys(previous).filter(key => validation[key]).map(key => [key, validation[key]])));
+  }, [form]);
 
   // ====================================================
   // CREAR MATERIAL
@@ -496,6 +503,13 @@ export default function InventarioView({
   // GUARDAR STOCK
   // ====================================================
 
+  const [editWarnings,setEditWarnings] = useState<Record<string,string>>({});
+  useEffect(() => {
+    setEditWarnings(previous => Object.fromEntries(Object.entries(previous).filter(([key]) => {
+      const value = key==='minimo' ? editMinimo : editStock[key];
+      return (key==='minimo' && !value?.trim()) || !Number.isFinite(Number(value)) || Number(value)<0;
+    })));
+  }, [editStock,editMinimo]);
   const handleSaveStock =
     async () => {
 
@@ -503,6 +517,11 @@ export default function InventarioView({
         return;
       }
 
+      const warnings: Record<string,string> = {};
+      for(const sede of SEDES) if(!Number.isFinite(Number(editStock[sede])) || Number(editStock[sede])<0) warnings[sede] = 'Ingresa un stock mayor o igual a cero.';
+      if(!editMinimo.trim() || !Number.isFinite(Number(editMinimo)) || Number(editMinimo)<0) warnings.minimo = 'Ingresa un mínimo válido mayor o igual a cero.';
+      setEditWarnings(warnings);
+      if(Object.keys(warnings).length) return;
       try {
 
         const chiclayo =
@@ -2030,7 +2049,7 @@ export default function InventarioView({
                     </label>
 
 
-                    <input
+                    <input aria-invalid={editWarnings[s] ? true : undefined}
                       className=
                         "input-field"
 
@@ -2057,6 +2076,7 @@ export default function InventarioView({
                         )
                       }
                     />
+<FieldError message={editWarnings[s]} />
 
                   </div>
 
@@ -2089,7 +2109,7 @@ export default function InventarioView({
                 </label>
 
 
-                <input
+                <input aria-invalid={editWarnings.minimo ? true : undefined}
                   className=
                     "input-field"
 
@@ -2108,6 +2128,7 @@ export default function InventarioView({
                     )
                   }
                 />
+<FieldError message={editWarnings.minimo} />
 
               </div>
 
@@ -2265,7 +2286,7 @@ export default function InventarioView({
                   Nombre del material *
                 </label>
 
-                <input
+                <input aria-invalid={errors.nombre ? true : undefined} aria-describedby={errors.nombre ? "material-nombre-error" : undefined}
                   className=
                     "input-field"
 
@@ -2288,6 +2309,7 @@ export default function InventarioView({
                     )
                   }
                 />
+<FieldError id="material-nombre-error" message={errors.nombre} />
 
               </div>
 
@@ -2305,7 +2327,7 @@ export default function InventarioView({
                   Descripción técnica *
                 </label>
 
-                <textarea
+                <textarea aria-invalid={errors.descripcion ? true : undefined} aria-describedby={errors.descripcion ? "material-descripcion-error" : undefined}
                   className=
                     "input-field"
 
@@ -2327,6 +2349,7 @@ export default function InventarioView({
                     )
                   }
                 />
+<FieldError id="material-descripcion-error" message={errors.descripcion} />
 
               </div>
 
@@ -2339,7 +2362,7 @@ export default function InventarioView({
                   Categoría *
                 </label>
 
-                <select
+                <select aria-invalid={errors.categoria ? true : undefined} aria-describedby={errors.categoria ? "material-categoria-error" : undefined}
                   className=
                     "select-field"
 
@@ -2389,6 +2412,7 @@ export default function InventarioView({
                   )}
 
                 </select>
+<FieldError id="material-categoria-error" message={errors.categoria} />
 
               </div>
 
@@ -2401,7 +2425,7 @@ export default function InventarioView({
                   Stock mínimo por sede
                 </label>
 
-                <input
+                <input aria-invalid={errors.minimo ? true : undefined} aria-describedby={errors.minimo ? "material-minimo-error" : undefined}
                   className=
                     "input-field"
 
@@ -2425,6 +2449,7 @@ export default function InventarioView({
                     )
                   }
                 />
+<FieldError id="material-minimo-error" message={errors.minimo} />
 
               </div>
 

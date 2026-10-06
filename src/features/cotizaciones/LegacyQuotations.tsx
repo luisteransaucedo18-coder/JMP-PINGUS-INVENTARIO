@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { obtenerCotizacionesAnteriores, type LegacyQuote } from '../../services/cotizacionService'
+import { legacyQuoteFields } from '../../utils/legacyQuoteDisplay'
 
 export default function LegacyQuotations({ projectId }: { projectId?: string }) {
   const [quotes, setQuotes] = useState<LegacyQuote[]>([])
@@ -23,9 +24,9 @@ export default function LegacyQuotations({ projectId }: { projectId?: string }) 
       <summary>{q.codigo} · versión {q.version_actual}</summary>
       {q.versiones.slice().sort((a,b) => b.numero-a.numero).map(v => <div key={v.numero}>
         <h3>Versión {v.numero} · {v.estado}</h3>
-        <dl>{Object.entries(v.presupuesto).map(([name,value]) => <div key={name}>
-          <dt>{name}</dt>
-          <dd style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{typeof value === 'object' ? JSON.stringify(value,null,2) : String(value ?? '')}</dd>
+        <dl>{legacyQuoteFields(v.presupuesto).map(field => <div key={field.label}>
+          <dt>{field.label}</dt>
+          <dd style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{field.value}</dd>
         </div>)}</dl>
       </div>)}
     </details>)}

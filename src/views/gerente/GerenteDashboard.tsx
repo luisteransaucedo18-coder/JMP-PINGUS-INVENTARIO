@@ -1,3 +1,4 @@
+import { publicCode } from "../../utils/publicCode";
 import { SEDE_COLOR, SEDE_BG, REQUERIMIENTO_COLOR as ESTADO_COLOR, REQUERIMIENTO_BG as ESTADO_BG } from '../../config/visualTokens';
 import { Card, SectionHead, BarChart } from '../../components/DashboardPrimitives';
 import { useAppStore } from '../../store/AppContext';
@@ -262,7 +263,7 @@ export default function GerenteDashboard({ onNav }: Props) {
             <tbody>
               {recentReqs.slice(0, 5).map(r => (
                 <tr key={r.id} style={{ borderBottom: '1px solid #F8F9FF' }}>
-                  <td style={{ padding: '11px 8px', fontFamily: 'monospace', fontSize: 11, color: '#2563EB', fontWeight: 700 }}>{r.id}</td>
+                  <td style={{ padding: '11px 8px', fontFamily: 'monospace', fontSize: 11, color: '#2563EB', fontWeight: 700 }}>{publicCode(r)}</td>
                   <td style={{ padding: '11px 8px', fontSize: 12.5, fontWeight: 600, color: '#1A1D23', maxWidth: 200, overflowWrap: 'anywhere' }}>{r.proyecto}</td>
                   <td style={{ padding: '11px 8px' }}>
                     <span style={{ background: SEDE_BG[r.sede], color: SEDE_COLOR[r.sede], borderRadius: 6, padding: '3px 8px', fontSize: 11, fontWeight: 700 }}>{r.sede}</span>

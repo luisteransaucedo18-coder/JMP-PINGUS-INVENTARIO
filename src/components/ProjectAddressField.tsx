@@ -27,18 +27,19 @@ function geocode<T>(parameters: Record<string, string>, signal: AbortSignal): Pr
   return result;
 }
 
-type Props = { value: string; onChange: (value: string) => void; departamento: string; provincia: string; distrito: string; readOnly?: boolean };
+type Props = { value: string; onChange: (value: string) => void; departamento: string; provincia: string; distrito: string; readOnly?: boolean; error?: string };
 export default function ProjectAddressField(props: Props) {
   const [open, setOpen] = useState(false);
   const ready = Boolean(props.departamento && props.provincia && props.distrito);
-  return <div className="quote-field project-address-field">
+  return <div className="quote-field project-address-field" data-field-label="Dirección del proyecto">
     <label htmlFor="project-address">Dirección del proyecto</label>
     <div className="project-address-control">
-      <ExpandingTextField id="project-address" className="input-field" autoComplete="street-address" placeholder="Ej. Av. José Balta 123, interior 2" required readOnly={props.readOnly} value={props.value} onChange={e => props.onChange(e.target.value)} />
+      <ExpandingTextField id="project-address" aria-invalid={props.error ? true : undefined} aria-describedby={props.error ? 'project-address-error' : undefined} className="input-field" autoComplete="street-address" placeholder="Ej. Av. José Balta 123, interior 2" required readOnly={props.readOnly} value={props.value} onChange={e => props.onChange(e.target.value)} />
       <button type="button" className="project-address-map-button" aria-label="Seleccionar ubicación en el mapa" title={ready ? 'Seleccionar ubicación en el mapa' : 'Selecciona departamento, provincia y distrito'} disabled={!ready || props.readOnly} onClick={() => setOpen(true)}>
         <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="m9 18-6 3V6l6-3 6 3 6-3v8M9 3v15M3 6l6-3 6 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/><path d="M22 16c0 3-4 6-4 6s-4-3-4-6a4 4 0 0 1 8 0Z" stroke="currentColor" strokeWidth="1.6"/><circle cx="18" cy="16" r="1" fill="currentColor"/></svg>
       </button>
     </div>
+    {props.error && <small id="project-address-error" className="field-validation-message">{props.error}</small>}
     {!ready && <small>Selecciona departamento, provincia y distrito para abrir el mapa.</small>}
     {props.readOnly && <small>La dirección pertenece al proyecto vinculado y no se puede modificar desde esta cotización.</small>}
     {open && <AddressMap {...props} onClose={() => setOpen(false)} />}

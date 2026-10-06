@@ -1,3 +1,4 @@
+import ValidatedForm from "../../components/ValidatedForm";
 import { useState } from "react"
 import { useAppStore } from "../../store/AppContext"
 import type { Role } from "../../domain/types"
@@ -161,7 +162,7 @@ export default function QuotationReport({
         </button>
       )}
       {edit && (
-        <form
+        <ValidatedForm
           onSubmit={async (e) => {
             e.preventDefault()
             setSaving(true)
@@ -227,7 +228,7 @@ export default function QuotationReport({
               </button>
             </div>
           </fieldset>
-        </form>
+        </ValidatedForm>
       )}
     </section>
   )

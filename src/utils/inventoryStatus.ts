@@ -13,6 +13,12 @@ export function estadoPorSede(material: Material, sede: Sede): EstadoMaterial {
   return calcularEstado(Number(material.stockSedes[sede] ?? 0), material.minimo);
 }
 
+/** Stock elsewhere must never hide a site that needs replenishment. */
+export function estadoGeneral(material: Material): EstadoMaterial {
+  const states = Object.values(material.stockSedes).map(stock => calcularEstado(Number(stock), material.minimo));
+  return (['AGOTADO', 'CRÍTICO', 'BAJO', 'OK'] as const).find(state => states.includes(state)) ?? 'OK';
+}
+
 export function coincideEstadoSedes(material: Material, sedes: readonly Sede[], estado: string): boolean {
   return !estado || sedes.some(sede => estadoPorSede(material, sede) === estado);
 }

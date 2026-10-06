@@ -1,3 +1,4 @@
+import { publicCode } from './publicCode';
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage, type RGB } from 'pdf-lib';
 import type { Entrega, Material, Requerimiento } from '../domain/types';
 
@@ -58,7 +59,7 @@ export async function createRequirementPdf(
   logoBytes: Uint8Array,
 ): Promise<Uint8Array> {
   if (requirement.estado !== 'CONFIRMADO') throw new Error('La solicitud aún no está confirmada.');
-  const reference = requirement.codigo ?? requirement.id;
+  const reference = publicCode(requirement);
   const doc = await PDFDocument.create();
   doc.setTitle(`JM-FI-GL-07 - ${reference}`);
   doc.setAuthor(COMPANY);

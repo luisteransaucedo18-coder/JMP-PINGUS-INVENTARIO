@@ -31,8 +31,11 @@ export default function NumericInput({
       {...props}
       type="text"
       inputMode={integer ? "numeric" : "decimal"}
+      data-min={min}
+      data-max={max}
+      data-integer={integer}
       pattern={integer ? "[0-9]+" : "[0-9]+([.,][0-9]+)?"}
-      aria-invalid={value < min || (max != null && value > max) || undefined}
+      aria-invalid={props['aria-invalid'] ?? (value < min || (max != null && value > max) || undefined)}
       value={draft}
       onChange={(event) => {
         const next = event.target.value

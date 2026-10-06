@@ -1,5 +1,7 @@
 import { supabase } from './supabase';
 import { Entrega, Sede } from '../domain/types';
+import { publicCode } from '../utils/publicCode';
+import { limaDate, limaTime } from '../utils/limaDate';
 
 type EstadoDevolucion = 'PENDIENTE_VALIDACION' | 'OBSERVADA' | 'VALIDADA';
 export interface SaldoDevolucion { requerimientoId: string; requerimientoCodigo: string; skuId: string; nombre: string; unidad: string; disponible: number; }
@@ -23,7 +25,7 @@ export async function obtenerDevoluciones(): Promise<Devolucion[]> {
   if (error) throw error;
   return (data ?? []).map((row: any) => ({
     id: row.id, codigo: row.codigo, proyectoId: row.proyecto_id, proyecto: row.proyecto?.nombre ?? 'Proyecto', requerimientoId: row.requerimiento_id,
-    requerimientoCodigo: row.requerimiento?.codigo ?? row.requerimiento_id, ubicacion: row.ubicacion_proyecto, sedeReceptora: row.sede_receptora,
+    requerimientoCodigo: publicCode(row.requerimiento ?? {}), ubicacion: row.ubicacion_proyecto, sedeReceptora: row.sede_receptora,
     estado: row.estado, analista: row.analista?.nombre ?? 'Analista', observacion: row.observacion ?? undefined, createdAt: row.created_at,
     validadoPor: row.validador?.nombre ?? undefined, fechaValidacion: row.fecha_validacion ?? undefined,
     items: (row.items ?? []).map((i: any) => ({ skuId: i.material_sku, nombre: i.material_nombre, unidad: i.unidad ?? 'UND', cantidad: Number(i.cantidad) })),
@@ -53,15 +55,20 @@ export async function registrarDevolucion(input: { requerimientoId: string; sede
   if (error) { await supabase.storage.from('evidencias-devoluciones').remove(paths); throw error; }
 }
 
-export async function registrarEntrega(requerimientoId: string, tecnico: string, dni: string, observaciones: string, items: { skuId: string; nombre: string; cantidadSolicitada: number; cantidadEntregada: number }[]): Promise<string> {
+export async function registrarEntrega(requerimientoId: string, tecnico: string, dni: string, observaciones: string, items: { skuId: string; nombre: string; cantidadSolicitada: number; cantidadEntregada: number }[]): Promise<{ codigo: string; fecha: string; hora: string }> {
   const { data, error } = await supabase.rpc('registrar_entrega', { p_requerimiento_id: requerimientoId, p_tecnico: tecnico, p_dni_tecnico: dni, p_observaciones: observaciones, p_items: items.map(item => ({ material_sku: item.skuId, material_nombre: item.nombre, cantidad_solicitada: item.cantidadSolicitada, cantidad_entregada: item.cantidadEntregada })) });
   if (error) throw error;
-  return data;
+  // A failed readback must never invite a second submission of a saved delivery.
+  const saved = await supabase.from('entregas').select('codigo,fecha_hora').eq('id', data).single().then(result => result.data, () => null);
+  const timestamp = saved?.fecha_hora ? new Date(saved.fecha_hora) : new Date();
+  return { codigo: publicCode(saved ?? {}, 'Entrega registrada'), fecha: limaDate(timestamp), hora: limaTime(timestamp) };
 }
 
 export async function obtenerEntregas(): Promise<Entrega[]> {
   const { data, error } = await supabase.from('entregas').select(`
-    id,requerimiento_id,proyecto_nombre,tecnico,dni_tecnico,fecha_hora,estado,observaciones,
+    id,codigo,requerimiento_id,proyecto_nombre,tecnico,dni_tecnico,fecha_hora,estado,observaciones,
+    requerimiento:requerimientos!entregas_requerimiento_id_fkey(codigo),
+    responsable:perfiles!entregas_responsable_entrega_id_fkey(nombre),
     items:entrega_items(material_sku,material_nombre,cantidad_solicitada,cantidad_entregada)
   `).order('fecha_hora', { ascending: false });
   if (error) throw error;
@@ -70,13 +77,16 @@ export async function obtenerEntregas(): Promise<Entrega[]> {
     const timestamp = new Date(row.fecha_hora);
     return {
       id: row.id,
+      codigo: row.codigo,
+      requerimientoCodigo: publicCode(row.requerimiento ?? {}),
+      fechaHora: row.fecha_hora,
       requerimientoId: row.requerimiento_id,
       proyectoNombre: row.proyecto_nombre,
       tecnico: row.tecnico,
       dniTecnico: row.dni_tecnico ?? '',
-      responsableEntrega: 'Usuario registrado',
-      fecha: timestamp.toISOString().split('T')[0],
-      hora: timestamp.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }),
+      responsableEntrega: row.responsable?.nombre ?? 'Responsable no disponible',
+      fecha: limaDate(timestamp),
+      hora: limaTime(timestamp),
       estado: row.estado,
       observaciones: row.observaciones ?? undefined,
       items: (row.items ?? []).map((item: any) => ({

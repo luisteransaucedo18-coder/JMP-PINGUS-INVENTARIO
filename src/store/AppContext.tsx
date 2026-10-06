@@ -62,6 +62,7 @@ interface AppContextType {
   state: AppState;
   refreshRemoteData: () => Promise<void>;
   initialLoad: 'loading' | 'ready' | 'error';
+  syncErrors: string[];
   retryInitialLoad: () => void;
 }
 
@@ -70,6 +71,7 @@ const AppContext = createContext<AppContextType | null>(null);
 export function AppProvider({ children }: { children: ReactNode }) {
   const [initialLoad, setInitialLoad] = useState<'loading' | 'ready' | 'error'>('loading');
   const [loadAttempt, setLoadAttempt] = useState(0);
+  const [syncErrors, setSyncErrors] = useState<string[]>([]);
   const [state, dispatch] = useReducer(reducer, initialState);
   const mounted = useRef(true);
   const lastSyncComplete = useRef(false);
@@ -86,6 +88,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const [requirements, projects, materials, deliveries, purchases] = results;
     lastSyncComplete.current = results.every(result => result.status === 'fulfilled');
     if (!mounted.current) return;
+    const labels = ['Requerimientos', 'Proyectos', 'Inventario', 'Entregas', 'Compras', 'Cotizaciones', 'Devoluciones'];
+    setSyncErrors(results.flatMap((result, index) => result.status === 'rejected' ? [labels[index]] : []));
     const quotations = results[5];
     if (results[6].status === 'fulfilled') dispatch({ type: 'REPLACE_DEVOLUCIONES', payload: results[6].value });
     if (quotations.status === 'fulfilled') dispatch({ type: 'REPLACE_COTIZACIONES', payload: { cotizaciones: quotations.value[0], gastosProyecto: quotations.value[1], plantillasCotizacion: quotations.value[2], periodosCotizacion:quotations.value[3], cotizacionesError: null } });
@@ -135,7 +139,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => { active = false; mounted.current = false; void supabase.removeChannel(channel); };
   }, [refreshRemoteData, loadAttempt]);
 
-  return <AppContext.Provider value={{ state, refreshRemoteData, initialLoad, retryInitialLoad: () => setLoadAttempt(value => value + 1) }}>{children}</AppContext.Provider>;
+  return <AppContext.Provider value={{ state, refreshRemoteData, initialLoad, syncErrors, retryInitialLoad: () => setLoadAttempt(value => value + 1) }}>{children}</AppContext.Provider>;
 }
 
 export function useAppStore() {

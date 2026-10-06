@@ -29,6 +29,7 @@ function render(sede, filtro = '') {
     if (name.endsWith('/inventoryStatus')) return status;
     if (name.endsWith('/domain/types')) return { SEDES: ['Chiclayo', 'Chimbote', 'Trujillo'] };
     if (name.endsWith('/materialService')) return {};
+    if (name.endsWith('/FieldError')) return { default: () => null };
     if (name === './StockStatusDialog') return { default: () => null };
     if (name.endsWith('/MaterialPreviewModal')) return { default: () => null };
     throw new Error(`Unexpected import ${name}`);
@@ -49,6 +50,53 @@ test('respeta los límites del mínimo y stock decimal', () => {
   }
   assert.equal(status.calcularEstado(0, 0), 'AGOTADO');
   assert.equal(status.calcularEstado(1, 0), 'OK');
+});
+
+test('las alertas generales no ocultan una sede agotada por el stock de otra', () => {
+  assert.equal(status.estadoGeneral(material), 'AGOTADO');
+  assert.equal(status.estadoGeneral({ ...material, stockSedes: { Chiclayo: 100, Chimbote: 5, Trujillo: 100 } }), 'CRÍTICO');
+});
+
+test('compras muestra agotados con mínimo cero y bajos de la sede, aunque el catálogo indique OK', () => {
+  const zero = { ...material, id: 'ZERO', nombre: 'Material sin stock', minimo: 0, stockSedes: { Chiclayo: 0, Chimbote: 100, Trujillo: 100 } };
+  const low = { ...material, id: 'LOW', nombre: 'Cable bajo', stockSedes: { Chiclayo: 12, Chimbote: 100, Trujillo: 100 } };
+  const purchaseSource = readFileSync(new URL('../src/features/compras/pages/NuevaCompraView.tsx', import.meta.url), 'utf8');
+  const renderPurchase = sede => {
+    const values = [sede, '', [{ skuId: '', nombre: '', cantidadSolicitada: 0, query: '', showDrop: false }], {}, null, false, 'criticos', false];
+    let index = 0;
+    const { default: Purchase } = load(purchaseSource, name => {
+      if (name === 'react') return { ...React, useState: () => [values[index++], () => {}], useRef: () => ({ current: false }), useEffect: () => {} };
+      if (name === 'react/jsx-runtime') return jsxRuntime;
+      if (name.endsWith('/AppContext')) return { useAppStore: () => ({ state: { materials: [zero, low] }, refreshRemoteData: async () => {} }) };
+      if (name.endsWith('/inventoryStatus')) return status;
+      if (name.endsWith('/domain/types')) return { SEDES: ['Chiclayo', 'Chimbote', 'Trujillo'] };
+      if (name.endsWith('/MaterialPreviewModal')) return { default: () => null, PreviewBtn: () => null };
+      if (name.endsWith('/FieldError')) return { default: () => null };
+      if (name.endsWith('/materialSearch')) return { searchMaterials: () => [] };
+      if (name.endsWith('/uniqueMaterials') || name.endsWith('/compraService')) return {};
+      throw new Error(`Unexpected import ${name}`);
+    });
+    return renderToStaticMarkup(Purchase({ onToast: () => {}, onNav: () => {} }));
+  };
+  const html = renderPurchase('Chiclayo');
+  assert.match(html, /Material sin stock/); assert.match(html, /AGOTADO/);
+  assert.match(html, /Cable bajo/); assert.match(html, />BAJO</);
+  assert.match(html, /Mínimo sin configurar/);
+  assert.doesNotMatch(html, /No hay materiales agotados/);
+  assert.match(renderPurchase('Chimbote'), /No hay materiales agotados, críticos o bajos en Chimbote/);
+});
+
+test('el servicio conserva existencias de BD y deriva la alerta general desde esas sedes', async () => {
+  const rows = [{ sku: 'ZERO', nombre: 'Cable', unidad: 'MTS', categoria_id: 1, stock_minimo: 10, precio_unitario: 1, estado: 'OK' }];
+  const inventory = [{ material_sku: 'ZERO', sede: 'Chiclayo', stock: 0 }, { material_sku: 'ZERO', sede: 'Chimbote', stock: 5 }, { material_sku: 'ZERO', sede: 'Trujillo', stock: 100 }];
+  const service = load(readFileSync(new URL('../src/services/materialService.ts', import.meta.url), 'utf8'), name => {
+    if (name.endsWith('/inventoryStatus')) return status;
+    if (name === './supabase') return { supabase: { from: table => ({ select: () => { const result = Promise.resolve({ data: table === 'materiales' ? rows : inventory, error: null }); result.order = () => result; return result; } }) } };
+    throw new Error(`Unexpected import ${name}`);
+  });
+  const [loaded] = await service.obtenerMateriales();
+  assert.deepEqual(loaded.stockSedes, { Chiclayo: 0, Chimbote: 5, Trujillo: 100 });
+  assert.equal(loaded.estado, 'AGOTADO');
 });
 
 test('tabla y filtro respetan la sede seleccionada', () => {

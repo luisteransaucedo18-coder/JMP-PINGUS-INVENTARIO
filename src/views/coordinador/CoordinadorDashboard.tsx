@@ -1,3 +1,4 @@
+import { publicCode } from "../../utils/publicCode";
 import { useAppStore } from '../../store/AppContext';
 import { SEDES } from '../../domain/types';
 import { obtenerFaltantesRequerimiento } from '../../utils/requirementStock';
@@ -61,7 +62,7 @@ export default function CoordinadorDashboard({ onNav }: Props) {
               <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#D97706', flexShrink: 0, marginTop: 6 }} />
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
-                  <span style={{ fontSize: 11, color: '#2563EB', fontFamily: 'monospace' }}>{r.id}</span>
+                  <span style={{ fontSize: 11, color: '#2563EB', fontFamily: 'monospace' }}>{publicCode(r)}</span>
                   <span style={{ fontSize: 11, color: SEDE_COLOR[r.sede], fontWeight: 600 }}>{r.sede}</span>
                 </div>
                 <div style={{ fontSize: 13.5, fontWeight: 600, color: '#18181B', marginBottom: 4 }}>{r.proyecto}</div>

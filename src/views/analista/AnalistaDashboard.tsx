@@ -1,3 +1,6 @@
+import { useUserProfile } from "../../store/UserProfileContext";
+import { ownedBy } from "../../utils/recordOwner";
+import { publicCode } from "../../utils/publicCode";
 import { useEffect, useState } from 'react';
 import { useAppStore } from '../../store/AppContext';
 import AnalistaHelpCenter from '../../components/AnalistaHelpCenter';
@@ -23,10 +26,10 @@ interface Props {
 }
 
 export default function AnalistaDashboard({
-  usuario,
   onNav,
 }: Props) {
 
+  const { profile } = useUserProfile();
   const { state } = useAppStore();
   const [helpMode, setHelpMode] = useState<'faq' | 'manual' | null>(null);
 
@@ -70,10 +73,7 @@ export default function AnalistaDashboard({
   const misReqs =
     state.requerimientos.filter(
       (r) =>
-        r.analista === usuario ||
-        r.analista.includes(
-          usuario.split(' ')[0]
-        )
+        ownedBy(r, profile)
     );
 
   const recent = [...misReqs]
@@ -398,7 +398,7 @@ export default function AnalistaDashboard({
                           'monospace',
                       }}
                     >
-                      {r.id}
+                      {publicCode(r)}
                     </span>
 
                     <span

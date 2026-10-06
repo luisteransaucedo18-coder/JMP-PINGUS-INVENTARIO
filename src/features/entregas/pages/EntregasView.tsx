@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { publicCode } from "../../../utils/publicCode";
+import { useRef, useState } from 'react';
+import { deliveryBalance } from '../../../utils/deliveryBalance';
+import FieldError from '../../../components/FieldError';
 import { useAppStore } from '../../../store/AppContext';
 import { Requerimiento, EntregaItem, EstadoEntrega } from '../../../domain/types';
 import MaterialPreviewModal, { PreviewBtn } from '../../../components/MaterialPreviewModal';
@@ -17,8 +20,13 @@ const ESTADO_E: Record<EstadoEntrega, { bg: string; color: string; label: string
 function Comprobante({ entregaId, req, tecnico, dni, responsable, items, fecha, hora, obs, onClose }:
   { entregaId: string; req: Requerimiento; tecnico: string; dni: string; responsable: string; items: EntregaItem[]; fecha: string; hora: string; obs: string; onClose: () => void }) {
 
-  const totalSolicitado = items.reduce((s, i) => s + i.cantidadSolicitada, 0);
-  const totalEntregado = items.reduce((s, i) => s + i.cantidadEntregada, 0);
+  const totals = (key: 'cantidadSolicitada' | 'cantidadEntregada') => {
+    const byUnit: Record<string, number> = {};
+    items.forEach(i => { const unit = req.materiales.find(m => m.skuId === i.skuId)?.unidad ?? 'UND'; byUnit[unit] = (byUnit[unit] ?? 0) + i[key]; });
+    return Object.entries(byUnit).map(([unit, n]) => `${n} ${unit}`).join(' · ');
+  };
+  const totalSolicitado = totals('cantidadSolicitada');
+  const totalEntregado = totals('cantidadEntregada');
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -46,7 +54,7 @@ function Comprobante({ entregaId, req, tecnico, dni, responsable, items, fecha, 
             {[
               ['N° Comprobante', entregaId],
               ['Fecha y hora', `${fecha} ${hora}`],
-              ['Requerimiento', req.id],
+              ['Requerimiento', publicCode(req)],
               ['Proyecto', req.proyecto],
               ['Sede', req.sede],
               ['Técnico receptor', tecnico],
@@ -72,13 +80,14 @@ function Comprobante({ entregaId, req, tecnico, dni, responsable, items, fecha, 
               <tbody>
                 {items.map((item, i) => {
                   const saldo = item.cantidadSolicitada - item.cantidadEntregada;
+              const unit = req.materiales.find(m => m.skuId === item.skuId)?.unidad ?? 'UND';
                   return (
                     <tr key={i}>
                       <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#2563EB' }}>{item.skuId}</td>
                       <td style={{ fontSize: 12 }}>{item.nombre}</td>
-                      <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{item.cantidadSolicitada} UND</td>
-                      <td style={{ fontFamily: 'monospace', fontWeight: 700, color: item.cantidadEntregada === item.cantidadSolicitada ? '#059669' : '#D97706' }}>{item.cantidadEntregada} UND</td>
-                      <td style={{ fontFamily: 'monospace', fontWeight: 600, color: saldo > 0 ? '#DC2626' : '#059669' }}>{saldo} UND</td>
+                      <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{item.cantidadSolicitada} {unit}</td>
+                      <td style={{ fontFamily: 'monospace', fontWeight: 700, color: item.cantidadEntregada === item.cantidadSolicitada ? '#059669' : '#D97706' }}>{item.cantidadEntregada} {unit}</td>
+                      <td style={{ fontFamily: 'monospace', fontWeight: 600, color: saldo > 0 ? '#DC2626' : '#059669' }}>{saldo} {unit}</td>
                     </tr>
                   );
                 })}
@@ -86,9 +95,9 @@ function Comprobante({ entregaId, req, tecnico, dni, responsable, items, fecha, 
               <tfoot>
                 <tr style={{ background: '#F9FAFB' }}>
                   <td colSpan={2} style={{ fontWeight: 700, fontSize: 12 }}>TOTALES</td>
-                  <td style={{ fontFamily: 'monospace', fontWeight: 700 }}>{totalSolicitado} UND</td>
-                  <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#059669' }}>{totalEntregado} UND</td>
-                  <td style={{ fontFamily: 'monospace', fontWeight: 700, color: totalSolicitado - totalEntregado > 0 ? '#DC2626' : '#059669' }}>{totalSolicitado - totalEntregado} UND</td>
+                  <td style={{ fontFamily: 'monospace', fontWeight: 700 }}>{totalSolicitado}</td>
+                  <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#059669' }}>{totalEntregado}</td>
+                  <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#52525B' }}>Por material</td>
                 </tr>
               </tfoot>
             </table>
@@ -117,27 +126,39 @@ function Comprobante({ entregaId, req, tecnico, dni, responsable, items, fecha, 
 
 function EntregaForm({ req, usuario, onDone, onCancel }: { req: Requerimiento; usuario: string; onDone: () => void; onCancel: () => void }) {
   const { state, refreshRemoteData } = useAppStore();
+  const balance = deliveryBalance(req, state.entregas);
+  const submittingRef = useRef(false);
   const [tecnico, setTecnico] = useState(req.tecnico);
   const [dni, setDni] = useState('');
   const [obs, setObs] = useState('');
   const [items, setItems] = useState<EntregaItem[]>(
-    req.materiales.map(m => ({ skuId: m.skuId, nombre: m.nombre, cantidadSolicitada: m.cantidad, cantidadEntregada: m.cantidad }))
+    balance.rows.filter(m => m.remaining > 0).map(m => ({ skuId: m.skuId, nombre: m.nombre, cantidadSolicitada: m.remaining, cantidadEntregada: m.remaining }))
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showConfirm, setShowConfirm] = useState(false);
   const [showComprobante, setShowComprobante] = useState(false);
   const [entregaId, setEntregaId] = useState('');
+  const [receiptDate, setReceiptDate] = useState({ fecha: '', hora: '' });
   const [previewMat, setPreviewMat] = useState<Material | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const updateQty = (i: number, v: string) => {
-    const n = Math.max(0, Math.min(items[i].cantidadSolicitada, parseInt(v) || 0));
+    const n = Math.max(0, Math.min(items[i].cantidadSolicitada, Number(v) || 0));
     setItems(prev => prev.map((item, j) => j === i ? { ...item, cantidadEntregada: n } : item));
+    setErrors(previous => { const next = {...previous}; delete next[`quantity-${i}`]; return next; });
   };
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!tecnico.trim()) e.tecnico = 'Requerido';
+    if (!tecnico.trim()) e.tecnico = 'Completa el nombre del técnico.';
+    if (!items.some(i => i.cantidadEntregada > 0)) e['quantity-0'] = 'Ingresa una cantidad mayor que cero en al menos un material.';
+    items.forEach((item,index) => {
+      const unit = req.materiales.find(m => m.skuId === item.skuId)?.unidad ?? 'UND';
+      if (!Number.isFinite(item.cantidadEntregada) || item.cantidadEntregada<0) e[`quantity-${index}`] = 'Ingresa una cantidad válida mayor o igual a cero.';
+      else if (['UND','ROLLO','PAR'].includes(unit) && !Number.isInteger(item.cantidadEntregada)) e[`quantity-${index}`] = `La unidad ${unit} requiere una cantidad entera.`;
+      else if (item.cantidadEntregada > (balance.rows.find(r => r.skuId === item.skuId)?.remaining ?? 0)) e[`quantity-${index}`] = 'La cantidad supera el saldo pendiente. Actualiza el requerimiento.';
+    });
+    if (balance.hasExcess) e.submit = 'Este requerimiento tiene entregas superiores a lo solicitado. Solicita su revisión antes de registrar otra entrega.';
     return e;
   };
 
@@ -148,16 +169,21 @@ function EntregaForm({ req, usuario, onDone, onCancel }: { req: Requerimiento; u
   };
 
   const handleSubmit = async () => {
+    if (submittingRef.current) return;
+    const validation = validate();
+    if (Object.keys(validation).length) { setErrors(validation); setShowConfirm(false); return; }
+    submittingRef.current = true;
     setSubmitting(true);
     try {
-      const persistedId = await registrarEntrega(req.id, tecnico, dni, obs, items);
+      const saved = await registrarEntrega(req.id, tecnico, dni, obs, items);
       await refreshRemoteData();
-      setEntregaId(persistedId);
+      setEntregaId(saved.codigo);
+      setReceiptDate(saved);
       setShowConfirm(false);
       setShowComprobante(true);
     } catch (error) {
       setErrors(prev => ({ ...prev, submit: error instanceof Error ? error.message : 'No se pudo registrar la entrega.' }));
-    } finally { setSubmitting(false); }
+    } finally { submittingRef.current = false; setSubmitting(false); }
   };
 
   const allComplete = items.every(i => i.cantidadEntregada >= i.cantidadSolicitada);
@@ -171,7 +197,7 @@ function EntregaForm({ req, usuario, onDone, onCancel }: { req: Requerimiento; u
 
         {/* Header */}
         <div className="panel" style={{ padding: '18px 22px', marginBottom: 20 }}>
-          <div style={{ fontSize: 11, color: '#71717A', fontFamily: 'monospace', marginBottom: 4 }}>{req.id}</div>
+          <div style={{ fontSize: 11, color: '#71717A', fontFamily: 'monospace', marginBottom: 4 }}>{publicCode(req)}</div>
           <h2 style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 800, color: '#18181B' }}>{req.proyecto}</h2>
           <div style={{ fontSize: 13, color: '#71717A', display: 'flex', alignItems: 'center', gap: 4 }}><svg width="11" height="11" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="6" r="2.5" stroke="currentColor" strokeWidth="1.3"/><path d="M7.5 1C5 1 3 3 3 6c0 3.5 4.5 8 4.5 8S12 9.5 12 6c0-3-2-5-4.5-5z" stroke="currentColor" strokeWidth="1.3"/></svg>{req.ubicacion} · {req.sede}</div>
         </div>
@@ -182,9 +208,9 @@ function EntregaForm({ req, usuario, onDone, onCancel }: { req: Requerimiento; u
           <div style={{ padding: '20px 22px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <div style={{ gridColumn: '1/-1' }}>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#52525B', marginBottom: 6 }}>Técnico receptor <span style={{ color: '#DC2626' }}>*</span></label>
-              <input className="input-field" value={tecnico} style={{ borderColor: errors.tecnico ? '#DC2626' : undefined }}
+              <input id="delivery-tecnico" aria-invalid={errors.tecnico ? true : undefined} aria-describedby={errors.tecnico ? 'delivery-tecnico-error' : undefined} className="input-field" value={tecnico} style={{ borderColor: errors.tecnico ? '#DC2626' : undefined }}
                 onChange={e => { setTecnico(e.target.value); setErrors(p => ({ ...p, tecnico: '' })); }} />
-              {errors.tecnico && <div style={{ fontSize: 11, color: '#DC2626', marginTop: 3 }}>{errors.tecnico}</div>}
+              <FieldError id="delivery-tecnico-error" message={errors.tecnico} />
             </div>
             <div>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#52525B', marginBottom: 6 }}>DNI / Documento</label>
@@ -221,6 +247,7 @@ function EntregaForm({ req, usuario, onDone, onCancel }: { req: Requerimiento; u
             {items.map((item, i) => {
               const mat = state.materials.find(m => m.id === item.skuId);
               const saldo = item.cantidadSolicitada - item.cantidadEntregada;
+              const unit = req.materiales.find(m => m.skuId === item.skuId)?.unidad ?? 'UND';
               return (
                 <div key={i} style={{ display: 'grid', gridTemplateColumns: '40px 1fr 130px 130px 100px', gap: 10, marginBottom: 10, alignItems: 'center', background: '#F9FAFB', borderRadius: 8, padding: '10px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -231,20 +258,21 @@ function EntregaForm({ req, usuario, onDone, onCancel }: { req: Requerimiento; u
                     <div style={{ fontSize: 12.5, color: '#18181B', fontWeight: 500, lineHeight: 1.3 }}>{item.nombre}</div>
                   </div>
                   <div style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 600, color: '#52525B' }}>
-                    {item.cantidadSolicitada} UND
+                    {item.cantidadSolicitada} {unit}
                   </div>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <input type="number" min="0" max={item.cantidadSolicitada}
+                      <input id={`delivery-quantity-${i}`} aria-invalid={errors[`quantity-${i}`] ? true : undefined} aria-describedby={errors[`quantity-${i}`] ? `delivery-quantity-${i}-error` : undefined} type="number" min="0" step={["UND", "ROLLO", "PAR"].includes(unit) ? 1 : "any"} max={item.cantidadSolicitada}
                         value={item.cantidadEntregada}
                         onChange={e => updateQty(i, e.target.value)}
                         style={{ width: 70, padding: '6px 8px', border: `1px solid ${item.cantidadEntregada < item.cantidadSolicitada ? '#FDE68A' : '#BBF7D0'}`, borderRadius: 6, fontSize: 13, fontWeight: 700, textAlign: 'center', fontFamily: 'monospace', background: item.cantidadEntregada === 0 ? '#FFF5F5' : item.cantidadEntregada < item.cantidadSolicitada ? '#FFFBEB' : '#F0FDF4' }}
                       />
-                      <span style={{ fontSize: 10.5, color: '#71717A' }}>UND</span>
+                      <span style={{ fontSize: 10.5, color: '#71717A' }}>{unit}</span>
                     </div>
+                    <FieldError id={`delivery-quantity-${i}-error`} message={errors[`quantity-${i}`]} />
                   </div>
                   <div style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 700, color: saldo > 0 ? '#DC2626' : '#059669' }}>
-                    {saldo} UND
+                    {saldo} {unit}
                     {saldo > 0 && <div style={{ fontSize: 9.5, color: '#D97706', fontFamily: 'sans-serif', fontWeight: 600 }}>pendiente</div>}
                   </div>
                 </div>
@@ -259,6 +287,7 @@ function EntregaForm({ req, usuario, onDone, onCancel }: { req: Requerimiento; u
         </div>
 
         {/* Footer */}
+        {errors.submit && <p role="alert" className="quote-error">{errors.submit}</p>}
         <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', paddingBottom: 24 }}>
           <button className="btn btn-ghost" onClick={onCancel}>Cancelar</button>
           <button className="btn btn-primary" style={{ padding: '10px 24px', background: '#059669', border: 'none' }} onClick={handleConfirm}>
@@ -277,7 +306,7 @@ function EntregaForm({ req, usuario, onDone, onCancel }: { req: Requerimiento; u
             </div>
             <div style={{ padding: '18px 22px' }}>
               <div style={{ fontSize: 13.5, color: '#52525B', lineHeight: 1.6 }}>
-                Vas a registrar una entrega <strong>{ESTADO_E[estadoPreview].label.toLowerCase()}</strong> de {items.reduce((s, i) => s + i.cantidadEntregada, 0)} UND al técnico <strong>{tecnico}</strong>.
+                Vas a registrar una entrega <strong>{ESTADO_E[estadoPreview].label.toLowerCase()}</strong> con {items.filter(i => i.cantidadEntregada > 0).length} líneas de materiales al técnico <strong>{tecnico}</strong>.
               </div>
               {!allComplete && (
                 <div style={{ marginTop: 12, background: '#FEF3C7', borderRadius: 6, padding: '10px 12px', fontSize: 12, color: '#92400E' }}>
@@ -304,8 +333,8 @@ function EntregaForm({ req, usuario, onDone, onCancel }: { req: Requerimiento; u
           dni={dni}
           responsable={usuario}
           items={items}
-          fecha={new Date().toISOString().split('T')[0]}
-          hora={new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}
+          fecha={receiptDate.fecha}
+          hora={receiptDate.hora}
           obs={obs}
           onClose={() => { setShowComprobante(false); onDone(); }}
         />
@@ -324,15 +353,13 @@ export default function EntregasView({ onToast, usuario }: Props) {
   const confirmados = state.requerimientos.filter(r => r.estado === 'CONFIRMADO');
 
   const getEntregaStatus = (reqId: string): EstadoEntrega | null => {
-    const entregas = state.entregas.filter(e => e.requerimientoId === reqId);
-    if (entregas.length === 0) return null;
-    const last = [...entregas].sort((a, b) => b.fecha.localeCompare(a.fecha))[0];
-    return last.estado;
+    const req = state.requerimientos.find(r => r.id === reqId);
+    return req ? deliveryBalance(req, state.entregas).status : null;
   };
 
   const filtered = confirmados.filter(r =>
     !search ||
-    r.id.toLowerCase().includes(search.toLowerCase()) ||
+    publicCode(r).toLowerCase().includes(search.toLowerCase()) ||
     r.proyecto.toLowerCase().includes(search.toLowerCase()) ||
     r.tecnico.toLowerCase().includes(search.toLowerCase())
   );
@@ -355,8 +382,8 @@ export default function EntregasView({ onToast, usuario }: Props) {
         {[
           { label: 'Reqs confirmados', value: confirmados.length, color: '#059669', bg: '#CCFBF1' },
           { label: 'Sin entrega', value: confirmados.filter(r => !getEntregaStatus(r.id)).length, color: '#71717A', bg: '#F4F4F5' },
-          { label: 'Entrega parcial', value: state.entregas.filter(e => e.estado === 'PARCIAL').length, color: '#D97706', bg: '#FEF3C7' },
-          { label: 'Entrega completa', value: state.entregas.filter(e => e.estado === 'COMPLETA').length, color: '#059669', bg: '#CCFBF1' },
+          { label: 'Entrega parcial', value: confirmados.filter(r => getEntregaStatus(r.id) === 'PARCIAL').length, color: '#D97706', bg: '#FEF3C7' },
+          { label: 'Entrega completa', value: confirmados.filter(r => getEntregaStatus(r.id) === 'COMPLETA').length, color: '#059669', bg: '#CCFBF1' },
         ].map(({ label, value, color, bg }) => (
           <div key={label} className="kpi-card">
             <div style={{ width: 34, height: 34, borderRadius: 8, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
@@ -386,14 +413,14 @@ export default function EntregasView({ onToast, usuario }: Props) {
           <div style={{ overflowX: 'auto' }}>
             <table className="data-table">
               <thead>
-                <tr><th>ID</th><th>Proyecto</th><th>Sede</th><th>Técnico</th><th>Materiales</th><th>Confirmado</th><th>Estado entrega</th><th>Acción</th></tr>
+                <tr><th>Código</th><th>Proyecto</th><th>Sede</th><th>Técnico</th><th>Materiales</th><th>Confirmado</th><th>Estado entrega</th><th>Acción</th></tr>
               </thead>
               <tbody>
                 {filtered.map(r => {
                   const estEnt = getEntregaStatus(r.id);
                   return (
                     <tr key={r.id}>
-                      <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#2563EB', fontWeight: 700 }}>{r.id}</td>
+                      <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#2563EB', fontWeight: 700 }}>{publicCode(r)}</td>
                       <td style={{ fontWeight: 500, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.proyecto}</td>
                       <td style={{ fontSize: 12 }}>{r.sede}</td>
                       <td style={{ fontSize: 12, color: '#71717A', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.tecnico}</td>
@@ -410,8 +437,8 @@ export default function EntregasView({ onToast, usuario }: Props) {
                       </td>
                       <td>
                         <button className="btn btn-primary" style={{ padding: '4px 12px', fontSize: 11, background: estEnt === 'COMPLETA' ? '#059669' : '#2563EB', border: 'none' }}
-                          onClick={() => setSelectedReq(r)}>
-                          {estEnt === 'COMPLETA' ? 'Ver' : estEnt === 'PARCIAL' ? 'Completar' : 'Preparar entrega'}
+                          disabled={estEnt === 'COMPLETA' || deliveryBalance(r, state.entregas).hasExcess} onClick={() => setSelectedReq(r)}>
+                          {deliveryBalance(r, state.entregas).hasExcess ? 'Revisar exceso' : estEnt === 'COMPLETA' ? 'Completada' : estEnt === 'PARCIAL' ? 'Completar' : 'Preparar entrega'}
                         </button>
                       </td>
                     </tr>
@@ -432,13 +459,13 @@ export default function EntregasView({ onToast, usuario }: Props) {
           <div style={{ overflowX: 'auto' }}>
             <table className="data-table">
               <thead>
-                <tr><th>ID</th><th>Requerimiento</th><th>Técnico</th><th>Responsable</th><th>Fecha</th><th>Estado</th></tr>
+                <tr><th>Código</th><th>Requerimiento</th><th>Técnico</th><th>Responsable</th><th>Fecha</th><th>Estado</th></tr>
               </thead>
               <tbody>
                 {[...state.entregas].sort((a, b) => b.fecha.localeCompare(a.fecha)).map(e => (
                   <tr key={e.id}>
-                    <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#2563EB' }}>{e.id}</td>
-                    <td style={{ fontFamily: 'monospace', fontSize: 11 }}>{e.requerimientoId}</td>
+                    <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#2563EB' }}>{publicCode(e)}</td>
+                    <td style={{ fontFamily: 'monospace', fontSize: 11 }}>{e.requerimientoCodigo ?? publicCode(state.requerimientos.find(r => r.id === e.requerimientoId) ?? {})}</td>
                     <td style={{ fontSize: 12 }}>{e.tecnico}</td>
                     <td style={{ fontSize: 12, color: '#71717A' }}>{e.responsableEntrega}</td>
                     <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#71717A' }}>{e.fecha} {e.hora}</td>

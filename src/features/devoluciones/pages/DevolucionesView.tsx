@@ -1,3 +1,4 @@
+import FieldError from "../../../components/FieldError";
 import { useEffect, useMemo, useState } from "react"
 
 import { SEDES, Sede } from "../../../domain/types"
@@ -123,19 +124,22 @@ export default function DevolucionesView({
     [evidencePreviews],
   )
 
+  const [warnings, setWarnings] = useState<Record<string,string>>({});
+  useEffect(() => {
+    setWarnings(previous => Object.fromEntries(Object.entries(previous).filter(([key]) => key==='evidence' ? !files.length : !(cantidades[key]>0))));
+  }, [cantidades,files]);
   const submit = async () => {
-    if (!selectedItems.length) return onToast("Indica una cantidad a devolver.")
-
-    if (!files.length)
-      return onToast("Adjunta al menos una fotografía de la devolución.")
-
-    const reqs = [...new Set(selectedItems.map((i) => i.requerimientoId))]
-
-    if (reqs.length !== 1)
-      return onToast("Registra una devolución por requerimiento.")
-
-    if (selectedItems.some((i) => i.cantidad <= 0 || i.cantidad > i.disponible))
-      return onToast("Revisa las cantidades disponibles.")
+    const errors: Record<string,string> = {};
+    if (!selectedItems.length && saldos.length) errors[`${saldos[0].requerimientoId}:${saldos[0].skuId}`] = 'Indica una cantidad a devolver en al menos un material.';
+    if (!files.length) errors.evidence = 'Adjunta al menos una fotografía de la devolución.';
+    const reqs = [...new Set(selectedItems.map((i) => i.requerimientoId))];
+    selectedItems.forEach(item => {
+      const key = `${item.requerimientoId}:${item.skuId}`;
+      if(reqs.length!==1) errors[key] = 'Selecciona materiales de un solo requerimiento por devolución.';
+      else if(item.cantidad<=0 || item.cantidad>item.disponible) errors[key] = `Ingresa una cantidad mayor que cero y como máximo ${item.disponible}.`;
+    });
+    setWarnings(errors);
+    if(Object.keys(errors).length) return;
 
     setSubmitting(true)
 
@@ -270,7 +274,7 @@ export default function DevolucionesView({
                     <td>{item.unidad}</td>
                     <td>{item.disponible}</td>
                     <td>
-                      <input
+                      <input aria-invalid={warnings[key] ? true : undefined} aria-describedby={warnings[key] ? `return-${key}-error` : undefined}
                         className="input-field"
                         min="0"
                         max={item.disponible}
@@ -287,6 +291,7 @@ export default function DevolucionesView({
                         }
                         style={{ width: 90 }}
                       />
+<FieldError id={`return-${key}-error`} message={warnings[key]} />
                     </td>
                   </tr>
                 )
@@ -314,6 +319,8 @@ export default function DevolucionesView({
             <label className="returns-upload">
               <input
                 type="file"
+                aria-invalid={warnings.evidence ? true : undefined}
+                aria-describedby={warnings.evidence ? "return-evidence-error" : undefined}
                 accept="image/*"
                 multiple
                 required
@@ -341,6 +348,8 @@ export default function DevolucionesView({
                 <small>Selecciona imágenes JPG, PNG o WEBP</small>
               </span>
             </label>
+          <FieldError id="return-evidence-error" message={warnings.evidence} />
+
             {evidencePreviews.length > 0 && (
               <div className="returns-evidence-grid">
                 {evidencePreviews.map(({ file, url }, index) => (

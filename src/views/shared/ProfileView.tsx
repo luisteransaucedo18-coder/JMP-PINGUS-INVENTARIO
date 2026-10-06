@@ -1,3 +1,6 @@
+import FieldError from "../../components/FieldError";
+import { ownedBy } from "../../utils/recordOwner";
+import { publicCode } from "../../utils/publicCode";
 import { useEffect, useRef, useState } from 'react';
 import UserAvatar from '../../components/UserAvatar';
 import { useUserProfile } from '../../store/UserProfileContext';
@@ -25,13 +28,13 @@ function StatCard({ label, value, color }: { label: string; value: number | stri
   );
 }
 
-export default function ProfileView({ role, userName, userEmail, onToast }: Props) {
+export default function ProfileView({ role, userEmail, onToast }: Props) {
   const { state, refreshRemoteData } = useAppStore();
   const { profile, avatarUrl, avatarError, reloadAvatar, updateProfile } = useUserProfile();
   const rc = ROLE_COLOR[role];
 
   /* Stats from real data */
-  const myReqs  = state.requerimientos.filter(r => r.analista === userName);
+  const myReqs  = state.requerimientos.filter(r => ownedBy(r, profile));
   const sent    = myReqs.filter(r => r.estado !== 'BORRADOR').length;
   const conf    = myReqs.filter(r => r.estado === 'CONFIRMADO').length;
   const drafts  = myReqs.filter(r => r.estado === 'BORRADOR').length;
@@ -84,12 +87,15 @@ export default function ProfileView({ role, userName, userEmail, onToast }: Prop
       if (fileInput.current) fileInput.current.value = '';
     }
   };
+  const [profileWarnings, setProfileWarnings] = useState<Record<string,string>>({});
+  const [passwordWarnings, setPasswordWarnings] = useState<Record<string,string>>({});
   const handleSave = async () => {
     if (savePending.current || validatingPhoto) return;
-    if (!form.nombre.trim()) { setSaveError('Ingresa tu nombre completo.'); return; }
-    if (form.nombre.trim().length > 150 || form.telefono.length > 30 || form.cargo.length > 120 || form.bio.length > 1000) {
-      setSaveError('Revisa la longitud de los campos antes de guardar.'); return;
-    }
+    const warnings: Record<string,string> = {};
+    if (!form.nombre.trim()) warnings.nombre = 'Completa tu nombre.';
+    for (const [key, max] of [['nombre',150],['telefono',30],['cargo',120],['bio',1000]] as const) if(form[key].length>max) warnings[key] = `Usa como máximo ${max} caracteres.`;
+    setProfileWarnings(warnings);
+    if(Object.keys(warnings).length) { document.getElementById(`profile-${Object.keys(warnings)[0]}`)?.focus(); return; }
     savePending.current = true; setSaving(true); setSaveError(''); setSaveSuccess('');
     let uploadedPath: string | undefined;
     let committed = false;
@@ -127,15 +133,19 @@ export default function ProfileView({ role, userName, userEmail, onToast }: Prop
   const handlePwSave = async () => {
     if (passwordPending.current) return;
     setPwError('');
-    if (!pwForm.actual) { setPwError('Ingresa tu contraseña actual'); return; }
-    if (pwForm.nueva.length < 8) { setPwError('La nueva contraseña debe tener al menos 8 caracteres'); return; }
-    if (pwForm.nueva !== pwForm.confirmar) { setPwError('Las contraseñas no coinciden'); return; }
+    const warnings: Record<string,string> = {};
+    if(!pwForm.actual) warnings.actual = 'Completa la contraseña actual.';
+    if(pwForm.nueva.length<8) warnings.nueva = 'Ingresa al menos 8 caracteres.';
+    if(!pwForm.confirmar) warnings.confirmar = 'Confirma la nueva contraseña.';
+    else if(pwForm.nueva!==pwForm.confirmar) warnings.confirmar = 'La confirmación debe coincidir con la nueva contraseña.';
+    setPasswordWarnings(warnings);
+    if(Object.keys(warnings).length) { document.getElementById(`profile-password-${Object.keys(warnings)[0]}`)?.focus(); return; }
     passwordPending.current = true; setSavingPassword(true);
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || user?.id !== profile.id || !user.email) throw new Error('Inicia sesión nuevamente.');
       const { error: reauthError } = await supabase.auth.signInWithPassword({ email: user.email, password: pwForm.actual });
-      if (reauthError) throw new Error('La contraseña actual es incorrecta.');
+      if (reauthError) { setPasswordWarnings({actual:'La contraseña actual es incorrecta.'}); return; }
       const { error } = await supabase.auth.updateUser({ password: pwForm.nueva });
       if (error) throw new Error('No se pudo actualizar la contraseña. Revisa sus requisitos e inténtalo nuevamente.');
       setPwForm({ actual: '', nueva: '', confirmar: '' }); onToast('Contraseña actualizada correctamente');
@@ -144,7 +154,7 @@ export default function ProfileView({ role, userName, userEmail, onToast }: Prop
   };
 
   const recentActivity = [...state.requerimientos]
-    .filter(r => r.analista === userName)
+    .filter(r => ownedBy(r, profile))
     .sort((a, b) => b.fecha.localeCompare(a.fecha))
     .slice(0, 8);
 
@@ -229,9 +239,10 @@ export default function ProfileView({ role, userName, userEmail, onToast }: Prop
                   <div key={key}>
                     <label htmlFor={`profile-${key}`} style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#8B8FA8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 7 }}>{label}</label>
                     {editing ? (
-                      <input id={`profile-${key}`} disabled={saving} maxLength={key === 'nombre' ? 150 : key === 'telefono' ? 30 : 120} className="input-field" type={type} placeholder={placeholder}
+                      <><input aria-invalid={profileWarnings[key] ? true : undefined} aria-describedby={profileWarnings[key] ? `profile-${key}-error` : undefined} id={`profile-${key}`} disabled={saving} maxLength={key === 'nombre' ? 150 : key === 'telefono' ? 30 : 120} className="input-field" type={type} placeholder={placeholder}
                         value={form[key]}
-                        onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))} />
+                        onChange={e => { setForm(p => ({ ...p, [key]: e.target.value })); setProfileWarnings(p => { const next = {...p}; delete next[key]; return next; }); }} />
+<FieldError id={`profile-${key}-error`} message={profileWarnings[key]} /></>
                     ) : (
                       <div style={{ fontSize: 14, fontWeight: 500, color: '#1A1D23', padding: '9px 0' }}>{form[key] || <span style={{ color: '#C4C6D8' }}>Sin definir</span>}</div>
                     )}
@@ -258,7 +269,7 @@ export default function ProfileView({ role, userName, userEmail, onToast }: Prop
                 <div style={{ gridColumn: '1 / -1' }}>
                   <label htmlFor="profile-bio" style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#8B8FA8', marginBottom: 7 }}>Biografía / nota</label>
                   {editing ? (
-                    <textarea id="profile-bio" disabled={saving} maxLength={1000} className="input-field" rows={3} placeholder="Describe tu rol, especialidad o cualquier información relevante…"
+                    <textarea aria-invalid={profileWarnings.bio ? true : undefined} aria-describedby={profileWarnings.bio ? "profile-bio-error" : undefined} id="profile-bio" disabled={saving} maxLength={1000} className="input-field" rows={3} placeholder="Describe tu rol, especialidad o cualquier información relevante…"
                       style={{ resize: 'vertical', fontFamily: 'inherit' }}
                       value={form.bio} onChange={e => setForm(p => ({ ...p, bio: e.target.value }))} />
                   ) : (
@@ -266,6 +277,7 @@ export default function ProfileView({ role, userName, userEmail, onToast }: Prop
                       {form.bio || 'Sin descripción. Haz clic en "Editar perfil" para agregar una nota.'}
                     </div>
                   )}
+                  <FieldError id="profile-bio-error" message={profileWarnings.bio} />
                 </div>
               </div>
 
@@ -293,12 +305,12 @@ export default function ProfileView({ role, userName, userEmail, onToast }: Prop
                   <div key={key} style={{ marginBottom: 16 }}>
                     <label htmlFor={`profile-password-${key}`} style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#8B8FA8', marginBottom: 7 }}>{label}</label>
                     <div style={{ position: 'relative' }}>
-                      <input id={`profile-password-${key}`} disabled={savingPassword} autoComplete={key === 'actual' ? 'current-password' : 'new-password'} className="input-field"
+                      <input aria-invalid={passwordWarnings[key] ? true : undefined} aria-describedby={passwordWarnings[key] ? `profile-password-${key}-error` : undefined} id={`profile-password-${key}`} disabled={savingPassword} autoComplete={key === 'actual' ? 'current-password' : 'new-password'} className="input-field"
                         type={pwVisible[key] ? 'text' : 'password'}
                         placeholder="••••••••"
                         style={{ paddingRight: 40 }}
                         value={pwForm[key]}
-                        onChange={e => setPwForm(p => ({ ...p, [key]: e.target.value }))} />
+                        onChange={e => { setPwForm(p => ({ ...p, [key]: e.target.value })); setPasswordWarnings(p => { const next = {...p}; delete next[key]; return next; }); }} />
                       <button type="button" aria-label={pwVisible[key] ? `Ocultar ${label.toLowerCase()}` : `Mostrar ${label.toLowerCase()}`} onClick={() => setPwVisible(p => ({ ...p, [key]: !p[key] }))}
                         style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#8B8FA8', padding: 0, fontSize: 12 }}>
                         {pwVisible[key]
@@ -307,6 +319,7 @@ export default function ProfileView({ role, userName, userEmail, onToast }: Prop
         }
                       </button>
                     </div>
+<FieldError id={`profile-password-${key}-error`} message={passwordWarnings[key]} />
                   </div>
                 ))}
 
@@ -354,7 +367,7 @@ export default function ProfileView({ role, userName, userEmail, onToast }: Prop
                         <tr key={r.id} style={{ borderBottom: '1px solid #F8F9FF' }}
                           onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F8F9FF'}
                           onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
-                          <td style={{ padding: '13px 20px', fontFamily: 'monospace', fontSize: 11, color: '#2563EB', fontWeight: 700 }}>{r.id}</td>
+                          <td style={{ padding: '13px 20px', fontFamily: 'monospace', fontSize: 11, color: '#2563EB', fontWeight: 700 }}>{publicCode(r)}</td>
                           <td style={{ padding: '13px 20px', fontSize: 13, fontWeight: 500, color: '#1A1D23', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.proyecto}</td>
                           <td style={{ padding: '13px 20px', fontSize: 12, color: '#8B8FA8' }}>{r.sede}</td>
                           <td style={{ padding: '13px 20px', fontFamily: 'monospace', fontSize: 12, fontWeight: 600 }}>{r.materiales.length}</td>

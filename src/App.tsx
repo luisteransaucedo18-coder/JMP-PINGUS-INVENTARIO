@@ -1,3 +1,4 @@
+import ValidatedForm from "./components/ValidatedForm";
 import { useState, useEffect, useRef } from 'react';
 import { obtenerMiPerfil, type Perfil } from './services/perfilService';
 import { UserProfileProvider, useUserProfile } from './store/UserProfileContext';
@@ -6,7 +7,7 @@ import Header from './components/Header';
 import MobileNavigation from './components/MobileNavigation';
 import { supabase, supabaseConfigError } from './services/supabase';
 import { ASSETS } from './config/assets';
-import { AppProvider } from './store/AppContext';
+import { AppProvider, useAppStore } from './store/AppContext';
 import WorkspaceGate from './components/WorkspaceTransition';
 import NotificationsPanel, { useNotifications } from './components/NotificationsPanel';
 import { getViewMeta } from './app/navigation';
@@ -141,7 +142,7 @@ const handleSubmit = async (e: React.FormEvent) => {
             <br></br>
             <br></br>
 
-            <form className="auth-form" onSubmit={handleSubmit}>
+            <ValidatedForm className="auth-form" onSubmit={handleSubmit}>
               <label className="auth-field">
                 <span>Correo electrónico</span>
                 <span className="auth-control">
@@ -171,7 +172,7 @@ const handleSubmit = async (e: React.FormEvent) => {
               <button type="submit" className="auth-submit" disabled={loading}>
                 {loading ? <><span className="auth-spinner" />Verificando...</> : 'Ingresar al sistema'}
               </button>
-            </form>
+            </ValidatedForm>
 
             <p className="auth-legal">Acceso restringido para personal autorizado.</p>
           </div>
@@ -184,6 +185,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 /* ─── Inner app (needs AppContext) ─── */
 function AppShell({ onLogout, loggingOut, logoutError }: { loggingOut: boolean; logoutError: string; onLogout: () => void }) {
   const { profile, avatarUrl } = useUserProfile();
+  const { syncErrors, refreshRemoteData } = useAppStore();
   const session = { role: profile.rol, name: profile.nombre, email: profile.email };
   const [view, setView] = useState('dashboard');
   const [tourOpen, setTourOpen] = useState(() => readTourStatus(profile.id) === null);
@@ -238,6 +240,10 @@ function AppShell({ onLogout, loggingOut, logoutError }: { loggingOut: boolean; 
           onBellClick={() => setNotifOpen(open => !open)}
         />
         <div className="app-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+          {syncErrors.length > 0 && <div className="quote-error" role="alert" style={{ margin: '0 24px', padding: 12 }}>
+            No se pudieron actualizar: {syncErrors.join(', ')}. Los datos mostrados pueden estar desactualizados.
+            <button type="button" className="btn btn-ghost" onClick={() => void refreshRemoteData()}>Reintentar actualización</button>
+          </div>}
           <div className="app-view-content" data-tour-view={view}>
             <ViewRouter role={session.role} view={view} onToast={msg => setToast(msg)} onNav={setView} userName={session.name} userEmail={session.email}
               onStartTour={() => { setMenuOpen(false); setNotifOpen(false); setTourOpen(true); }} />

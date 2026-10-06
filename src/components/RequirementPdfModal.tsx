@@ -1,3 +1,4 @@
+import { publicCode } from "../utils/publicCode";
 import { useEffect, useRef, useState } from 'react';
 import type { Entrega, Material, Requerimiento } from '../domain/types';
 import PdfDocumentViewer from './PdfDocumentViewer';
@@ -48,13 +49,13 @@ export default function RequirementPdfModal({ requirement, materials, deliveries
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <div className="modal-header" style={{ flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h2 id="requirement-pdf-title" style={{ margin: 0, fontSize: 16 }}>Pedido de materiales · {requirement.codigo ?? requirement.id}</h2>
+            <h2 id="requirement-pdf-title" style={{ margin: 0, fontSize: 16 }}>Pedido de materiales · {publicCode(requirement)}</h2>
             <p style={{ margin: '5px 0 0', fontSize: 12, color: '#71717A' }}>Formato JM-FI-GL-07 · Solicitud confirmada</p>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {url && <>
               <a className="btn btn-ghost" href={url} target="_blank" rel="noopener noreferrer">Abrir PDF</a>
-              <a className="btn btn-ghost" href={url} download={`JM-FI-GL-07-${requirement.codigo ?? requirement.id}.pdf`}>Descargar</a>
+              <a className="btn btn-ghost" href={url} download={`JM-FI-GL-07-${publicCode(requirement)}.pdf`}>Descargar</a>
             </>}
             <button autoFocus className="btn btn-ghost" onClick={onClose}>Cerrar</button>
           </div>
