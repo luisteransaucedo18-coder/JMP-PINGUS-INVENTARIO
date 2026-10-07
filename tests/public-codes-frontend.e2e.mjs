@@ -16,8 +16,8 @@ try {
       const project = { id:id(2), nombre:'Proyecto repetido', ubicacion:'Dirección A', sede:'Chiclayo', responsable:'Técnico QA', cliente:'Cliente QA', created_at:'2026-10-05T16:00:00Z' };
       const requirement = { id:id(3),codigo:'REQ-QA-001',analista_id:user.id,sede:'Chiclayo',fecha:'2026-10-05',estado:'CONFIRMADO',ubicacion:'Dirección A',descripcion:'Instalación',tecnico:'Técnico QA',proyecto:{id:project.id,nombre:project.nombre},analista:{nombre:profile.nombre},coordinador:{nombre:'Coordinador QA'},items:[{material_sku:'104',material_nombre:'Cable',cantidad:12,unidad:'MTS'}] };
       const tables = {
-        materiales:[{sku:'104',nombre:'Cable',descripcion:'',categoria_id:1,unidad:'MTS',stock_minimo:1,precio_unitario:25,estado:'OK'}],
-        inventario_sedes:['Chiclayo','Chimbote','Trujillo'].map(sede=>({material_sku:'104',sede,stock:20})),
+        materiales:[{sku:'104',nombre:'Cable',descripcion:'',categoria_id:1,unidad:'MTS',stock_minimo:10,precio_unitario:25,estado:'OK'}],
+        inventario_sedes:['Chiclayo','Chimbote','Trujillo'].map((sede,index)=>({material_sku:'104',sede,stock:[0,5,100][index]})),
         proyectos:[project,{...project,id:id(5),ubicacion:'Dirección B'}],
         requerimientos:[requirement,{...requirement,id:id(6),codigo:'REQ-QA-002',proyecto:{id:id(5),nombre:project.nombre}}],
         entregas:[{id:id(4),codigo:'ENT-QA-001',requerimiento_id:requirement.id,requerimiento:{codigo:requirement.codigo},proyecto_nombre:project.nombre,tecnico:'Técnico QA',dni_tecnico:'',fecha_hora:'2026-10-06T02:30:00Z',estado:'PARCIAL',responsable:{nombre:'Responsable QA'},items:[{material_sku:'104',material_nombre:'Cable',cantidad_solicitada:12,cantidad_entregada:5}]}],
@@ -87,6 +87,25 @@ try {
         await page.getByRole('button',{name:'Volver al listado',exact:true}).press('Enter');
       }
       if(role==='analista') {
+        await nav('Inventario');
+        const sku=page.locator('.data-table').getByText('104',{exact:true});
+        await sku.waitFor();
+        const stateFilter=page.getByLabel('Filtrar por estado',{exact:true});
+        await stateFilter.selectOption('OK');
+        assert.equal(await sku.count(),0,'A site with healthy stock must not mask an exhausted site in the general filter');
+        await stateFilter.selectOption('AGOTADO');
+        await sku.waitFor();
+        await page.getByRole('button',{name:'Trujillo',exact:true}).press('Enter');
+        assert.equal(await sku.count(),0);
+        await stateFilter.selectOption('OK');
+        await sku.waitFor();
+        const exhaustedCard=page.getByRole('button',{name:/^AGOTADO \(Trujillo\)/});
+        await exhaustedCard.press('Enter');
+        assert.equal(await stateFilter.inputValue(),'AGOTADO');
+        assert.equal(await sku.count(),0);
+        assert.equal(await exhaustedCard.getAttribute('aria-pressed'),'true');
+        await exhaustedCard.press('Enter');
+        assert.equal(await stateFilter.inputValue(),'','Clicking the active state card must clear the filter');
         await nav('Órdenes de Compra');
         await page.getByRole('button',{name:'+ Nueva solicitud de compra',exact:true}).click();
         await page.getByRole('button',{name:'Enviar al coordinador',exact:true}).click();

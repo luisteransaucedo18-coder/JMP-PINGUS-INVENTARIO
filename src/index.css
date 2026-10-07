@@ -2790,3 +2790,4 @@ body {
   .material-request-identity { grid-column: 1 / -1; }
   .material-request-balance { padding-right: 12px; }
 }
+.inventory-filter-note { flex-basis: 100%; margin: 2px 0 0; color: #71717a; font-size: 12px; line-height: 1.5; }

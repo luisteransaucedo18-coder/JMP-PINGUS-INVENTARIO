@@ -116,11 +116,18 @@ test('todas las sedes abre el detalle sin apilar estados en la tabla', () => {
   assert.doesNotMatch(html, /Chimbote: CRÍTICO/);
 });
 
+test('todas las sedes usa una sola clasificación por material, igual en tabla y filtro', () => {
+  assert.match(render('todas','AGOTADO'), /SKU-001/);
+  assert.doesNotMatch(render('todas','OK'), /SKU-001/);
+  assert.doesNotMatch(render('todas','CRÍTICO'), /SKU-001/);
+  assert.match(render('todas','AGOTADO'), /badge-red">AGOTADO/);
+});
+
 test('contadores y stock corresponden a la sede seleccionada', () => {
   const html = render('Chiclayo');
   assert.match(html, /Stock en Chiclayo/);
   assert.match(html, /AGOTADO \(Chiclayo\)<\/div><div[^>]*>1<\/div>/);
-  assert.match(render('todas'), /AGOTADO \(SKU por sede\)<\/div><div[^>]*>1<\/div>/);
+  assert.match(render('todas'), /AGOTADO \(todas las sedes\)<\/div><div[^>]*>1<\/div>/);
 });
 
 test('el panel separa las sedes y explica el rango de referencia 30', () => {
