@@ -1,3 +1,4 @@
+import QuoteMaterialLabel from './QuoteMaterialLabel'
 import { Children, cloneElement, isValidElement, useContext, useEffect, useId, useRef, useState, type ReactNode, type ReactElement } from "react"
 import { collectFieldIssues, type FieldIssue } from '../../utils/formValidation'
 
@@ -250,7 +251,9 @@ export default function QuoteEditor({
   const steps = [
     templateMode ? "Datos de la tarifa" : "Datos del proyecto",
 
-    "Materiales y costos",
+    "Materiales",
+
+    "Costos y servicios",
 
     "Condiciones y márgenes",
 
@@ -383,12 +386,12 @@ export default function QuoteEditor({
 
     }
 
-    if (step === 1 && !budget.materiales.length && !budget.gastos.length)
+    if (step === 2 && !budget.materiales.length && !budget.gastos.length)
       messages.push(
         "Agrega al menos un material o costo para cotizar.",
       )
 
-    if (step === 2) messages.push(...quoteValidation(budget))
+    if (step === 3) messages.push(...quoteValidation(budget))
 
     setErrors(messages)
 
@@ -410,7 +413,7 @@ export default function QuoteEditor({
 
         if (saving) return
 
-        if (step < 3) {
+        if (step < steps.length - 1) {
           nextStep()
           return
         }
@@ -490,7 +493,9 @@ export default function QuoteEditor({
                 ? "Identifica la tarifa, su ubicación en Perú y modalidad. Los analistas podrán aplicarla a sus cotizaciones."
                 : "Describe el trabajo y el cliente. El proyecto se creará cuando el cliente acepte la cotización.",
 
-              "Selecciona los materiales y agrega los costos que correspondan. Conservamos los nombres del Excel para ayudarte.",
+              "Configura el presupuesto y selecciona los materiales del catálogo con sus cantidades y precios.",
+
+              "Agrega las partidas, costos y servicios que correspondan al proyecto.",
 
               "Define los porcentajes, el financiamiento y los datos del convenio, si aplica.",
 
@@ -731,9 +736,154 @@ export default function QuoteEditor({
                 />
               </Field>
             </div>
+            {!templateMode && (
+              <div className="quote-budget-subsection">
+                <h4>Materiales del catálogo</h4>
+                <p className="quote-muted">
+                  Revisa el costo referencial antes de cotizar. Todos los costos
+                  se expresan sin IGV en {budget.moneda}; el tipo de cambio es una
+                  referencia y no convierte precios automáticamente.
+                </p>
+                <Field label="Buscar material por nombre o SKU">
+                  <ExpandingTextField
+                    className="input-field"
+                    value={materialQuery}
+                    placeholder="Escribe el nombre del material…"
+                    aria-controls="quote-material-results"
+                    onChange={(e) => setMaterialQuery(e.target.value)}
+                  />
+                </Field>
+                <ul
+                  id="quote-material-results"
+                  className="quote-material-results"
+                  aria-label="Materiales del catálogo"
+                >
+                  {searchMaterials(
+                    materials,
+                    materialQuery,
+                    materials.length,
+                  ).map((m) => {
+                    const added = budget.materiales.some(
+                      (item) => item.sku === m.id,
+                    )
+                    return (
+                      <li key={m.id} className="quote-material-catalog-row">
+                        <QuoteMaterialLabel material={m} sku={m.id} nombre={m.nombre} />
+                        <button
+                          type="button"
+                          className="quote-material-option"
+                          aria-label={`${added ? 'Agregado' : 'Agregar'} ${m.nombre} · SKU ${m.id}`}
+                          disabled={added}
+                          onClick={() => addMaterial(m.id)}
+                        >
+                          <span>{added ? "Agregado" : "Agregar +"}</span>
+                          <small>{m.unidad}</small>
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+                {!searchMaterials(materials, materialQuery, materials.length)
+                  .length && (
+                  <p role="status">
+                    No se encontraron materiales con ese nombre.
+                  </p>
+                )}
+                {budget.materiales.map((m, index) => (
+                  <div key={m.id} className="quote-line">
+                    <QuoteMaterialLabel material={materials.find(material => material.id === m.sku)} sku={m.sku} nombre={m.nombre} />
+                    <div className="quote-form-grid">
+                      <NumberField
+                        label="CANTIDAD"
+                        min={0.000001}
+                        value={m.cantidad}
+                        onChange={(v) =>
+                          set(
+                            "materiales",
+
+                            budget.materiales.map((x, i) =>
+                              i === index ? { ...x, cantidad: v } : x,
+                            ),
+                          )
+                        }
+                      />
+                      <Field label="UND">
+                        <ExpandingTextField
+                          className="input-field"
+                          required
+                          value={m.unidadCotizada}
+                          onChange={(e) =>
+                            set(
+                              "materiales",
+
+                              budget.materiales.map((x, i) =>
+                                i === index
+                                  ? { ...x, unidadCotizada: e.target.value }
+                                  : x,
+                              ),
+                            )
+                          }
+                        />
+                      </Field>
+                      <NumberField
+                        label={`Unidades ${m.unidadCatalogo} por unidad cotizada`}
+                        min={0.000001}
+                        value={m.factorStock}
+                        onChange={(v) =>
+                          set(
+                            "materiales",
+
+                            budget.materiales.map((x, i) =>
+                              i === index ? { ...x, factorStock: v } : x,
+                            ),
+                          )
+                        }
+                      />
+                      <NumberField
+                        label={`PRECIO (${budget.moneda}, SIN IGV)`}
+                        value={m.costoUnitario}
+                        onChange={(v) =>
+                          set(
+                            "materiales",
+
+                            budget.materiales.map((x, i) =>
+                              i === index ? { ...x, costoUnitario: v } : x,
+                            ),
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="quote-toolbar">
+                      <span>
+                        Stock a solicitar: {m.cantidad * m.factorStock}{" "}
+                        {m.unidadCatalogo} · Costo:{" "}
+                        {money(m.cantidad * m.costoUnitario, budget.moneda)}
+                      </span>
+                      <button
+                        className="btn btn-ghost"
+                        type="button"
+                        aria-label={`Quitar ${m.nombre}`}
+                        onClick={() =>
+                          set(
+                            "materiales",
+
+                            budget.materiales.filter((_, i) => i !== index),
+                          )
+                        }
+                      >
+                        Quitar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
+        </div>
+        <div hidden={step !== 2} data-form-step="2">
           <section className="panel quote-section">
-            <h3>Variables del Excel · {EXCEL_MODALIDADES[budget.modalidad]}</h3>
+            <h3>Costos y servicios</h3>
+            <h4>Partidas por modalidad · {EXCEL_MODALIDADES[budget.modalidad]}</h4>
             <p className="quote-muted">
               Los nombres conservan las etiquetas del Excel. Agrega únicamente
               las partidas que correspondan al proyecto; cada una se suma una
@@ -894,95 +1044,89 @@ export default function QuoteEditor({
                 </span>
               </Field>
             </details>
-          </section>
-          {!templateMode && (
-            <section className="panel quote-section">
-              <h3>Materiales del catálogo</h3>
-              <p className="quote-muted">
-                Revisa el costo referencial antes de cotizar. Todos los costos
-                se expresan sin IGV en {budget.moneda}; el tipo de cambio es una
-                referencia y no convierte precios automáticamente.
-              </p>
-              <Field label="Buscar material por nombre o SKU">
-                <ExpandingTextField
-                  className="input-field"
-                  value={materialQuery}
-                  placeholder="Escribe el nombre del material…"
-                  aria-controls="quote-material-results"
-                  onChange={(e) => setMaterialQuery(e.target.value)}
-                />
-              </Field>
-              <ul
-                id="quote-material-results"
-                className="quote-material-results"
-                aria-label="Materiales del catálogo"
-              >
-                {searchMaterials(
-                  materials,
-                  materialQuery,
-                  materials.length,
-                ).map((m) => {
-                  const added = budget.materiales.some(
-                    (item) => item.sku === m.id,
-                  )
-                  return (
-                    <li key={m.id}>
-                      <button
-                        type="button"
-                        className="quote-material-option"
-                        disabled={added}
-                        onClick={() => addMaterial(m.id)}
-                      >
-                        <span>
-                          <strong>{m.nombre}</strong>
-                          <small>
-                            SKU {m.id} · {m.unidad}
-                          </small>
-                        </span>
-                        <span>{added ? "Agregado" : "Agregar +"}</span>
-                      </button>
-                    </li>
-                  )
-                })}
-              </ul>
-              {!searchMaterials(materials, materialQuery, materials.length)
-                .length && (
-                <p role="status">
-                  No se encontraron materiales con ese nombre.
-                </p>
-              )}
-              {budget.materiales.map((m, index) => (
-                <div key={m.id} className="quote-line">
-                  <strong>
-                    {m.nombre} <small>({m.sku})</small>
-                  </strong>
-                  <div className="quote-form-grid">
-                    <NumberField
-                      label="CANTIDAD"
-                      min={0.000001}
-                      value={m.cantidad}
-                      onChange={(v) =>
-                        set(
-                          "materiales",
+            <div className="quote-budget-subsection">
+              <div className="quote-toolbar">
+                <h4>Servicios y otros costos sin IGV</h4>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() =>
+                    set("gastos", [
+                      ...budget.gastos,
 
-                          budget.materiales.map((x, i) =>
-                            i === index ? { ...x, cantidad: v } : x,
-                          ),
-                        )
+                      {
+                        id: crypto.randomUUID(),
+
+                        rubro: "MANO_OBRA",
+
+                        descripcion: "",
+
+                        cantidad: 1,
+
+                        costoUnitario: 0,
+                      },
+                    ])
+                  }
+                >
+                  Agregar partida
+                </button>
+              </div>
+              {budget.gastos.map((g, index) => (
+                <div className="quote-line" key={g.id}>
+                  <div className="quote-form-grid">
+                    <Field label="Rubro">
+                      <select
+                        className="select-field"
+                        value={g.rubro}
+                        disabled={Boolean(g.variableExcel)}
+                        onChange={(e) =>
+                          set(
+                            "gastos",
+
+                            budget.gastos.map((x, i) =>
+                              i === index
+                                ? {
+                                    ...x,
+
+                                    rubro: e.target.value as typeof g.rubro,
+                                  }
+                                : x,
+                            ),
+                          )
+                        }
+                      >
+                        {RUBROS.filter(
+                          (r) =>
+                            !["FINANCIAMIENTO", "GENERALES", "COMISION"].includes(
+                              r,
+                            ),
+                        ).map((r) => (
+                          <option key={r} value={r}>
+                            {RUBRO_LABELS[r]}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                    <Field
+                      label={
+                        g.variableExcel
+                          ? (EXCEL_PARTIDAS.find((p) => p.key === g.variableExcel)
+                              ?.label ?? "Descripción")
+                          : "Descripción"
                       }
-                    />
-                    <Field label="UND">
+                    >
                       <ExpandingTextField
                         className="input-field"
                         required
-                        value={m.unidadCotizada}
+                        readOnly={Boolean(g.variableExcel)}
+                        value={g.descripcion}
                         onChange={(e) =>
                           set(
-                            "materiales",
+                            "gastos",
 
-                            budget.materiales.map((x, i) =>
+                            budget.gastos.map((x, i) =>
                               i === index
-                                ? { ...x, unidadCotizada: e.target.value }
+                                ? { ...x, descripcion: e.target.value }
                                 : x,
                             ),
                           )
@@ -990,27 +1134,27 @@ export default function QuoteEditor({
                       />
                     </Field>
                     <NumberField
-                      label={`Unidades ${m.unidadCatalogo} por unidad cotizada`}
+                      label="Cantidad"
                       min={0.000001}
-                      value={m.factorStock}
+                      value={g.cantidad}
                       onChange={(v) =>
                         set(
-                          "materiales",
+                          "gastos",
 
-                          budget.materiales.map((x, i) =>
-                            i === index ? { ...x, factorStock: v } : x,
+                          budget.gastos.map((x, i) =>
+                            i === index ? { ...x, cantidad: v } : x,
                           ),
                         )
                       }
                     />
                     <NumberField
-                      label={`PRECIO (${budget.moneda}, SIN IGV)`}
-                      value={m.costoUnitario}
+                      label={`Costo unitario (${budget.moneda})`}
+                      value={g.costoUnitario}
                       onChange={(v) =>
                         set(
-                          "materiales",
+                          "gastos",
 
-                          budget.materiales.map((x, i) =>
+                          budget.gastos.map((x, i) =>
                             i === index ? { ...x, costoUnitario: v } : x,
                           ),
                         )
@@ -1019,19 +1163,17 @@ export default function QuoteEditor({
                   </div>
                   <div className="quote-toolbar">
                     <span>
-                      Stock a solicitar: {m.cantidad * m.factorStock}{" "}
-                      {m.unidadCatalogo} · Costo:{" "}
-                      {money(m.cantidad * m.costoUnitario, budget.moneda)}
+                      {money(g.cantidad * g.costoUnitario, budget.moneda)}
                     </span>
                     <button
                       className="btn btn-ghost"
                       type="button"
-                      aria-label={`Quitar ${m.nombre}`}
+                      aria-label={`Quitar partida ${index + 1}`}
                       onClick={() =>
                         set(
-                          "materiales",
+                          "gastos",
 
-                          budget.materiales.filter((_, i) => i !== index),
+                          budget.gastos.filter((_, i) => i !== index),
                         )
                       }
                     >
@@ -1040,149 +1182,10 @@ export default function QuoteEditor({
                   </div>
                 </div>
               ))}
-            </section>
-          )}
-          <section className="panel quote-section">
-            <div className="quote-toolbar">
-              <h3>Servicios y otros costos sin IGV</h3>
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={() =>
-                  set("gastos", [
-                    ...budget.gastos,
-
-                    {
-                      id: crypto.randomUUID(),
-
-                      rubro: "MANO_OBRA",
-
-                      descripcion: "",
-
-                      cantidad: 1,
-
-                      costoUnitario: 0,
-                    },
-                  ])
-                }
-              >
-                Agregar partida
-              </button>
             </div>
-            {budget.gastos.map((g, index) => (
-              <div className="quote-line" key={g.id}>
-                <div className="quote-form-grid">
-                  <Field label="Rubro">
-                    <select
-                      className="select-field"
-                      value={g.rubro}
-                      disabled={Boolean(g.variableExcel)}
-                      onChange={(e) =>
-                        set(
-                          "gastos",
-
-                          budget.gastos.map((x, i) =>
-                            i === index
-                              ? {
-                                  ...x,
-
-                                  rubro: e.target.value as typeof g.rubro,
-                                }
-                              : x,
-                          ),
-                        )
-                      }
-                    >
-                      {RUBROS.filter(
-                        (r) =>
-                          !["FINANCIAMIENTO", "GENERALES", "COMISION"].includes(
-                            r,
-                          ),
-                      ).map((r) => (
-                        <option key={r} value={r}>
-                          {RUBRO_LABELS[r]}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field
-                    label={
-                      g.variableExcel
-                        ? (EXCEL_PARTIDAS.find((p) => p.key === g.variableExcel)
-                            ?.label ?? "Descripción")
-                        : "Descripción"
-                    }
-                  >
-                    <ExpandingTextField
-                      className="input-field"
-                      required
-                      readOnly={Boolean(g.variableExcel)}
-                      value={g.descripcion}
-                      onChange={(e) =>
-                        set(
-                          "gastos",
-
-                          budget.gastos.map((x, i) =>
-                            i === index
-                              ? { ...x, descripcion: e.target.value }
-                              : x,
-                          ),
-                        )
-                      }
-                    />
-                  </Field>
-                  <NumberField
-                    label="Cantidad"
-                    min={0.000001}
-                    value={g.cantidad}
-                    onChange={(v) =>
-                      set(
-                        "gastos",
-
-                        budget.gastos.map((x, i) =>
-                          i === index ? { ...x, cantidad: v } : x,
-                        ),
-                      )
-                    }
-                  />
-                  <NumberField
-                    label={`Costo unitario (${budget.moneda})`}
-                    value={g.costoUnitario}
-                    onChange={(v) =>
-                      set(
-                        "gastos",
-
-                        budget.gastos.map((x, i) =>
-                          i === index ? { ...x, costoUnitario: v } : x,
-                        ),
-                      )
-                    }
-                  />
-                </div>
-                <div className="quote-toolbar">
-                  <span>
-                    {money(g.cantidad * g.costoUnitario, budget.moneda)}
-                  </span>
-                  <button
-                    className="btn btn-ghost"
-                    type="button"
-                    aria-label={`Quitar partida ${index + 1}`}
-                    onClick={() =>
-                      set(
-                        "gastos",
-
-                        budget.gastos.filter((_, i) => i !== index),
-                      )
-                    }
-                  >
-                    Quitar
-                  </button>
-                </div>
-              </div>
-            ))}
           </section>
         </div>
-        <div hidden={step !== 2} data-form-step="2">
+        <div hidden={step !== 3} data-form-step="3">
           <section className="panel quote-section">
             <h3>Condiciones comerciales</h3>
             <div className="quote-form-grid">
@@ -1369,7 +1372,7 @@ export default function QuoteEditor({
             </section>
           )}
         </div>
-        <div hidden={step !== 3} data-form-step="3">
+        <div hidden={step !== 4} data-form-step="4">
           <section className="panel quote-section">
             <h3>{project.nombre || templateName || "Resumen del proyecto"}</h3>
             <p>
@@ -1383,7 +1386,7 @@ export default function QuoteEditor({
             <div className="quote-review-grid">
               {budget.materiales.map((m) => (
                 <div className="quote-review-item" key={m.id}>
-                  <strong>{m.nombre}</strong>
+                  <QuoteMaterialLabel material={materials.find(material => material.id === m.sku)} sku={m.sku} nombre={m.nombre} />
                   <span>
                     {m.cantidad} {m.unidadCotizada}
                   </span>
@@ -1438,8 +1441,9 @@ export default function QuoteEditor({
               Anterior
             </button>
           )}
-          {step < 3 ? (
+          {step < steps.length - 1 ? (
             <button
+              key="next-step"
               type="button"
               className="btn btn-primary"
               onClick={nextStep}
@@ -1447,7 +1451,7 @@ export default function QuoteEditor({
               Siguiente →
             </button>
           ) : (
-            <button className="btn btn-primary" type="submit">
+            <button key="save-budget" className="btn btn-primary" type="submit">
               {saving
                 ? "Guardando…"
                 : templateMode
