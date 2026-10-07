@@ -1,3 +1,4 @@
+import QuoteMaterialLabel from './QuoteMaterialLabel'
 import ValidatedForm from "../../components/ValidatedForm";
 import { publicCode } from "../../utils/publicCode";
 import { useEffect, useRef, useState, type ReactNode } from "react"
@@ -1084,7 +1085,7 @@ export default function CotizacionesView({
                 {quote.presupuesto.materiales.map((m) => (
                   <tr key={m.id}>
                     <td>
-                      {m.nombre}
+                      <QuoteMaterialLabel material={state.materials.find(material => material.id === m.sku)} sku={m.sku} nombre={m.nombre} />
                       <small>
                         {m.sku} · 1 {m.unidadCotizada} = {m.factorStock}{" "}
                         {m.unidadCatalogo}
@@ -1238,12 +1239,13 @@ export default function CotizacionesView({
                 )}
             </div>
             {quote.presupuesto.materiales.map((m) => (
-              <p key={m.id}>
-                {m.nombre}: presupuesto {m.cantidad * m.factorStock}{" "}
+              <div key={m.id} className="quote-line">
+                <QuoteMaterialLabel material={state.materials.find(material => material.id === m.sku)} sku={m.sku} nombre={m.nombre} />
+                <p>Presupuesto {m.cantidad * m.factorStock}{" "}
                 {m.unidadCatalogo} · saldo por solicitar{" "}
                 {remainingMaterial(m, family, state.requerimientos)}{" "}
-                {m.unidadCatalogo}
-              </p>
+                {m.unidadCatalogo}</p>
+              </div>
             ))}
             {linkedRequests.map((r) => (
               <div className="quote-line" key={r.id}>
@@ -1346,7 +1348,8 @@ export default function CotizacionesView({
                   ).map((m) => (
                     <tr key={m.sku}>
                       <td>
-                        {m.nombre} ({m.unidadCatalogo})
+                        <QuoteMaterialLabel material={state.materials.find(material => material.id === m.sku)} sku={m.sku} nombre={m.nombre} />
+                        <small>{m.unidadCatalogo}</small>
                       </td>
                       <td>
                         {deliveries

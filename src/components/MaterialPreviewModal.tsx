@@ -149,7 +149,7 @@ export default function MaterialPreviewModal({ material, onClose }: Props) {
               </div>
               <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#18181B', lineHeight: 1.3 }}>{material.nombre}</h2>
             </div>
-            <button onClick={onClose} style={{ background: '#F4F4F5', border: 'none', borderRadius: 8, width: 30, height: 30, cursor: 'pointer', color: '#71717A', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <button type="button" aria-label="Cerrar vista previa del material" onClick={onClose} style={{ background: '#F4F4F5', border: 'none', borderRadius: 8, width: 30, height: 30, cursor: 'pointer', color: '#71717A', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <svg width="11" height="11" viewBox="0 0 15 15" fill="none"><path d="M2.5 2.5l10 10M12.5 2.5l-10 10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
             </button>
           </div>
