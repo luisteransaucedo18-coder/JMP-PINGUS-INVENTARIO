@@ -11,8 +11,8 @@ import { estadoPorSede } from '../../../utils/inventoryStatus';
 
 interface Props { onToast: (m: string) => void; onNav: (v: string) => void; }
 
-const ESTADO_COLOR: Record<string, string> = { OK: '#059669', BAJO: '#D97706', CRÍTICO: '#DC2626', AGOTADO: '#991B1B' };
-const ESTADO_BG:    Record<string, string> = { OK: '#CCFBF1', BAJO: '#FEF3C7', CRÍTICO: '#FEE2E2', AGOTADO: '#FEE2E2' };
+const ESTADO_COLOR: Record<string, string> = { OK: '#276749', BAJO: '#8A5A19', CRÍTICO: '#9C3442', AGOTADO: '#9C3442' };
+const ESTADO_BG:    Record<string, string> = { OK: '#E8F3EC', BAJO: '#FBF1DC', CRÍTICO: '#F9EAED', AGOTADO: '#F9EAED' };
 
 export default function NuevaCompraView({ onToast, onNav }: Props) {
   const { state, refreshRemoteData } = useAppStore();

@@ -7,10 +7,10 @@ import AnalistaHelpCenter from '../../components/AnalistaHelpCenter';
 import { QuotationSummary } from '../../features/cotizaciones/CotizacionesView';
 
 const ESTADO_COLOR: Record<string, string> = {
-  BORRADOR: '#A1A1AA',
-  ENVIADO: '#D97706',
-  CONFIRMADO: '#059669',
-  RECHAZADO: '#DC2626',
+  BORRADOR: '#526174',
+  ENVIADO: '#8A5A19',
+  CONFIRMADO: '#276749',
+  RECHAZADO: '#9C3442',
 };
 
 const ESTADO_BADGE: Record<string, string> = {

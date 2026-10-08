@@ -162,8 +162,8 @@ export default function ProfileView({ role, userEmail, onToast }: Props) {
     .sort((a, b) => b.fecha.localeCompare(a.fecha))
     .slice(0, 8);
 
-  const ESTADO_COLOR: Record<string, string> = { CONFIRMADO: '#059669', ENVIADO: '#D97706', RECHAZADO: '#DC2626', BORRADOR: '#8B8FA8' };
-  const ESTADO_BG:    Record<string, string> = { CONFIRMADO: '#CCFBF1', ENVIADO: '#FEF3C7', RECHAZADO: '#FEE2E2', BORRADOR: '#F4F4F5' };
+  const ESTADO_COLOR: Record<string, string> = { CONFIRMADO: '#276749', ENVIADO: '#8A5A19', RECHAZADO: '#9C3442', BORRADOR: '#526174' };
+  const ESTADO_BG:    Record<string, string> = { CONFIRMADO: '#E8F3EC', ENVIADO: '#FBF1DC', RECHAZADO: '#F9EAED', BORRADOR: '#EEF1F5' };
 
   const openSettings = () => {
     if (editing) setActiveTab('info');
