@@ -15,6 +15,7 @@ import ViewRouter from './app/ViewRouter';
 import OnboardingTour from './components/OnboardingTour';
 import { readTourStatus } from './app/onboarding';
 import { authErrorMessage } from './utils/authErrors';
+import { recordSessionActivity, sessionIsIdle, readSessionActivity, SESSION_IDLE_MS } from './utils/sessionActivity';
 
 /* ─── Toast ─── */
 function Toast({ msg, onDismiss }: { msg: string; onDismiss: () => void }) {
@@ -285,8 +286,13 @@ export default function App() {
     let active = true;
     void supabase.auth.getSession().then(async ({ data }) => {
       if (!data.session) return;
+      if (sessionIsIdle()) {
+        if (active) setSessionError('Tu sesión venció por inactividad. Ingresa tus credenciales para continuar.');
+        await supabase.auth.signOut({ scope: 'local' });
+        return;
+      }
       const profile = await obtenerMiPerfil();
-      if (active) setSession(profile);
+      if (active && !sessionIsIdle()) setSession(profile);
     }).catch(() => { if (active) setSessionError('No se pudo recuperar tu sesión. Inicia sesión nuevamente.'); })
       .finally(() => { if (active) setRestoring(false); });
     const { data: { subscription } } = supabase.auth.onAuthStateChange(event => {
@@ -300,9 +306,51 @@ export default function App() {
   }, []);
 
   const handleLogin = (profile: Perfil) => {
+    recordSessionActivity();
     setSession(profile);
     setSessionError('');
   };
+
+  useEffect(() => {
+    if (!session) return;
+    let expired = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const expire = () => {
+      if (expired) return;
+      expired = true;
+      setSession(null);
+      setSessionError('Tu sesión venció por inactividad. Ingresa tus credenciales para continuar.');
+      // Lock the UI immediately, even if the remote logout request fails.
+      void supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+    };
+    const schedule = () => {
+      clearTimeout(timer);
+      if (sessionIsIdle()) { expire(); return; }
+      timer = setTimeout(schedule, Math.max(1, SESSION_IDLE_MS - (Date.now() - readSessionActivity())));
+    };
+    const activity = () => {
+      if (expired) return;
+      if (sessionIsIdle()) { expire(); return; }
+      if (document.visibilityState === 'visible') {
+        if (Date.now() - readSessionActivity() >= 1000) recordSessionActivity();
+        schedule();
+      }
+    };
+    const check = () => { if (!expired) schedule(); };
+    const events = ['pointerdown', 'pointermove', 'keydown', 'scroll', 'touchstart'];
+    events.forEach(event => window.addEventListener(event, activity, { passive: true, capture: true }));
+    window.addEventListener('focus', check);
+    window.addEventListener('storage', check);
+    document.addEventListener('visibilitychange', check);
+    schedule();
+    return () => {
+      clearTimeout(timer);
+      events.forEach(event => window.removeEventListener(event, activity, true));
+      window.removeEventListener('focus', check);
+      window.removeEventListener('storage', check);
+      document.removeEventListener('visibilitychange', check);
+    };
+  }, [session?.id]);
 
   const logout = async () => {
     if (logoutPending.current) return;
@@ -326,7 +374,7 @@ export default function App() {
   if (restoring) return <main className="session-restoring" role="status">Cargando tu sesión…</main>;
 
   return <>
-    {!session && sessionError && <div role="alert" className="sidebar-session-error">{sessionError} Si la sesión local ya se cerró, inicia sesión para reintentar.</div>}
+    {!session && sessionError && <div role="alert" className="sidebar-session-error">{sessionError}</div>}
     {session ? <UserProfileProvider key={session.id} initialProfile={session} onChange={next => setSession(current => current?.id === next.id ? next : current)}><AppProvider><WorkspaceGate loggingOut={loggingOut} logoutError={sessionError} onLogout={() => void logout()}><AppShell loggingOut={loggingOut} logoutError={sessionError} onLogout={() => void logout()} /></WorkspaceGate></AppProvider></UserProfileProvider>
       : <LoginScreen onLogin={handleLogin} />}
   </>;
