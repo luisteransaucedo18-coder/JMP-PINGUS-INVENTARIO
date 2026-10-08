@@ -1,3 +1,4 @@
+import DataDetails from '../../../components/DataDetails';
 import FieldError, { InlineValidationError } from "../../../components/FieldError";
 import ValidatedForm from "../../../components/ValidatedForm";
 import { useEffect, useRef, useState } from "react"
@@ -557,33 +558,13 @@ export default function TransporteInternoView({
               {labelEstado(seleccionado.estado)}
             </span>
           </div>
-          <dl className="transporte-fields">
-            <div>
-              <dt>Envío</dt>
-              <dd>{seleccionado.fecha_envio}</dd>
-            </div>
-            <div>
-              <dt>Transportista / guía</dt>
-              <dd>
-                {seleccionado.transportista || "Sin transportista"} ·{" "}
-                {seleccionado.guia || "Sin guía"}
-              </dd>
-            </div>
-            <div>
-              <dt>Costo</dt>
-              <dd>
-                {seleccionado.moneda} {Number(seleccionado.costo).toFixed(2)}
-              </dd>
-            </div>
-            <div>
-              <dt>Comprobante</dt>
-              <dd>
-                {seleccionado.numero_comprobante || "Sin número"} ·{" "}
-                {seleccionado.fecha_comprobante || "Sin fecha"}
-              </dd>
-            </div>
-          </dl>
-          <p>{seleccionado.observaciones || "Sin observaciones"}</p>
+          <DataDetails title="Datos del traslado" fields={[
+            { label: 'Envío', value: seleccionado.fecha_envio },
+            { label: 'Transportista / guía', value: <>{seleccionado.transportista || 'Sin transportista'} · {seleccionado.guia || 'Sin guía'}</> },
+            { label: 'Costo', value: <>{seleccionado.moneda} {Number(seleccionado.costo).toFixed(2)}</> },
+            { label: 'Comprobante', value: <>{seleccionado.numero_comprobante || 'Sin número'} · {seleccionado.fecha_comprobante || 'Sin fecha'}</> },
+            { label: 'Observaciones', value: seleccionado.observaciones || 'Sin observaciones', wide: true },
+          ]} />
           <div className="transporte-table">
             <table>
               <thead>

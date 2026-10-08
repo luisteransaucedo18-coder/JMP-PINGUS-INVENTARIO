@@ -1,7 +1,10 @@
+import DataDetails from '../../components/DataDetails';
+import { authErrorMessage, isInvalidCredentials } from '../../utils/authErrors';
 import FieldError from "../../components/FieldError";
 import { ownedBy } from "../../utils/recordOwner";
 import { publicCode } from "../../utils/publicCode";
 import { useEffect, useRef, useState } from 'react';
+import ProfilePhotoEditor from '../../components/ProfilePhotoEditor';
 import UserAvatar from '../../components/UserAvatar';
 import { useUserProfile } from '../../store/UserProfileContext';
 import { guardarMiPerfil, type DatosPersonales } from '../../services/perfilService';
@@ -44,8 +47,7 @@ export default function ProfileView({ role, userEmail, onToast }: Props) {
   const [editing, setEditing] = useState(false);
   const storedForm = (): DatosPersonales => ({ nombre: profile.nombre, telefono: profile.telefono ?? '', cargo: profile.cargo ?? '', bio: profile.bio ?? '' });
   const [form, setForm] = useState<DatosPersonales>(storedForm);
-  const [pendingPhoto, setPendingPhoto] = useState<{ file: File; extension: string } | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [photoSource, setPhotoSource] = useState<File | null>(null);
   const [validatingPhoto, setValidatingPhoto] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -53,21 +55,16 @@ export default function ProfileView({ role, userEmail, onToast }: Props) {
   const fileInput = useRef<HTMLInputElement>(null);
   const savePending = useRef(false);
   const selectionVersion = useRef(0);
-  useEffect(() => {
-    if (!pendingPhoto) { setPreviewUrl(null); return; }
-    const url = URL.createObjectURL(pendingPhoto.file);
-    setPreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [pendingPhoto]);
   useEffect(() => { if (!editing) setForm(storedForm()); }, [profile, editing]);
   const [pwForm, setPwForm] = useState({ actual: '', nueva: '', confirmar: '' });
   const [pwVisible, setPwVisible] = useState({ actual: false, nueva: false, confirmar: false });
   const [pwError, setPwError] = useState('');
-  const [activeTab, setActiveTab] = useState<'info' | 'seguridad' | 'actividad'>('info');
+  const [pwSuccess, setPwSuccess] = useState('');
+  const [activeTab, setActiveTab] = useState<'info' | 'seguridad' | 'actividad'>('actividad');
 
   const cancelEdit = () => {
     selectionVersion.current++;
-    setForm(storedForm()); setPendingPhoto(null); setEditing(false); setSaveError(''); setSaveSuccess(''); setValidatingPhoto(false);
+    setForm(storedForm()); setEditing(false); setProfileWarnings({}); setSaveError(''); setSaveSuccess(''); setValidatingPhoto(false);
     if (fileInput.current) fileInput.current.value = '';
   };
   const selectPhoto = async (file?: File) => {
@@ -75,11 +72,11 @@ export default function ProfileView({ role, userEmail, onToast }: Props) {
     const version = ++selectionVersion.current;
     setValidatingPhoto(true); setSaveError(''); setSaveSuccess('');
     try {
-      const extension = await validateProfilePhoto(file);
+      await validateProfilePhoto(file);
       try { const bitmap = await createImageBitmap(file); bitmap.close(); }
       catch { throw new Error('La imagen está dañada o no se puede abrir. Selecciona otra foto.'); }
       if (version !== selectionVersion.current) return;
-      setPendingPhoto({ file, extension }); setEditing(true); setActiveTab('info');
+      setPhotoSource(file);
     } catch (error) {
       if (version === selectionVersion.current) setSaveError(error instanceof Error ? error.message : 'No se pudo abrir la imagen. Selecciona otra foto.');
     } finally {
@@ -89,50 +86,53 @@ export default function ProfileView({ role, userEmail, onToast }: Props) {
   };
   const [profileWarnings, setProfileWarnings] = useState<Record<string,string>>({});
   const [passwordWarnings, setPasswordWarnings] = useState<Record<string,string>>({});
-  const handleSave = async () => {
-    if (savePending.current || validatingPhoto) return;
+  const handleSave = async (photo?: File): Promise<boolean> => {
+    const fields = photo ? storedForm() : form;
+    if (savePending.current || validatingPhoto) return false;
     const warnings: Record<string,string> = {};
-    if (!form.nombre.trim()) warnings.nombre = 'Completa tu nombre.';
-    for (const [key, max] of [['nombre',150],['telefono',30],['cargo',120],['bio',1000]] as const) if(form[key].length>max) warnings[key] = `Usa como máximo ${max} caracteres.`;
+    if (!fields.nombre.trim()) warnings.nombre = 'Completa tu nombre.';
+    for (const [key, max] of [['nombre',150],['telefono',30],['cargo',120],['bio',1000]] as const) if(fields[key].length>max) warnings[key] = `Usa como máximo ${max} caracteres.`;
     setProfileWarnings(warnings);
-    if(Object.keys(warnings).length) { document.getElementById(`profile-${Object.keys(warnings)[0]}`)?.focus(); return; }
+    if(Object.keys(warnings).length) { document.getElementById(`profile-${Object.keys(warnings)[0]}`)?.focus(); return false; }
     savePending.current = true; setSaving(true); setSaveError(''); setSaveSuccess('');
     let uploadedPath: string | undefined;
     let committed = false;
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || user?.id !== profile.id) throw new Error('Tu sesión terminó. Inicia sesión nuevamente.');
-      if (pendingPhoto) {
-        await validateProfilePhoto(pendingPhoto.file);
-        uploadedPath = `${user.id}/${crypto.randomUUID()}.${pendingPhoto.extension}`;
-        const { error } = await supabase.storage.from(PROFILE_PHOTO_BUCKET).upload(uploadedPath, pendingPhoto.file, {
-          contentType: pendingPhoto.file.type, cacheControl: '3600', upsert: false,
+      if (photo) {
+        const extension = await validateProfilePhoto(photo);
+        uploadedPath = `${user.id}/${crypto.randomUUID()}.${extension}`;
+        const { error } = await supabase.storage.from(PROFILE_PHOTO_BUCKET).upload(uploadedPath, photo, {
+          contentType: photo.type, cacheControl: '3600', upsert: false,
         });
         if (error) throw new Error('No se pudo subir la foto. Revisa tu conexión e inténtalo nuevamente.');
       }
-      const saved = await guardarMiPerfil(form, uploadedPath);
+      const saved = await guardarMiPerfil(fields, uploadedPath);
       committed = true;
-      updateProfile(saved); setPendingPhoto(null); setEditing(false);
-      setSaveSuccess('Perfil actualizado correctamente.'); onToast('Perfil actualizado correctamente.');
+      updateProfile(saved); if (!photo) setEditing(false);
+      const message = photo ? 'Foto de perfil actualizada.' : 'Datos personales actualizados.';
+      setSaveSuccess(message); onToast(message);
       void refreshRemoteData();
       if (uploadedPath && profile.foto_path && profile.foto_path !== uploadedPath) {
         // Storage denies deletion of any photo still referenced by a saved profile.
         void supabase.storage.from(PROFILE_PHOTO_BUCKET).remove([profile.foto_path]);
       }
+      return true;
     } catch (error) {
       if (uploadedPath && !committed) await supabase.storage.from(PROFILE_PHOTO_BUCKET).remove([uploadedPath]).catch(() => undefined);
       setSaveError(error instanceof Error ? error.message : 'No se pudo actualizar tu perfil. Inténtalo nuevamente.');
+      return false;
     } finally { savePending.current = false; setSaving(false); }
   };
   const handleEditToggle = () => {
-    if (editing) { cancelEdit(); return; }
     setForm(storedForm()); setEditing(true); setActiveTab('info'); setSaveError(''); setSaveSuccess('');
   };
   const passwordPending = useRef(false);
   const [savingPassword, setSavingPassword] = useState(false);
   const handlePwSave = async () => {
     if (passwordPending.current) return;
-    setPwError('');
+    setPwError(''); setPwSuccess('');
     const warnings: Record<string,string> = {};
     if(!pwForm.actual) warnings.actual = 'Completa la contraseña actual.';
     if(pwForm.nueva.length<8) warnings.nueva = 'Ingresa al menos 8 caracteres.';
@@ -145,10 +145,14 @@ export default function ProfileView({ role, userEmail, onToast }: Props) {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || user?.id !== profile.id || !user.email) throw new Error('Inicia sesión nuevamente.');
       const { error: reauthError } = await supabase.auth.signInWithPassword({ email: user.email, password: pwForm.actual });
-      if (reauthError) { setPasswordWarnings({actual:'La contraseña actual es incorrecta.'}); return; }
+      if (reauthError) {
+        if (isInvalidCredentials(reauthError)) setPasswordWarnings({ actual: 'La contraseña actual es incorrecta.' });
+        else setPwError(authErrorMessage(reauthError));
+        return;
+      }
       const { error } = await supabase.auth.updateUser({ password: pwForm.nueva });
       if (error) throw new Error('No se pudo actualizar la contraseña. Revisa sus requisitos e inténtalo nuevamente.');
-      setPwForm({ actual: '', nueva: '', confirmar: '' }); onToast('Contraseña actualizada correctamente');
+      setPwForm({ actual: '', nueva: '', confirmar: '' }); setPwVisible({ actual: false, nueva: false, confirmar: false }); setPwSuccess('Contraseña actualizada correctamente.'); onToast('Contraseña actualizada correctamente');
     } catch (error) { setPwError(error instanceof Error ? error.message : 'No se pudo actualizar la contraseña.'); }
     finally { passwordPending.current = false; setSavingPassword(false); }
   };
@@ -161,83 +165,62 @@ export default function ProfileView({ role, userEmail, onToast }: Props) {
   const ESTADO_COLOR: Record<string, string> = { CONFIRMADO: '#059669', ENVIADO: '#D97706', RECHAZADO: '#DC2626', BORRADOR: '#8B8FA8' };
   const ESTADO_BG:    Record<string, string> = { CONFIRMADO: '#CCFBF1', ENVIADO: '#FEF3C7', RECHAZADO: '#FEE2E2', BORRADOR: '#F4F4F5' };
 
+  const openSettings = () => {
+    if (editing) setActiveTab('info');
+    else handleEditToggle();
+  };
   return (
-    <div className="profile-view" style={{ padding: 28, overflowY: 'auto', flex: 1, background: 'transparent' }}>
-      <div style={{ maxWidth: 860, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 22 }}>
-
-        {/* ── Hero card ── */}
-        <div style={{ background: 'var(--color-surface)', border: '1px solid var(--surface-border)', borderRadius: 'var(--surface-radius)', boxShadow: 'var(--surface-shadow)', overflow: 'hidden' }}>
-          {/* Banner */}
-          <div style={{ height: 110, background: rc.grad, position: 'relative' }}>
-            <div style={{ position: 'absolute', inset: 0, opacity: 0.12 }}>
-              {[...Array(6)].map((_, i) => (
-                <div key={i} style={{ position: 'absolute', width: 120 + i * 40, height: 120 + i * 40, borderRadius: '50%', border: '1px solid #fff', top: -60 + i * 10, right: -40 + i * 20, opacity: 0.5 }} />
-              ))}
-            </div>
-          </div>
-
-          <div className="profile-hero-content" style={{ padding: '0 32px 28px', position: 'relative' }}>
-            {/* Avatar */}
-            <div className="profile-identity-row" style={{ display: 'flex', alignItems: 'flex-end', gap: 20, marginTop: -40 }}>
-              <div className="profile-avatar" style={{ width: 88, height: 88, borderRadius: '50%', background: rc.grad, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, fontWeight: 900, color: '#fff', border: '4px solid #fff', boxShadow: '0 4px 16px rgba(0,0,0,0.15)', flexShrink: 0 }}>
-                <UserAvatar name={profile.nombre} src={previewUrl ?? avatarUrl} />
-              </div>
-              <div className="profile-identity-copy" style={{ paddingBottom: 4, flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: '#1A1D23', letterSpacing: '-0.02em', lineHeight: 1.2 }}>{profile.nombre}</div>
-                <div className="profile-identity-meta" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 5 }}>
-                  <span style={{ background: rc.bg, color: rc.text, borderRadius: 6, padding: '3px 10px', fontSize: 12, fontWeight: 700 }}>{ROLE_LABEL[role]}</span>
-                  <span style={{ fontSize: 12.5, color: '#8B8FA8' }}>{userEmail}</span>
-                </div>
-              </div>
-              <button disabled={saving || validatingPhoto} className="btn btn-ghost profile-edit-button" style={{ fontSize: 12.5, flexShrink: 0, marginBottom: 4 }} onClick={handleEditToggle}>
-                {editing ? 'Cancelar edición' : 'Editar perfil'}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="panel profile-photo-controls">
+    <div className="profile-view profile-redesign">
+      <div className="profile-layout">
+        <aside className="profile-person-card">
+          <div className="profile-person-accent" style={{ background: rc.grad }} />
+          <button type="button" className="profile-avatar-trigger" disabled={saving || validatingPhoto || savingPassword} onClick={() => { setSaveError(''); fileInput.current?.click(); }} aria-label="Cambiar foto de perfil" title="Cambiar foto de perfil">
+            <span className="profile-avatar" style={{ background: rc.grad }}><UserAvatar name={profile.nombre} src={avatarUrl} /></span>
+            <span className="profile-avatar-pencil" aria-hidden="true">✎</span>
+          </button>
           <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" aria-label="Archivo de foto de perfil" hidden disabled={saving || validatingPhoto} onChange={event => void selectPhoto(event.target.files?.[0])} />
-          <div><strong>Foto de perfil</strong><p>JPG, PNG o WebP · Máximo 5 MB</p>{pendingPhoto && <p className="profile-preview-note">Vista previa sin guardar: {pendingPhoto.file.name}</p>}</div>
-          <button type="button" className="btn btn-ghost" disabled={saving || validatingPhoto} onClick={() => fileInput.current?.click()}>{validatingPhoto ? 'Validando foto…' : 'Seleccionar foto'}</button>
-        </div>
-        {saveError && <p className="profile-feedback profile-feedback-error" role="alert">{saveError}</p>}
-        {saveSuccess && <p className="profile-feedback profile-feedback-success" role="status">{saveSuccess}</p>}
-        {avatarError && <p className="profile-feedback profile-feedback-error" role="alert">{avatarError} <button type="button" onClick={reloadAvatar}>Volver a cargar foto</button></p>}
-
-        {/* ── Stats row ── */}
-        <div className="profile-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
-          <StatCard label="Requerimientos enviados"   value={sent}  color="#2563EB" />
-          <StatCard label="Confirmados"                value={conf}  color="#059669" />
-          <StatCard label="Borradores activos"         value={drafts} color="#D97706" />
-          <StatCard label="Tasa de aprobación"         value={`${tasa}%`} color={tasa >= 70 ? '#059669' : tasa >= 40 ? '#D97706' : '#DC2626'} />
-        </div>
-
-        {/* ── Tab panel ── */}
-        <div style={{ background: 'var(--color-surface)', border: '1px solid var(--surface-border)', borderRadius: 'var(--surface-radius)', boxShadow: 'var(--surface-shadow)', overflow: 'hidden' }}>
-          {/* Tabs */}
-          <div className="profile-tabs" style={{ display: 'flex', borderBottom: '1px solid #F0F2FF', padding: '0 24px' }}>
-            {([['info', 'Información personal'], ['seguridad', 'Seguridad'], ['actividad', 'Actividad reciente']] as const).map(([id, label]) => (
-              <button key={id} onClick={() => setActiveTab(id)} style={{
-                padding: '16px 18px', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, background: 'none',
-                color: activeTab === id ? '#2563EB' : '#8B8FA8',
-                borderBottom: activeTab === id ? '2.5px solid #2563EB' : '2.5px solid transparent',
-                transition: 'all 0.15s', marginBottom: -1,
-              }}>{label}</button>
-            ))}
+          <span className="profile-photo-hint">{validatingPhoto ? 'Validando foto…' : 'Haz clic en tu foto para cambiarla'}</span>
+          <div className="profile-identity-copy"><h2>{profile.nombre}</h2><span className="profile-role-chip" style={{ background: rc.bg, color: rc.text }}>{ROLE_LABEL[role]}</span></div>
+          <button className="btn btn-primary profile-settings-button" disabled={saving || savingPassword} onClick={openSettings}>⚙ Configuración</button>
+          <DataDetails className="data-details-compact profile-account-details" fields={[
+            { label: 'Correo electrónico', value: userEmail },
+            { label: 'Teléfono', value: profile.telefono || 'Sin completar' },
+            { label: 'Cargo', value: profile.cargo || 'Sin completar' },
+            { label: 'Sede principal', value: profile.sede || 'Sin sede asignada' },
+          ]} />
+          {profile.bio && <div className="profile-person-bio"><h3>Sobre mí</h3><p>{profile.bio}</p></div>}
+          {(!profile.telefono || !profile.cargo) && <button className="profile-complete-link" disabled={saving || savingPassword} onClick={openSettings}>Completar mis datos</button>}
+          <span className="profile-account-state"><span aria-hidden="true" />{profile.estado === 'ACTIVO' ? 'Cuenta activa' : 'Cuenta inactiva'}</span>
+        </aside>
+        <div className="profile-main-column">
+          {saveError && !photoSource && <p className="profile-feedback profile-feedback-error" role="alert">{saveError}</p>}
+          {saveSuccess && <p className="profile-feedback profile-feedback-success" role="status">{saveSuccess}</p>}
+          {avatarError && <p className="profile-feedback profile-feedback-error" role="alert">{avatarError} <button type="button" onClick={reloadAvatar}>Volver a cargar foto</button></p>}
+          <div className="profile-summary-grid">
+            <StatCard label="Requerimientos enviados" value={sent} color="#2563EB" />
+            <StatCard label="Confirmados" value={conf} color="#059669" />
+            <StatCard label="Borradores" value={drafts} color="#D97706" />
           </div>
-
+          <section className="profile-content-card">
+            <nav className="profile-section-nav" aria-label="Secciones del perfil">
+              <button type="button" aria-current={activeTab === 'actividad' ? 'page' : undefined} disabled={saving || savingPassword} onClick={() => setActiveTab('actividad')}>Mi actividad</button>
+              <button type="button" aria-current={activeTab !== 'actividad' ? 'page' : undefined} disabled={saving || savingPassword} onClick={() => { if (!editing) handleEditToggle(); else setActiveTab('info'); }}>Configuración</button>
+            </nav>
+            {activeTab !== 'actividad' && <nav className="profile-settings-nav" aria-label="Configuración del perfil">
+              <button type="button" disabled={saving || savingPassword} aria-current={activeTab === 'info' ? 'page' : undefined} onClick={() => { setEditing(true); setActiveTab('info'); }}>Datos personales</button>
+              <button type="button" disabled={saving || savingPassword} aria-current={activeTab === 'seguridad' ? 'page' : undefined} onClick={() => setActiveTab('seguridad')}>Contraseña</button>
+            </nav>}
           {/* ── Tab: Info ── */}
           {activeTab === 'info' && (
-            <div style={{ padding: '28px 28px 32px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+            <form className="profile-settings-form" onSubmit={event => { event.preventDefault(); void handleSave(); }}>
+              <h2>Datos personales</h2><p className="profile-section-help">Completa tu información de contacto. El correo, el rol y la sede son administrados por JIP.</p><div className="profile-fields-grid">
                 {[
                   { label: 'Nombre completo', key: 'nombre' as const, type: 'text', placeholder: 'Tu nombre y apellido' },
                   { label: 'Cargo',           key: 'cargo' as const,  type: 'text', placeholder: 'Tu cargo' },
                   { label: 'Teléfono',        key: 'telefono' as const, type: 'tel', placeholder: '+51 999 999 999' },
                 ].map(({ label, key, type, placeholder }) => (
                   <div key={key}>
-                    <label htmlFor={`profile-${key}`} style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#8B8FA8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 7 }}>{label}</label>
+                    <label htmlFor={`profile-${key}`} style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#8B8FA8', marginBottom: 7 }}>{label}</label>
                     {editing ? (
                       <><input aria-invalid={profileWarnings[key] ? true : undefined} aria-describedby={profileWarnings[key] ? `profile-${key}-error` : undefined} id={`profile-${key}`} disabled={saving} maxLength={key === 'nombre' ? 150 : key === 'telefono' ? 30 : 120} className="input-field" type={type} placeholder={placeholder}
                         value={form[key]}
@@ -267,11 +250,11 @@ export default function ProfileView({ role, userEmail, onToast }: Props) {
 
                 {/* Bio — full width */}
                 <div style={{ gridColumn: '1 / -1' }}>
-                  <label htmlFor="profile-bio" style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#8B8FA8', marginBottom: 7 }}>Biografía / nota</label>
+                  <label htmlFor="profile-bio" style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#8B8FA8', marginBottom: 7 }}>Sobre mí</label>
                   {editing ? (
                     <textarea aria-invalid={profileWarnings.bio ? true : undefined} aria-describedby={profileWarnings.bio ? "profile-bio-error" : undefined} id="profile-bio" disabled={saving} maxLength={1000} className="input-field" rows={3} placeholder="Describe tu rol, especialidad o cualquier información relevante…"
                       style={{ resize: 'vertical', fontFamily: 'inherit' }}
-                      value={form.bio} onChange={e => setForm(p => ({ ...p, bio: e.target.value }))} />
+                      value={form.bio} onChange={e => { setForm(p => ({ ...p, bio: e.target.value })); setProfileWarnings(p => ({ ...p, bio: '' })); }} />
                   ) : (
                     <div style={{ fontSize: 13.5, color: form.bio ? '#1A1D23' : '#C4C6D8', lineHeight: 1.6, padding: '6px 0' }}>
                       {form.bio || 'Sin descripción. Haz clic en "Editar perfil" para agregar una nota.'}
@@ -283,16 +266,16 @@ export default function ProfileView({ role, userEmail, onToast }: Props) {
 
               {editing && (
                 <div style={{ display: 'flex', gap: 10, marginTop: 24, justifyContent: 'flex-end' }}>
-                  <button type="button" disabled={saving} className="btn btn-ghost" onClick={cancelEdit}>Cancelar</button>
-                  <button type="button" disabled={saving || validatingPhoto} aria-busy={saving} className="btn btn-primary" onClick={() => void handleSave()}>{saving ? 'Guardando…' : 'Guardar cambios'}</button>
+                  <button type="button" disabled={saving} className="btn btn-ghost" onClick={() => { cancelEdit(); setActiveTab('actividad'); }}>Cancelar</button>
+                  <button type="submit" disabled={saving || validatingPhoto} aria-busy={saving} className="btn btn-primary">{saving ? 'Guardando…' : 'Guardar cambios'}</button>
                 </div>
               )}
-            </div>
+            </form>
           )}
 
           {/* ── Tab: Seguridad ── */}
           {activeTab === 'seguridad' && (
-            <div style={{ padding: '28px 28px 32px' }}>
+            <form className="profile-settings-form" onSubmit={event => { event.preventDefault(); void handlePwSave(); }}>
               <div style={{ maxWidth: 440 }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: '#1A1D23', marginBottom: 6 }}>Cambiar contraseña</div>
                 <div style={{ fontSize: 12.5, color: '#8B8FA8', marginBottom: 22 }}>Elige una contraseña segura de al menos 8 caracteres.</div>
@@ -300,7 +283,7 @@ export default function ProfileView({ role, userEmail, onToast }: Props) {
                 {[
                   { label: 'Contraseña actual', key: 'actual' as const },
                   { label: 'Nueva contraseña',  key: 'nueva'  as const },
-                  { label: 'Confirmar nueva',   key: 'confirmar' as const },
+                  { label: 'Confirmar nueva contraseña',   key: 'confirmar' as const },
                 ].map(({ label, key }) => (
                   <div key={key} style={{ marginBottom: 16 }}>
                     <label htmlFor={`profile-password-${key}`} style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#8B8FA8', marginBottom: 7 }}>{label}</label>
@@ -323,68 +306,40 @@ export default function ProfileView({ role, userEmail, onToast }: Props) {
                   </div>
                 ))}
 
+                {pwSuccess && <p role="status" className="profile-feedback profile-feedback-success">{pwSuccess}</p>}
                 {pwError && (
-                  <div style={{ background: '#FEE2E2', border: '1px solid #FECACA', borderRadius: 10, padding: '10px 14px', fontSize: 12.5, color: '#DC2626', marginBottom: 16 }}>{pwError}</div>
+                  <div role="alert" style={{ background: '#FEE2E2', border: '1px solid #FECACA', borderRadius: 10, padding: '10px 14px', fontSize: 12.5, color: '#DC2626', marginBottom: 16 }}>{pwError}</div>
                 )}
 
-                <button disabled={savingPassword} aria-busy={savingPassword} className="btn btn-primary" style={{ padding: '10px 24px' }} onClick={() => void handlePwSave()}>{savingPassword ? 'Actualizando…' : 'Actualizar contraseña'}</button>
+                <button type="submit" disabled={savingPassword} aria-busy={savingPassword} className="btn btn-primary" style={{ padding: '10px 24px' }}>{savingPassword ? 'Actualizando…' : 'Actualizar contraseña'}</button>
 
                 {/* Security info */}
-                <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid #F0F2FF' }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#1A1D23', marginBottom: 14 }}>Información de sesión</div>
-                  {[
-                    { label: 'Último acceso',        value: profile.ultimo_acceso ? new Date(profile.ultimo_acceso).toLocaleString('es-PE', { timeZone: 'America/Lima' }) : 'Sin registro' },
-                    { label: 'Rol asignado',          value: ROLE_LABEL[role] },
-                    { label: 'Estado de la cuenta',   value: profile.estado === 'ACTIVO' ? 'Activa' : 'Inactiva' },
-                  ].map(({ label, value }) => (
-                    <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #F8F9FF' }}>
-                      <span style={{ fontSize: 12.5, color: '#8B8FA8' }}>{label}</span>
-                      <span style={{ fontSize: 12.5, fontWeight: 600, color: '#1A1D23' }}>{value}</span>
-                    </div>
-                  ))}
-                </div>
+                <div className="profile-session-details"><DataDetails title="Información de sesión" fields={[
+                  { label: 'Último acceso', value: profile.ultimo_acceso ? new Date(profile.ultimo_acceso).toLocaleString('es-PE', { timeZone: 'America/Lima' }) : 'Sin registro' },
+                  { label: 'Rol asignado', value: ROLE_LABEL[role] },
+                  { label: 'Estado de la cuenta', value: profile.estado === 'ACTIVO' ? 'Activa' : 'Inactiva' },
+                ]} /></div>
+
               </div>
-            </div>
+            </form>
           )}
 
-          {/* ── Tab: Actividad ── */}
-          {activeTab === 'actividad' && (
-            <div>
-              {recentActivity.length === 0 ? (
-                <div style={{ padding: 48, textAlign: 'center', color: '#C4C6D8', fontSize: 13 }}>No hay actividad registrada aún.</div>
-              ) : (
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr style={{ background: '#F8F9FF', borderBottom: '1px solid #F0F2FF' }}>
-                        {['ID', 'Proyecto', 'Sede', 'Materiales', 'Fecha', 'Estado'].map(h => (
-                          <th key={h} style={{ padding: '12px 20px', fontSize: 11, fontWeight: 600, color: '#2563EB', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left' }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recentActivity.map(r => (
-                        <tr key={r.id} style={{ borderBottom: '1px solid #F8F9FF' }}
-                          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F8F9FF'}
-                          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
-                          <td style={{ padding: '13px 20px', fontFamily: 'monospace', fontSize: 11, color: '#2563EB', fontWeight: 700 }}>{publicCode(r)}</td>
-                          <td style={{ padding: '13px 20px', fontSize: 13, fontWeight: 500, color: '#1A1D23', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.proyecto}</td>
-                          <td style={{ padding: '13px 20px', fontSize: 12, color: '#8B8FA8' }}>{r.sede}</td>
-                          <td style={{ padding: '13px 20px', fontFamily: 'monospace', fontSize: 12, fontWeight: 600 }}>{r.materiales.length}</td>
-                          <td style={{ padding: '13px 20px', fontFamily: 'monospace', fontSize: 11, color: '#8B8FA8' }}>{r.fecha}</td>
-                          <td style={{ padding: '13px 20px' }}>
-                            <span className="status-badge" style={{ background: ESTADO_BG[r.estado], color: ESTADO_COLOR[r.estado] }}>{r.estado}</span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
+
+            {activeTab === 'actividad' && <div className="profile-activity" role="region" aria-label="Mi actividad reciente" tabIndex={0}>
+              <div className="profile-activity-heading"><div><h2>Requerimientos recientes</h2><p>Los últimos movimientos que registraste en el sistema.</p></div><span>{myReqs.length} en total</span></div>
+              {recentActivity.length === 0 ? <div className="profile-empty"><h3>Aún no tienes requerimientos</h3><p>Cuando registres un requerimiento, podrás consultar su estado aquí.</p></div> : <ul className="profile-activity-list">
+                {recentActivity.map(r => <li key={r.id}>
+                  <div className="profile-activity-date"><strong>{r.fecha.slice(8,10) || '—'}</strong><span>{r.fecha.slice(0,7)}</span></div>
+                  <div className="profile-activity-detail"><strong>{r.proyecto}</strong><span>{publicCode(r)} · {r.sede} · {r.materiales.length} materiales</span></div>
+                  <span className="status-badge" style={{ background: ESTADO_BG[r.estado], color: ESTADO_COLOR[r.estado] }}>{r.estado}</span>
+                </li>)}
+              </ul>}
+              <div className="profile-approval"><span>Tasa de aprobación <strong>{sent ? tasa + '%' : 'Sin envíos'}</strong></span><progress max="100" value={tasa} aria-label="Tasa de aprobación" /><small>{conf} confirmados de {sent} enviados</small></div>
+            </div>}
+          </section>
         </div>
       </div>
+      {photoSource && <ProfilePhotoEditor file={photoSource} saving={saving} error={saveError} onSave={handleSave} onClose={() => { setPhotoSource(null); setSaveError(''); }} />}
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import DataDetails from '../../../components/DataDetails';
 import { publicCode } from "../../../utils/publicCode";
 import { useRef, useState } from 'react';
 import { deliveryBalance } from '../../../utils/deliveryBalance';
@@ -50,23 +51,16 @@ function Comprobante({ entregaId, req, tecnico, dni, responsable, items, fecha, 
           </div>
 
           {/* Meta */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-            {[
-              ['N° Comprobante', entregaId],
-              ['Fecha y hora', `${fecha} ${hora}`],
-              ['Requerimiento', publicCode(req)],
-              ['Proyecto', req.proyecto],
-              ['Sede', req.sede],
-              ['Técnico receptor', tecnico],
-              ['DNI / Documento', dni || '—'],
-              ['Responsable entrega', responsable],
-            ].map(([k, v]) => (
-              <div key={k} style={{ background: '#F9FAFB', borderRadius: 6, padding: '8px 10px' }}>
-                <div style={{ fontSize: 10, color: '#A1A1AA', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>{k}</div>
-                <div style={{ fontSize: 12.5, fontWeight: 600, color: '#18181B' }}>{v}</div>
-              </div>
-            ))}
-          </div>
+          <div className="purchase-details-wrap"><DataDetails title="Datos de la entrega" fields={[
+            { label: 'N° Comprobante', value: entregaId },
+            { label: 'Fecha y hora', value: fecha + ' ' + hora },
+            { label: 'Requerimiento', value: publicCode(req) },
+            { label: 'Proyecto', value: req.proyecto },
+            { label: 'Sede', value: req.sede },
+            { label: 'Técnico receptor', value: tecnico },
+            { label: 'DNI / Documento', value: dni || '—' },
+            { label: 'Responsable entrega', value: responsable },
+          ]} /></div>
 
           {/* Materials table */}
           <div style={{ marginBottom: 14 }}>

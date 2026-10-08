@@ -11,7 +11,7 @@ export const ROLE_LABELS: Record<Role, string> = {
 
 export const NAVIGATION_BY_ROLE: Record<Role, NavigationItem[]> = {
   gerente: [
-    { id: 'dashboard', label: 'Dashboard', icon: 'grid', title: 'Dashboard General', subtitle: 'Resumen ejecutivo del sistema' },
+    { id: 'dashboard', label: 'Inicio', icon: 'grid', title: 'Dashboard General', subtitle: 'Resumen ejecutivo del sistema' },
     { id: 'cotizaciones', label: 'Cotizaciones', icon: 'document', title: 'Cotizaciones de proyectos', subtitle: 'Presupuestos, acuerdos comerciales y resultados — consulta' },
     { id: 'reportes', label: 'Reportes', icon: 'chart', title: 'Reportes', subtitle: 'Análisis de requerimientos, stock e indicadores operativos' },
     { id: 'requerimientos', label: 'Requerimientos', icon: 'document', title: 'Requerimientos', subtitle: 'Consulta general de solicitudes — solo lectura' },
@@ -24,7 +24,7 @@ export const NAVIGATION_BY_ROLE: Record<Role, NavigationItem[]> = {
     { id: 'usuarios', label: 'Usuarios', icon: 'users', title: 'Usuarios', subtitle: 'Directorio del sistema — solo lectura' },
   ],
   analista: [
-    { id: 'dashboard', label: 'Dashboard', icon: 'grid', title: 'Mi Panel', subtitle: 'Resumen de mis solicitudes' },
+    { id: 'dashboard', label: 'Inicio', icon: 'grid', title: 'Mi Panel', subtitle: 'Resumen de mis solicitudes' },
     { id: 'cotizaciones', label: 'Cotizaciones', icon: 'document', title: 'Cotizaciones de proyectos', subtitle: 'Preparar propuestas y seguir su ejecución' },
     { id: 'nueva-solicitud', label: 'Nueva Solicitud', icon: 'plus', title: 'Nueva Solicitud', subtitle: 'Registrar requerimiento de materiales' },
     { id: 'mis-solicitudes', label: 'Mis Solicitudes', icon: 'clipboard', title: 'Mis Solicitudes', subtitle: 'Historial de requerimientos enviados' },
@@ -35,7 +35,7 @@ export const NAVIGATION_BY_ROLE: Record<Role, NavigationItem[]> = {
     { id: 'inventario', label: 'Inventario', icon: 'box', title: 'Inventario', subtitle: 'Consulta de existencias por sede' },
   ],
   coordinador: [
-    { id: 'dashboard', label: 'Dashboard', icon: 'grid', title: 'Panel de Coordinación', subtitle: 'Gestión de requerimientos e inventario' },
+    { id: 'dashboard', label: 'Inicio', icon: 'grid', title: 'Panel de Coordinación', subtitle: 'Gestión de requerimientos e inventario' },
     { id: 'cotizaciones', label: 'Cotizaciones', icon: 'document', title: 'Cotizaciones de proyectos', subtitle: 'Consultar propuestas y conciliar cierres' },
     { id: 'requerimientos', label: 'Requerimientos', icon: 'document', title: 'Requerimientos', subtitle: 'Validar y confirmar solicitudes de analistas' },
     { id: 'compras', label: 'Compras', icon: 'cart', title: 'Órdenes de Compra', subtitle: 'Aprobar solicitudes y confirmar ingresos de stock' },

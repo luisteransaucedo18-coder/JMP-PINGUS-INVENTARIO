@@ -1,6 +1,8 @@
 import {createRequire} from 'node:module';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {mkdir} from 'node:fs/promises';
+if(process.env.QA_SCREENSHOT_DIR) await mkdir(process.env.QA_SCREENSHOT_DIR,{recursive:true});
 import ts from 'typescript';
 const domainSource = readFileSync(new URL('../src/features/cotizaciones/domain.ts', import.meta.url), 'utf8');
 const compiled = ts.transpileModule(domainSource, {compilerOptions:{module:ts.ModuleKind.ESNext}}).outputText;
@@ -58,12 +60,22 @@ try {
     await nav('Nueva Solicitud');
     await page.locator('.quote-field select').selectOption('quote-qa');
     for(const value of ['Cliente QA','Responsable QA','Lambayeque','Chiclayo','Av. José Balta 123, interior 2',budget.alcance]) {
-      assert((await page.locator('.quote-note').innerText()).includes(value));
+      assert((await page.locator('.data-details').innerText()).includes(value));
     }
+    const dataDetails=page.locator('.data-details');
+    assert((await dataDetails.innerText()).includes('Técnico QA'));
+    assert.equal(await page.getByText('Sede de abastecimiento',{exact:true}).count(),1);
+    const desktopColumns=await dataDetails.locator('dl').evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').length);
+    assert.equal(desktopColumns,width===1440?3:1,'Details use the available space and collapse on mobile');
+    if(process.env.QA_SCREENSHOT_DIR) await dataDetails.screenshot({path:process.env.QA_SCREENSHOT_DIR+'/project-details-'+width+'.png'});
     await nav('Mis Solicitudes');
     await page.locator('tr').filter({hasText:'REQ-QA'}).click();
-    assert((await page.locator('.modal .quote-note').innerText()).includes('Av. José Balta 123, interior 2'));
-    assert((await page.locator('.modal .quote-note').innerText()).includes('COT-QA · versión 1'));
+    assert((await page.getByRole('region',{name:'Datos del proyecto cotizado',exact:true}).innerText()).includes('Av. José Balta 123, interior 2'));
+    assert((await page.getByRole('region',{name:'Datos del proyecto cotizado',exact:true}).innerText()).includes('COT-QA · versión 1'));
+    assert.equal(await page.locator('.modal .data-details').count(),2,'Both quote and requirement share the same data presentation');
+    const overflow=await page.locator('.modal .data-details').evaluateAll(els=>els.some(el=>el.scrollWidth>el.clientWidth+1));
+    assert.equal(overflow,false,'Detail blocks do not overflow');
+    if(process.env.QA_SCREENSHOT_DIR) await page.locator('.modal').screenshot({path:process.env.QA_SCREENSHOT_DIR+'/requirement-details-'+width+'.png'});
     assert.deepEqual(errors,[]); assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth));
     console.log(`OK: ${width}px, province/district selectors, address, inherited quotation data before and after creating a request`);
     await page.close();

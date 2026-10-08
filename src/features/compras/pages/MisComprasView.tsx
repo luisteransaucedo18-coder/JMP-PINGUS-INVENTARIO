@@ -1,3 +1,4 @@
+import DataDetails from '../../../components/DataDetails';
 import FieldError from "../../../components/FieldError";
 import { useUserProfile } from "../../../store/UserProfileContext";
 import { ownedBy } from "../../../utils/recordOwner";
@@ -128,6 +129,12 @@ export default function MisComprasView({ onNav, onToast }: Props) {
                 ))}
               </div>
             </div>
+            <div className="record-details-wrap"><DataDetails title="Datos de la compra" fields={[
+              { label: 'Analista', value: det.analista },
+              { label: 'Sede', value: det.sede },
+              { label: 'Fecha', value: det.fecha },
+              { label: 'Motivo de la compra', value: det.motivo, wide: true },
+            ]} /></div>
             <table className="data-table">
               <thead><tr><th>SKU</th><th>Material</th><th>Cant. solicitada</th><th>Precio unit.</th><th>Subtotal</th></tr></thead>
               <tbody>

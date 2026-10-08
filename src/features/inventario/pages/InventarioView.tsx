@@ -133,6 +133,8 @@ export default function InventarioView({
   // FILTROS
   // ====================================================
 
+  const [showTechnical, setShowTechnical] = useState(false);
+
   const [search, setSearch] =
     useState('');
 
@@ -587,7 +589,7 @@ export default function InventarioView({
 
     return (
       <div
-        className={role === 'gerente' ? 'manager-view-surface manager-inventory-view' : undefined}
+        className={`inventory-view ${role === 'gerente' ? 'manager-view-surface manager-inventory-view' : ''}`}
         style={{
           padding: 24,
           flex: 1,
@@ -611,7 +613,7 @@ export default function InventarioView({
   return (
 
     <div
-      className={role === 'gerente' ? 'manager-view-surface manager-inventory-view' : undefined}
+      className={`inventory-view ${role === 'gerente' ? 'manager-view-surface manager-inventory-view' : ''}`}
       style={{
         padding: 24,
         overflowY: 'auto',
@@ -619,11 +621,13 @@ export default function InventarioView({
       }}
     >
 
+      <header className="inventory-section-heading"><div><h2>Existencias y alertas</h2><p>Consulta el stock por sede y localiza los materiales que necesitan atención.</p></div></header>
       {/* ===============================================
           KPIs
       ================================================ */}
 
       <div
+        className="inventory-summary-grid"
         style={{
           display: 'grid',
           gridTemplateColumns:
@@ -851,11 +855,15 @@ export default function InventarioView({
           PANEL
       ================================================ */}
 
-      <div className="panel">
+      <section className="panel inventory-catalog" aria-labelledby="inventory-catalog-title">
+        <header className="inventory-section-heading"><div><h2 id="inventory-catalog-title">Catálogo de materiales</h2><p>Busca un material y consulta su disponibilidad. Abre su nombre para ver el detalle.</p></div>
+          <button type="button" className="btn btn-ghost" aria-pressed={showTechnical} onClick={() => setShowTechnical(value => !value)}>{showTechnical ? 'Ocultar datos técnicos' : 'Mostrar datos técnicos'}</button>
+        </header>
 
         {/* FILTROS */}
 
         <div
+          className="inventory-filters"
           style={{
             padding:
               '14px 16px',
@@ -882,6 +890,7 @@ export default function InventarioView({
               maxWidth: 240,
             }}
 
+            aria-label="Buscar material por SKU, nombre o categoría"
             placeholder=
               "Buscar SKU, nombre, categoría…"
 
@@ -898,6 +907,7 @@ export default function InventarioView({
           <select
             className="select-field"
 
+            aria-label="Filtrar por categoría"
             value={catFilter}
 
             onChange={(e) =>
@@ -980,7 +990,15 @@ export default function InventarioView({
 
             {' SKU'}
           </div>
-          {sedeView==='todas' && <p className="inventory-filter-note">El estado general muestra la mayor alerta entre las sedes: Agotado, Crítico, Bajo u OK.</p>}
+          {(search || catFilter || estadoFilter || sedeView !== 'todas') && <div className="active-filters" aria-label="Filtros activos">
+            <span>Filtros activos:</span>
+            {search && <button type="button" onClick={() => setSearch('')} aria-label="Quitar búsqueda">Búsqueda: {search} ×</button>}
+            {catFilter && <button type="button" onClick={() => setCatFilter('')} aria-label="Quitar categoría">{catFilter} ×</button>}
+            {estadoFilter && <button type="button" onClick={() => setEstadoFilter('')} aria-label="Quitar estado">{estadoFilter} ×</button>}
+            {sedeView !== 'todas' && <button type="button" onClick={() => setSedeView('todas')} aria-label="Quitar sede">{sedeView} ×</button>}
+            <button type="button" className="filter-reset" onClick={() => { setSearch(''); setCatFilter(''); setEstadoFilter(''); setSedeView('todas'); }}>Restablecer filtros</button>
+          </div>}
+          {sedeView==='todas'  && <p className="inventory-filter-note">El estado general muestra la mayor alerta entre las sedes: Agotado, Crítico, Bajo u OK.</p>}
 
 
 
@@ -1015,30 +1033,32 @@ export default function InventarioView({
             TABLA
         ================================================ */}
 
+        <p className="inventory-scroll-hint" id="inventory-scroll-help">Desliza la tabla horizontalmente para consultar todas las columnas.</p>
         <div
+          className="inventory-table-scroll"
+          role="region" aria-label="Existencias de materiales" aria-describedby="inventory-scroll-help" tabIndex={0}
           style={{
             overflowX:
               'auto',
           }}
         >
 
-          <table className="data-table">
+          <table className="data-table inventory-table">
+            <caption className="sr-only">Disponibilidad de materiales por sede</caption>
 
             <thead>
 
               <tr>
 
               <th>SKU</th>
-                <th>Imagen</th>
+                {showTechnical && <th>Imagen</th>}
                   <th>Material</th>
 
                 <th>
                   Categoría
                 </th>
 
-                <th>
-                  Unidad
-                </th>
+                <th>Unidad</th>
 
 
                 {sedeView ===
@@ -1071,9 +1091,7 @@ export default function InventarioView({
                   Mínimo por sede
                 </th>
 
-                <th>
-                  Precio unitario
-                </th>
+                {showTechnical && <th>Precio unitario</th>}
 
                 <th>
                   Estado
@@ -1100,8 +1118,8 @@ export default function InventarioView({
                   <td
                     colSpan={
                       sedeView === 'todas'
-                        ? canEdit ? 13 : 12
-                        : canEdit ? 10 : 9
+                        ? (canEdit ? 11 : 10) + (showTechnical ? 2 : 0)
+                        : (canEdit ? 8 : 7) + (showTechnical ? 2 : 0)
                     }
 
                     style={{
@@ -1114,7 +1132,7 @@ export default function InventarioView({
                         '#71717A',
                     }}
                   >
-                    No hay materiales registrados.
+                    {materiales.length ? 'No hay materiales que coincidan. Ajusta o restablece los filtros.' : 'No hay materiales registrados.'}
                   </td>
 
                 </tr>
@@ -1166,6 +1184,7 @@ export default function InventarioView({
                           {m.id}
                         </td>
 
+                        {showTechnical && <>
                         <td
                           onClick={(e) => e.stopPropagation()}
                           style={{
@@ -1206,6 +1225,7 @@ export default function InventarioView({
                             </div>
                           )}
                         </td>
+                        </>}
 
                         <td
                           style={{
@@ -1225,7 +1245,7 @@ export default function InventarioView({
                               'nowrap',
                           }}
                         >
-                          {m.nombre}
+                          <button type="button" className="inventory-material-link" onClick={event => { event.stopPropagation(); setSelected(m); setEditMode(false); }}>{m.nombre}</button>
                         </td>
 
 
@@ -1257,6 +1277,7 @@ export default function InventarioView({
                           {m.unidad ||
                             'UND'}
                         </td>
+
 
 
                         {sedeView ===
@@ -1372,6 +1393,7 @@ export default function InventarioView({
                         </td>
 
 
+                        {showTechnical && <>
                         <td
                           style={{
                             fontVariantNumeric:
@@ -1396,6 +1418,7 @@ export default function InventarioView({
                             m.precioUnitario
                           )}
                         </td>
+                        </>}
 
 
                         <td>
@@ -1459,7 +1482,7 @@ export default function InventarioView({
 
         </div>
 
-      </div>
+      </section>
 
 
       {/* ===============================================

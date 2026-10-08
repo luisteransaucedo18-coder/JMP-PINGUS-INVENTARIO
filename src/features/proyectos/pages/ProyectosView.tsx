@@ -1,3 +1,4 @@
+import DataDetails from '../../../components/DataDetails';
 import { publicCode } from "../../../utils/publicCode";
 import { useState } from 'react';
 import { useAppStore } from '../../../store/AppContext';
@@ -142,23 +143,13 @@ function ProjectDetail({ proyecto, onBack, role, onToast, onNav, managerSurface 
 
             <RequirementStatusTimeline requirement={selectedRequirement} />
 
-            <div style={{ padding: '18px 22px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-              {[
-                ['Sede', selectedRequirement.sede],
-                ['Ubicación', selectedRequirement.ubicacion],
-                ['Analista', selectedRequirement.analista],
-                ['Técnico responsable', selectedRequirement.tecnico],
-              ].map(([label, value]) => (
-                <div key={label}>
-                  <div style={{ fontSize: 10, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>{label}</div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: '#18181B' }}>{value}</div>
-                </div>
-              ))}
-              <div style={{ gridColumn: '1/-1' }}>
-                <div style={{ fontSize: 10, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Descripción</div>
-                <div style={{ fontSize: 12.5, color: '#52525B', lineHeight: 1.6 }}>{selectedRequirement.descripcion}</div>
-              </div>
-            </div>
+            <div className="record-details-wrap"><DataDetails title="Datos del requerimiento" fields={[
+                { label: 'Sede', value: selectedRequirement.sede },
+                { label: 'Ubicación', value: selectedRequirement.ubicacion, wide: true },
+                { label: 'Analista', value: selectedRequirement.analista },
+                { label: 'Técnico responsable', value: selectedRequirement.tecnico },
+                { label: 'Descripción', value: selectedRequirement.descripcion, wide: true },
+              ]} /></div>
 
             <div style={{ padding: '0 22px 16px' }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: '#52525B', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>

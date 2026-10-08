@@ -1,3 +1,4 @@
+import DataDetails from '../../../components/DataDetails';
 import FieldError from "../../../components/FieldError";
 import { publicCode } from "../../../utils/publicCode";
 import { useEffect, useState } from 'react';
@@ -230,18 +231,14 @@ export default function RequerimientosView({ onToast, onNav }: Props) {
             <RequirementStatusTimeline requirement={selected} />
             {selectedQuote && <div style={{ padding: '16px 22px 0' }}><QuoteProjectInfo quote={selectedQuote} /></div>}
 
-            <div style={{ padding: '18px 22px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-              {[['Sede', selected.sede], ['Ubicación', selected.ubicacion], ['Analista', selected.analista], ['Técnico responsable', selected.tecnico], ['Fecha solicitud', selected.fecha]].map(([k, v]) => (
-                <div key={String(k)} style={{ gridColumn: k === 'Ubicación' ? '1/-1' : undefined }}>
-                  <div style={{ fontSize: 10, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>{k}</div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: '#18181B' }}>{v}</div>
-                </div>
-              ))}
-              <div style={{ gridColumn: '1/-1' }}>
-                <div style={{ fontSize: 10, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Descripción</div>
-                <div style={{ fontSize: 12.5, color: '#52525B', lineHeight: 1.6 }}>{selected.descripcion}</div>
-              </div>
-            </div>
+            <div className="record-details-wrap"><DataDetails title="Datos del requerimiento" fields={[
+                { label: 'Sede', value: selected.sede },
+                { label: 'Ubicación', value: selected.ubicacion, wide: true },
+                { label: 'Analista', value: selected.analista },
+                { label: 'Técnico responsable', value: selected.tecnico },
+                { label: 'Fecha solicitud', value: selected.fecha },
+                { label: 'Descripción', value: selected.descripcion, wide: true },
+              ]} /></div>
 
             <div style={{ padding: '0 22px 16px' }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: '#52525B', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>

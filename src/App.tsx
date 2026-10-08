@@ -10,10 +10,11 @@ import { ASSETS } from './config/assets';
 import { AppProvider, useAppStore } from './store/AppContext';
 import WorkspaceGate from './components/WorkspaceTransition';
 import NotificationsPanel, { useNotifications } from './components/NotificationsPanel';
-import { getViewMeta } from './app/navigation';
+import { getViewMeta, NAVIGATION_BY_ROLE } from './app/navigation';
 import ViewRouter from './app/ViewRouter';
 import OnboardingTour from './components/OnboardingTour';
 import { readTourStatus } from './app/onboarding';
+import { authErrorMessage } from './utils/authErrors';
 
 /* ─── Toast ─── */
 function Toast({ msg, onDismiss }: { msg: string; onDismiss: () => void }) {
@@ -36,9 +37,12 @@ function LoginScreen({ onLogin }: { onLogin: (profile: Perfil) => void }) {
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const loginPending = useRef(false);
 
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
+  if (loginPending.current) return;
+  loginPending.current = true;
 
   setError('');
   setLoading(true);
@@ -52,9 +56,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       });
 
     if (authError) {
-      console.error('Error Auth:', authError);
-
-      setError('Correo o contraseña incorrectos.');
+      setError(authErrorMessage(authError));
       setLoading(false);
 
       return;
@@ -77,9 +79,7 @@ const handleSubmit = async (e: React.FormEvent) => {
         .eq('id', user.id)
         .single();
 
-    if (perfilError) {
-      console.error('Error obteniendo perfil:', perfilError);
-
+    if (perfilError || !perfil) {
       setError('El usuario existe, pero no tiene un perfil válido.');
       setLoading(false);
 
@@ -113,10 +113,9 @@ const handleSubmit = async (e: React.FormEvent) => {
     onLogin(perfil as Perfil);
 
   } catch (error) {
-    console.error('Error inesperado:', error);
-
-    setError('Ocurrió un error al iniciar sesión.');
+    setError(authErrorMessage(error));
   } finally {
+    loginPending.current = false;
     setLoading(false);
   }
 };
@@ -217,6 +216,8 @@ function AppShell({ onLogout, loggingOut, logoutError }: { loggingOut: boolean; 
       </MobileNavigation>
       <div className="app-main" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '14px 0 0', gap: 12 }}>
         <Header
+          navigationItems={NAVIGATION_BY_ROLE[session.role]}
+          onNavigate={navigate}
           menuButton={<button ref={menuTrigger} className="mobile-menu-trigger" aria-label="Abrir menú"
             aria-expanded={menuOpen} aria-controls="mobile-navigation" onClick={() => { setNotifOpen(false); setMenuOpen(true); }}>
             <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>

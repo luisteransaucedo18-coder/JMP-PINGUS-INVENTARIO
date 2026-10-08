@@ -104,11 +104,7 @@ export default function RequerimientoCotizado({
           </p>
         )}
         {quote && (
-          <div>
-            <QuoteProjectInfo quote={quote} />
-            <p>Sede de abastecimiento: {quote.presupuesto.sede}</p>
-            <p>Técnico: {quote.presupuesto.tecnico}</p>
-          </div>
+          <QuoteProjectInfo quote={quote} />
         )}
       </section>
       {quote && (

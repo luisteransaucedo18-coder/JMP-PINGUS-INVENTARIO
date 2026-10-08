@@ -26,7 +26,14 @@ export default function Sidebar({ role, activeView, onNav, onLogout, userName, u
   const { state } = useAppStore();
   const [hovered, setHovered] = useState(false);
 
-  const nav = NAVIGATION_BY_ROLE[role];
+  const groups = [
+    { label: 'Resumen', ids: ['dashboard', 'reportes'] },
+    { label: 'Materiales y movimientos', ids: ['inventario', 'entregas', 'devoluciones', 'transporte'] },
+    { label: 'Solicitudes y compras', ids: ['nueva-solicitud', 'mis-solicitudes', 'requerimientos', 'mis-compras', 'compras'] },
+    { label: 'Proyectos y presupuestos', ids: ['proyectos', 'cotizaciones'] },
+    { label: 'Administración', ids: ['usuarios'] },
+  ].map(group => ({ ...group, items: group.ids.flatMap(id => NAVIGATION_BY_ROLE[role].filter(item => item.id === id)) })).filter(group => group.items.length);
+  const nav = groups.flatMap(group => group.items);
   const badge = roleBadgeColors[role];
   const pendingReqs    = state.requerimientos.filter(r => r.estado === 'ENVIADO').length;
   const pendingCompras = state.compras.filter(c => c.estado === 'ENVIADO').length;
@@ -39,7 +46,7 @@ export default function Sidebar({ role, activeView, onNav, onLogout, userName, u
       className={`app-sidebar${mobile ? " mobile-sidebar" : " desktop-sidebar"}`}
       data-expanded={expanded}
       onFocus={() => setHovered(true)}
-      onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setHovered(false); }}
+      onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setHovered(false); }}
       onMouseEnter={() => { if (!mobile) setHovered(true); }}
       onMouseLeave={() => { if (!mobile) setHovered(false); }}
       style={{
@@ -82,12 +89,15 @@ export default function Sidebar({ role, activeView, onNav, onLogout, userName, u
           <div className="sidebar-nav-label">Navegación</div>
         )}
         {nav.map(item => {
+          const group = groups.find(group => group.items[0].id === item.id);
           const badgeCount =
             (item.id === 'requerimientos' && role === 'coordinador') ? pendingReqs :
             (item.id === 'compras'        && role === 'coordinador') ? pendingCompras :
             0;
           const isActive = activeView === item.id;
           return (
+            <div key={item.id}>
+            {group && expanded && <h2 className="sidebar-group-title">{group.label}</h2>}
             <button
               key={item.id}
               aria-label={item.label}
@@ -113,6 +123,7 @@ export default function Sidebar({ role, activeView, onNav, onLogout, userName, u
                 <span className="sidebar-link-alert" />
               )}
             </button>
+            </div>
           );
         })}
         <button type="button" className={`sidebar-link${activeView === 'manual' ? ' active' : ''}`} aria-label="Ayuda y Manual de Usuario"

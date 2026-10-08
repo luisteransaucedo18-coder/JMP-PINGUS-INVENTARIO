@@ -1,3 +1,4 @@
+import DataDetails from '../../../components/DataDetails';
 import FieldError from "../../../components/FieldError";
 import { COMPRA_COLOR as E_COLOR, COMPRA_BG as E_BG } from '../../../config/visualTokens';
 import { useState } from 'react';
@@ -203,10 +204,12 @@ export default function ComprasView({ onToast }: Props) {
             {/* Detail body */}
             <div style={{ padding: '20px 24px' }}>
               {/* Motivo */}
-              <div style={{ background: '#F8F9FF', borderRadius: 12, padding: '14px 16px', marginBottom: 18 }}>
-                <div style={{ fontSize: 10.5, fontWeight: 700, color: '#8B8FA8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Motivo de la compra</div>
-                <div style={{ fontSize: 13, color: '#1A1D23', lineHeight: 1.6 }}>{selected.motivo}</div>
-              </div>
+              <div className="purchase-details-wrap"><DataDetails title="Datos de la compra" fields={[
+                { label: 'Analista', value: selected.analista },
+                { label: 'Sede', value: selected.sede },
+                { label: 'Fecha', value: selected.fecha },
+                { label: 'Motivo de la compra', value: selected.motivo, wide: true },
+              ]} /></div>
 
               {/* Items table */}
               <div style={{ fontSize: 11, fontWeight: 700, color: '#8B8FA8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>

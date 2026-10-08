@@ -69,10 +69,11 @@ for (const role of (process.env.QA_ROLE ? [process.env.QA_ROLE] : ['gerente','an
     await page.locator('input[autocomplete="current-password"]').fill('test-password');
     await page.getByRole('button',{name:'Ingresar al sistema'}).click();await page.locator('.app-header').waitFor();
   };
-  const openProfile=async()=>{await page.locator('.app-header').getByRole('button',{name:'Mi perfil',exact:true}).click();await page.getByRole('button',{name:'Editar perfil'}).waitFor();};
+  const openProfile=async()=>{await page.locator('.app-header').getByRole('button',{name:'Mi perfil',exact:true}).click();await page.getByRole('button',{name:'⚙ Configuración'}).waitFor();};
   const select=async(file)=>{await page.locator('input[type=file]').setInputFiles(file);};
-  const waitPreview=()=>page.waitForFunction(()=>document.querySelector('.profile-avatar img')?.src.startsWith('blob:'));
+  const waitPreview=async()=>{await page.getByRole('dialog',{name:'Ajustar foto de perfil'}).waitFor();await page.getByRole('button',{name:'Guardar foto',exact:true}).waitFor();await page.waitForFunction(()=>!document.querySelector('.profile-photo-dialog button.btn-primary')?.disabled);};
   const screenshot=async(name)=>{if(output){await page.locator('.profile-avatar').scrollIntoViewIfNeeded();await page.screenshot({path:`${output}/profile-${role}-${width}-${name}.png`});}};
+  await page.addInitScript(id=>localStorage.setItem(`jip:onboarding:v1:${id}`,'skipped'),id);
   await page.goto(process.env.QA_BASE_URL || 'http://localhost:8443');await login();
   const mobile=width<=768;
   const sidebar=page.locator(mobile?'.mobile-sidebar':'.desktop-sidebar');
@@ -87,7 +88,7 @@ for (const role of (process.env.QA_ROLE ? [process.env.QA_ROLE] : ['gerente','an
     await openNav();
   }
   if(mobile)await page.getByRole('button',{name:'Cerrar menú'}).click();else{await page.locator('.app-header h1').hover();await page.waitForFunction(()=>document.querySelector('.desktop-sidebar').getBoundingClientRect().width<65);}
-  await page.getByRole('button',{name:'Editar perfil'}).click();
+  await page.getByRole('button',{name:'⚙ Configuración'}).click();
   assert.equal(await page.getByLabel('Teléfono',{exact:true}).inputValue(),'987123456');
   assert.equal(await page.locator('.profile-readonly-value').textContent(),'Trujillo');
   assert.equal(await page.locator('.profile-view select').count(),0,'Sede and role are not editable');
@@ -104,21 +105,39 @@ for (const role of (process.env.QA_ROLE ? [process.env.QA_ROLE] : ['gerente','an
     assert.equal(await page.locator('.profile-avatar img').count(),0);
   }
   await select({name:'foto.png',mimeType:'image/png',buffer:png});await waitPreview();
+  await page.getByLabel('Acercar').fill('1.5');await page.getByLabel('Posición horizontal').fill('70');
+  await page.getByRole('button',{name:'Guardar foto',exact:true}).click();await page.getByRole('dialog').waitFor({state:'hidden'});
+  assert.equal(uploads,1);assert.equal(saves,1);
+  await page.getByRole('button',{name:'⚙ Configuración'}).click();
   await page.getByLabel('Nombre completo',{exact:true}).fill(`Nuevo ${role}`);
   await page.getByLabel('Teléfono',{exact:true}).fill('999888777');
   await page.getByLabel('Cargo',{exact:true}).fill('Cargo actualizado');
-  await page.getByLabel('Biografía / nota',{exact:true}).fill('Biografía actualizada');
+  await page.getByLabel('Sobre mí',{exact:true}).fill('Biografía actualizada');
   await screenshot('preview');
   const save=page.getByRole('button',{name:'Guardar cambios',exact:true});
   await save.click();await page.getByRole('button',{name:'Guardando…'}).waitFor();assert(await page.getByRole('button',{name:'Guardando…'}).isDisabled());
   await page.waitForFunction(()=>document.querySelector('.profile-feedback-success'));
-  assert.equal(saves,1);assert.equal(uploads,1);assert.equal(objects.size,1);
+  assert.equal(saves,2);assert.equal(uploads,1);assert.equal(objects.size,1);
   await page.waitForFunction(()=>document.querySelector('.header-avatar img')?.src.includes('/object/sign/'));
   assert(profile.foto_path);assert.equal(profile.sede,'Trujillo');assert.equal(profile.rol,role);
   await page.reload();await page.locator('.app-header').waitFor();await openProfile();
   await page.waitForFunction(()=>document.querySelector('.profile-avatar img')?.src.includes('/object/sign/'));
   assert.equal(await page.locator('.profile-identity-copy').getByText(`Nuevo ${role}`,{exact:true}).isVisible(),true);
   await screenshot('saved');
+  await page.getByRole('button',{name:'⚙ Configuración'}).click();
+  await page.getByRole('button',{name:'Contraseña',exact:true}).click();
+  await page.getByRole('button',{name:'Actualizar contraseña',exact:true}).click();
+  await page.getByText('Completa la contraseña actual.',{exact:true}).waitFor();
+  await page.getByLabel('Contraseña actual',{exact:true}).fill('test-password');
+  await page.getByLabel('Nueva contraseña',{exact:true}).fill('new-password');
+  await page.getByLabel('Confirmar nueva contraseña',{exact:true}).fill('different');
+  await page.getByRole('button',{name:'Actualizar contraseña',exact:true}).click();
+  await page.getByText('La confirmación debe coincidir con la nueva contraseña.',{exact:true}).waitFor();
+  await page.getByLabel('Confirmar nueva contraseña',{exact:true}).fill('new-password');
+  await page.getByRole('button',{name:'Actualizar contraseña',exact:true}).click();
+  await page.locator('.profile-settings-form').getByRole('status').filter({hasText:'Contraseña actualizada correctamente.'}).waitFor();
+  assert.equal(await page.getByLabel('Nueva contraseña',{exact:true}).inputValue(),'');
+  await page.getByRole('button',{name:'Mi actividad',exact:true}).click();
   await openNav();assert(await sidebar.locator('.sidebar-user-avatar img').isVisible());
   await sidebar.getByRole('button',{name:'Cerrar sesión',exact:true}).click();
   await page.getByRole('button',{name:'Ingresar al sistema'}).waitFor();await login();await openProfile();
@@ -126,12 +145,12 @@ for (const role of (process.env.QA_ROLE ? [process.env.QA_ROLE] : ['gerente','an
   assert.equal(uploads,1,'Reload and new login reuse the stored image');
   // Failure handling preserves the committed image and editable draft; failed uploads are cleaned up.
   await select({name:'replacement.png',mimeType:'image/png',buffer:png});await waitPreview();
-  const oldPath=profile.foto_path;failUpload=true;await page.getByRole('button',{name:'Guardar cambios',exact:true}).click();
-  await page.getByRole('alert').filter({hasText:'No se pudo subir'}).waitFor();assert.equal(profile.foto_path,oldPath);assert.equal(saves,1);
-  failUpload=false;failSave=true;await page.getByRole('button',{name:'Guardar cambios',exact:true}).click();
+  const oldPath=profile.foto_path;failUpload=true;await page.getByRole('button',{name:'Guardar foto',exact:true}).click();
+  await page.getByRole('alert').filter({hasText:'No se pudo subir'}).waitFor();assert.equal(profile.foto_path,oldPath);assert.equal(saves,2);
+  failUpload=false;failSave=true;await page.getByRole('button',{name:'Guardar foto',exact:true}).click();
   await page.getByRole('alert').filter({hasText:'No se pudo guardar'}).waitFor();assert.equal(objects.size,1);assert.equal(profile.foto_path,oldPath);
-  failSave=false;const cleanup=page.waitForResponse(r=>r.request().method()==='DELETE' && r.url().includes('/storage/v1/'));await page.getByRole('button',{name:'Guardar cambios',exact:true}).click();
-  await page.waitForFunction(()=>document.querySelector('.profile-feedback-success'));await cleanup;assert.equal(objects.size,1,'Old photo removed after successful replacement');
+  failSave=false;const cleanup=page.waitForResponse(r=>r.request().method()==='DELETE' && r.url().includes('/storage/v1/'));await page.getByRole('button',{name:'Guardar foto',exact:true}).click();
+  await page.waitForFunction(()=>!document.querySelector('.profile-photo-dialog[open]'));await cleanup;assert.equal(objects.size,1,'Old photo removed after successful replacement');
   assert.notEqual(profile.foto_path,oldPath);assert.deepEqual(errors,[]);
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   console.log(`PASS profile ${role} ${width}: real fields, all formats, preview/cancel, storage/RPC failures, single save, synced avatars, reload and re-login`);

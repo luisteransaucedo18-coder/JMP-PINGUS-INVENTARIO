@@ -1,7 +1,10 @@
 import UserAvatar from './UserAvatar';
 import { useState } from 'react';
+import type { NavigationItem } from '../app/navigation';
 
 interface HeaderProps {
+  navigationItems?: NavigationItem[];
+  onNavigate?: (view: string) => void;
   menuButton?: React.ReactNode;
   title: string;
   subtitle?: string;
@@ -16,8 +19,11 @@ interface HeaderProps {
   notificationPanel?: React.ReactNode;
 }
 
-export default function Header({ menuButton, title, subtitle, actions, userName, avatarUrl, onProfile, onBellClick, unreadCount = 0, notificationsOpen, notificationPanel }: HeaderProps) {
+export default function Header({ navigationItems = [], onNavigate, menuButton, title, subtitle, actions, userName, avatarUrl, onProfile, onBellClick, unreadCount = 0, notificationsOpen, notificationPanel }: HeaderProps) {
   const [search, setSearch] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const query = search.trim().toLocaleLowerCase('es');
+  const matches = navigationItems.filter(item => `${item.label} ${item.title} ${item.subtitle || ''}`.toLocaleLowerCase('es').includes(query));
 
   return (
     <div className="app-header" style={{
@@ -43,16 +49,16 @@ export default function Header({ menuButton, title, subtitle, actions, userName,
       </div>
 
       {/* Search */}
-      <div className="header-search" style={{ flex: 1, maxWidth: 340, position: 'relative', marginLeft: 12 }}>
+      <div className="header-search" onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setSearchOpen(false); }} onKeyDown={event => { if (event.key === 'Escape') { setSearchOpen(false); setSearch(''); } }} style={{ flex: 1, maxWidth: 340, position: 'relative', marginLeft: 12 }}>
         <svg style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} width="14" height="14" viewBox="0 0 15 15" fill="none">
           <circle cx="6.5" cy="6.5" r="4.5" stroke="#A1A1AA" strokeWidth="1.4"/>
           <path d="M10.5 10.5L13 13" stroke="#A1A1AA" strokeWidth="1.4" strokeLinecap="round"/>
         </svg>
         <input
           value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Buscar en el sistema…"
-          aria-label="Buscar en el sistema"
+          onChange={e => { setSearch(e.target.value); setSearchOpen(true); }}
+          placeholder="Buscar una sección…"
+          aria-label="Buscar una sección" aria-controls={searchOpen && query ? "section-search-results" : undefined}
           style={{
             width: '100%',
             height: 38,
@@ -67,9 +73,12 @@ export default function Header({ menuButton, title, subtitle, actions, userName,
             outline: 'none',
             transition: 'border-color 0.15s, box-shadow 0.15s',
           }}
-          onFocus={e => { e.currentTarget.style.borderColor = '#2563EB'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.08)'; }}
+          onFocus={e => { setSearchOpen(true); e.currentTarget.style.borderColor = '#2563EB'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.08)'; }}
           onBlur={e => { e.currentTarget.style.borderColor = '#E8EAFF'; e.currentTarget.style.boxShadow = 'none'; }}
         />
+        {searchOpen && query && <div id="section-search-results" className="section-search-results" aria-label="Secciones encontradas">
+          {matches.length ? matches.map(item => <button type="button" key={item.id} onClick={() => { onNavigate?.(item.id); setSearch(''); setSearchOpen(false); }}><strong>{item.label}</strong><span>{item.subtitle}</span></button>) : <p>No se encontraron secciones. Prueba con inventario, compras o proyectos.</p>}
+        </div>}
       </div>
 
       <div className="header-spacer" style={{ flex: 1 }} />

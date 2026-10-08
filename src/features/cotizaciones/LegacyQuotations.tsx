@@ -1,3 +1,4 @@
+import DataDetails from '../../components/DataDetails';
 import { useEffect, useState } from 'react'
 import { obtenerCotizacionesAnteriores, type LegacyQuote } from '../../services/cotizacionService'
 import { legacyQuoteFields } from '../../utils/legacyQuoteDisplay'
@@ -24,10 +25,7 @@ export default function LegacyQuotations({ projectId }: { projectId?: string }) 
       <summary>{q.codigo} · versión {q.version_actual}</summary>
       {q.versiones.slice().sort((a,b) => b.numero-a.numero).map(v => <div key={v.numero}>
         <h3>Versión {v.numero} · {v.estado}</h3>
-        <dl>{legacyQuoteFields(v.presupuesto).map(field => <div key={field.label}>
-          <dt>{field.label}</dt>
-          <dd style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{field.value}</dd>
-        </div>)}</dl>
+        <DataDetails fields={legacyQuoteFields(v.presupuesto).map(field => ({ label: field.label, value: field.value, wide: field.value.length > 160 }))} />
       </div>)}
     </details>)}
   </details>

@@ -1,3 +1,4 @@
+import DataDetails from '../../../components/DataDetails';
 import { useUserProfile } from "../../../store/UserProfileContext";
 import { ownedBy } from "../../../utils/recordOwner";
 import { publicCode } from "../../../utils/publicCode";
@@ -82,7 +83,7 @@ export default function MisSolicitudesView({ onToast, onNav }: Props) {
                 <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#71717A' }}>{r.fecha}</td>
                 <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{r.materiales.length} SKU</td>
                 <td><span className={`badge status-badge badge-${BADGE[r.estado]}`}>{r.estado}</span></td>
-                <td onClick={e => e.stopPropagation()}>
+                <td className="document-pdf-cell" onClick={e => e.stopPropagation()}>
                   {r.estado === 'CONFIRMADO' ? (
                     <button className="btn btn-ghost" style={{ fontSize: 12, whiteSpace: 'nowrap' }}
                       aria-label={`Visualizar PDF de ${publicCode(r)}`} onClick={() => setPdfId(r.id)}>Visualizar PDF</button>
@@ -124,18 +125,13 @@ export default function MisSolicitudesView({ onToast, onNav }: Props) {
             </div>
             <RequirementStatusTimeline requirement={selected} />
             {selectedQuote && <div style={{ padding: '16px 22px 0' }}><QuoteProjectInfo quote={selectedQuote} /></div>}
-            <div style={{ padding: '20px 22px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-              {[['Sede', selected.sede], ['Ubicación', selected.ubicacion], ['Técnico', selected.tecnico], ['Fecha', selected.fecha]].map(([k, v]) => (
-                <div key={String(k)}>
-                  <div style={{ fontSize: 10, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>{k}</div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: '#18181B' }}>{v}</div>
-                </div>
-              ))}
-              <div style={{ gridColumn: '1/-1' }}>
-                <div style={{ fontSize: 10, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Descripción</div>
-                <div style={{ fontSize: 12.5, color: '#52525B', lineHeight: 1.6 }}>{selected.descripcion}</div>
-              </div>
-            </div>
+            <div className="record-details-wrap"><DataDetails title="Datos del requerimiento" fields={[
+                { label: 'Sede', value: selected.sede },
+                { label: 'Ubicación', value: selected.ubicacion, wide: true },
+                { label: 'Técnico', value: selected.tecnico },
+                { label: 'Fecha', value: selected.fecha },
+                { label: 'Descripción', value: selected.descripcion, wide: true },
+              ]} /></div>
             <div style={{ padding: '0 22px 16px' }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: '#52525B', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Materiales ({selected.materiales.length})</div>
               <table className="data-table request-materials-table">

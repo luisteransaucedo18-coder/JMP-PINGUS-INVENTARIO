@@ -1,3 +1,4 @@
+import DataDetails from '../../components/DataDetails';
 import type { QuoteBudget } from './domain';
 
 export default function BudgetContext({ budget:b }: { budget:QuoteBudget }) {
@@ -6,5 +7,5 @@ export default function BudgetContext({ budget:b }: { budget:QuoteBudget }) {
     ['GASTOS DE FINANCIAMIENTO: (%/MES)',b.tasas.financiamientoMensual],['MESES DE FINANCIAMIENTO',b.tasas.meses],['GASTOS GENERALES (%)',b.tasas.generales],['Utilidad (%):',b.tasas.utilidad],['Comision Venta (%):',b.tasas.comision],['IGV (%):',b.tasas.igv],
   ];
   if(b.modalidad==='FISE')values.push(['Configuración FISE',b.fise.configuracion],['Configuración interna',b.fise.configuracionInterna],['Presión de artefactos (23 - 340)',`${b.fise.presionArtefactos} mbar`],['Instalación interna',b.fise.instalacion],['Acometida',b.fise.acometida],['INGRESO CONVENIO FISE (SIN IGV)',b.fise.ingresoSinIgv],['Utilidad FISE','Derivada del ingreso del convenio menos costos y cargos']);
-  return <details className="quote-line"><summary>Variables y porcentajes guardados del Excel</summary><dl className="quote-totals">{values.map(([name,value])=><div key={name}><dt>{name}</dt><dd>{value===''?'Sin registrar':value}</dd></div>)}</dl>{b.excel.bonoCondicionado&&<p className="quote-muted">Bono Administrativo: asignado posterior a la habilitacion, sujeto a mantener los costos presupuestados; la desviacion se toma del Bono.</p>}</details>;
+  return <details className="quote-line"><summary>Variables y porcentajes guardados del Excel</summary><DataDetails fields={values.map(([label, value]) => ({ label, value, wide: label === 'Utilidad FISE' }))} />{b.excel.bonoCondicionado&&<p className="quote-muted">Bono Administrativo: asignado posterior a la habilitacion, sujeto a mantener los costos presupuestados; la desviacion se toma del Bono.</p>}</details>;
 }
