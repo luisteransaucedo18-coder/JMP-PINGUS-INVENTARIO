@@ -2,25 +2,30 @@
 
 Aplicación interna para inventario por sede, proyectos, requerimientos, compras, entregas, devoluciones y transporte entre Chiclayo, Chimbote y Trujillo. Utiliza React, TypeScript, Vite, Tailwind CSS y Supabase.
 
+El inventario muestra fotografías y unidades por producto, incluidos rollos completos y metros restantes. Los proyectos incorporan avance de obra, evidencias de instalación e incidencias con garantía de un año desde la finalización.
+
 ## Guía del repositorio
 
 - [Configuración y ejecución](#configuración-y-ejecución).
 - [Estructura técnica](#estructura-técnica).
 - [Cambios implementados y verificables](#cambios-implementados-y-verificables).
 - [Estado actual y auditoría](#estado-actual-y-auditoría).
+- [Despliegue y compatibilidad](#despliegue-y-compatibilidad).
 - [Políticas y reglas de negocio](#políticas-y-reglas-de-negocio).
 - [Excepciones vigentes de acceso](#29-excepciones-vigentes-de-acceso).
 
 ## Configuración y ejecución
 
-El proyecto declara Node.js 22 y pnpm. Existe una diferencia pendiente entre la versión pnpm de `package.json` (10.12.4) y `.mise.toml` (10.34.3); la auditoría se ejecutó con Node.js 22.15.0 y pnpm 11.25.0. Conservar `pnpm-lock.yaml` y utilizar instalación congelada para evitar resoluciones distintas.
+El proyecto declara Node.js 22 y pnpm. Existe una diferencia pendiente entre la versión pnpm de `package.json` (10.12.4) y `.mise.toml` (10.34.3). Conservar `pnpm-lock.yaml` y utilizar instalación congelada para evitar resoluciones distintas.
 
 ```sh
 pnpm install --frozen-lockfile
-pnpm typecheck
-pnpm build
-node --test tests/*.test.mjs
+pnpm check
 ```
+
+`pnpm check` ejecuta la auditoría de consistencia, las pruebas y el build; sus comandos internos utilizan npm. Para ejecutarlos por separado: `pnpm audit:consistencia`, `pnpm test`, `pnpm typecheck` y `pnpm build`. También están disponibles `pnpm test:materiales`, `pnpm test:requerimientos`, `pnpm test:transporte` y `pnpm test:cotizaciones`.
+
+Las pruebas de navegador (`tests/*.e2e.mjs`) se ejecutan aparte y requieren un servidor accesible y Playwright. En los scripts que usan `createRequire`, `PLAYWRIGHT_PACKAGE_JSON` permite indicar el `package.json` de un entorno que tenga Playwright instalado. Las pruebas de rollos y seguimiento de proyectos usan API simulada para evitar escrituras en producción.
 
 Para desarrollo fuera de una sesión que ya tiene el servidor activo, usar `pnpm dev`. Vite usa `PORT` o 8443 y puede elegir otro puerto si está ocupado. En Figma Make el servidor ya está iniciado y la vista previa refleja los cambios automáticamente. `pnpm preview` sirve el build generado y `pnpm format` aplica el formateador.
 
@@ -33,7 +38,7 @@ VITE_SUPABASE_PUBLISHABLE_KEY=<clave-publicable>
 
 Se admite `VITE_SUPABASE_ANON_KEY` como alternativa y variables `NEXT_PUBLIC_` por compatibilidad. La configuración Vite expone ambos prefijos al cliente: utilizar únicamente valores públicos. No colocar claves secretas, `service_role` ni contraseñas de base de datos en esas variables. Los archivos `.env*` están excluidos de Git.
 
-La autenticación utiliza Supabase Auth y consulta `perfiles` para rol y estado. La configuración actual mantiene la sesión en memoria (`persistSession: false`); recargar la página requiere iniciar sesión nuevamente. Los recursos de marca provienen del bucket `JMP`; la plantilla PDF y los videos de transición están en `public`.
+La autenticación utiliza Supabase Auth y consulta `perfiles` para rol y estado. La configuración actual persiste la sesión (`persistSession: true`), recupera el perfil activo al entrar y bloquea la sesión tras cinco minutos de inactividad. El cierre de sesión desmonta los datos compartidos de la aplicación. Los recursos de marca provienen del bucket `JMP`; la plantilla PDF y los videos de transición están en `public`.
 
 **Base de datos:** las migraciones locales dependen de un esquema previo y su historial difiere del remoto. No constituyen todavía una instalación completa sobre una base vacía. Antes de crear otro entorno, revisar [A13 del informe](docs/auditoria-2026-10-01.md#a13--media-migraciones-locales-y-remotas-no-se-pueden-reconciliar-por-versión).
 
@@ -50,14 +55,16 @@ La autenticación utiliza Supabase Auth y consulta `perfiles` para rol y estado.
 | `src/store/AppContext.tsx` | Datos compartidos y suscripciones Realtime. |
 | `src/components`, `src/utils` | Componentes compartidos, reglas de stock, búsqueda y PDF. |
 | `supabase/migrations` | Evolución SQL versionada; requiere reconciliación con el esquema remoto. |
-| `tests` | Pruebas de inventario, materiales atómicos, faltantes, transporte y navegación. |
+| `tests` | Pruebas de inventario, rollos, materiales atómicos, faltantes, entregas, transporte, cotizaciones, perfiles, evidencias y seguimiento de proyectos; scripts de navegador. |
+| `scripts/auditar-consistencia.mjs` | Detecta conflictos de Git y candidatos de duplicación; genera el informe en `test-results/auditoria`. |
+| `docs` | Arquitectura, flujos e informes históricos de auditoría. |
 | `public` | Plantilla PDF y videos de transición. |
 
 Más información: [arquitectura frontend](docs/arquitectura-frontend.md), [requerimientos con faltantes](docs/flujo-requerimientos-stock.md), [transporte interno](docs/transporte-interno.md) y [recursos de transición](public/media/README.md).
 
 ## Cambios implementados y verificables
 
-Este registro se reconstruye a partir del código, las migraciones y el historial disponible. Describe cambios existentes antes de esta auditoría; no implica que todas sus reglas estén completas ni que todas las migraciones tengan una entrada equivalente en la base remota.
+Este registro se reconstruye a partir del código, las migraciones y el historial disponible. Incluye las modificaciones hasta el 09/10/2026; cada informe conserva la fecha y el alcance de su revisión. No implica equivalencia completa entre el historial local de migraciones y el remoto.
 
 | Fecha o periodo | Cambio existente | Referencia |
 |---|---|---|
@@ -72,6 +79,14 @@ Este registro se reconstruye a partir del código, las migraciones y el historia
 | 30/09/2026 | Creación/actualización atómica de material y existencias por sede mediante RPC. | `20260930133738_guardar_material_atomico.sql`, `tests/material-atomic.test.mjs`. |
 | 30/09–01/10/2026 | Navegación centralizada por rol, menú móvil, dashboard Gerente, transición con video y estados de inventario calculados por sede. | Código vigente, pruebas de inventario y merges recientes del historial Git. |
 | 01/10/2026 | Auditoría estática y remota de solo lectura; estructura técnica, guía de ejecución, cambios y pendientes incorporados a la documentación. | [Informe completo](docs/auditoria-2026-10-01.md). Únicamente documentación modificada en esta revisión. |
+| 02/10/2026 | Perfil y foto persistidos, actualización de contraseña con Supabase Auth y tutorial por rol. | `perfilService.ts`, `ProfileView.tsx`, `OnboardingTour.tsx` y migración `mi_perfil_foto_segura`. |
+| 02–05/10/2026 | Cotizaciones de proyectos, aceptación y solicitudes por etapas, ubicación por provincia/distrito y dirección cotizada. | [Flujo de cotizaciones](docs/flujo-cotizaciones.md) y migraciones del módulo. |
+| 06/10/2026 | Códigos públicos, asociaciones por ID y saldos acumulados de entrega; controles de rol y propietario en servidor. | [Auditoría de datos y roles](docs/auditoria-datos-roles-2026-10-06.md), `20261006142652_entrega_saldos_y_roles.sql`. |
+| 09/10/2026 | Fotografías visibles en inventario, selector de unidad y totales separados por unidad. | `InventarioView.tsx`, `MaterialPreviewModal.tsx`, `materialService.ts`. |
+| 09/10/2026 | Estados de obra, fotografías de proceso/instalación e incidencias; garantía de un año desde la finalización. | `SeguimientoProyecto.tsx`, `proyectoSeguimientoService.ts`, `20261009133455_proyectos_avance_evidencias_garantias.sql`. |
+| 09/10/2026 | Rollos completos más metros restantes; configuración de longitud y entregas/traslados parciales. | `rollStock.ts`, `RollStockInput.tsx`, `20261009161249_materiales_rollos_metros_restantes.sql`. |
+| 09/10/2026 | Corrección de conflictos de Git, guardados duplicados, precisión, edición de stock desactualizado y fotografías de devolución. | [Auditoría de código](docs/auditoria-codigo-2026-10-09.md), `20261009164148_auditoria_guardado_inventario.sql`. |
+
 
 El estado de inventario por sede se calcula así: `stock <= 0`: `AGOTADO`; `0 < stock < mínimo`: `CRÍTICO`; `mínimo <= stock <= 1,5 × mínimo`: `BAJO`; por encima: `OK`. El mínimo inicial de nuevos materiales en la interfaz es 30 y se conserva el mínimo configurado de cada material. `material.estado` persistido no debe confundirse con el estado calculado para una sede específica.
 
@@ -79,20 +94,36 @@ Los PDF de requerimientos confirmados se generan con `pdf-lib` a partir del dise
 
 ## Estado actual y auditoría
 
-**Última revisión: 01/10/2026.** TypeScript y build correctos; 27 pruebas aprobadas, 0 fallidas y 1 omitida. El build advierte sobre el tamaño del paquete principal. La auditoría de dependencias devuelve 9 avisos en herramientas de desarrollo: 6 altos y 3 moderados.
+**Última revisión documentada: 09/10/2026.** La auditoría más reciente verificó 103 archivos de `src`: 87 pruebas aprobadas, ninguna fallida y una omitida por la suite existente; TypeScript y compilación correctos. La edición de rollos se comprobó con API simulada a 1440 y 390 px. Estas cifras corresponden a esa ejecución; no sustituyen ejecutar `pnpm check` en cambios posteriores.
 
-Pendientes prioritarios:
+Correcciones recientes:
 
-- El formulario de perfil y cambio de contraseña muestra éxito sin guardar en el backend.
-- La función remota `rol_actual()` no filtra usuarios inactivos; varias operaciones conservan esa autorización durante una sesión.
-- Las entregas no validan el saldo acumulado; se observó una línea con entregas superiores a lo solicitado.
-- La creación de usuarios no crea una cuenta Auth ni aporta su UUID; los permisos remotos de administración corresponden al Gerente, mientras la interfaz los ofrece al Coordinador.
-- La carga inicial puede declararse completa con consultas fallidas; hay diferencias entre suscripciones y publicación Realtime.
-- El historial de migraciones local/remoto y varias reglas heredadas necesitan reconciliación.
+- Resolución de marcadores de Git y conservación de las mejoras de ambas versiones.
+- Validación compartida de cantidades y precisión tanto en cliente como en las funciones SQL de inventario.
+- Ediciones de stock protegidas con una instantánea original: si el stock, unidad, longitud o mínimo cambian durante la edición, se rechaza el guardado completo.
+- Bloqueo de guardados repetidos y actualización del estado compartido después de las operaciones.
+- Restricción de acceso directo a funciones internas; creación/edición de materiales exige un coordinador activo.
+- Fotos de devolución validadas antes de subir, límites de Storage y limpieza si falla la subida o el registro.
+- Descarte de consultas de saldos anteriores al cambiar de proyecto.
 
-El [informe de auditoría](docs/auditoria-2026-10-01.md) contiene evidencia, prioridades, verificaciones y acciones propuestas. **Los problemas están documentados, no corregidos por esta revisión.** No se modificaron permisos ni datos reales.
+Pendientes documentados:
 
-**Diferencias con las políticas heredadas:** las secciones 13–14 y la matriz describen validación posterior de devoluciones y registro exclusivo del Analista; el código y la base actual aplican ingreso directo y permiten también al Coordinador. La sección 20 menciona una posible plantilla JSON, mientras la implementación usa diseño en código. Las secciones de usuarios atribuyen administración al Coordinador, aunque las políticas remotas observadas no la permiten. Estas diferencias se registran para decidir y alinear el comportamiento; no se consideran nuevas excepciones aprobadas.
+- Confirmar longitudes desconocidas de rollos y revisar la unidad de los SKU `965958`, `985958` y `95`, registrados como `ROLLO`. No se convierten existencias automáticamente.
+- Reconciliar el historial SQL local/remoto antes de preparar una base nueva.
+- Alinear la administración de usuarios con Auth y los permisos remotos; el informe del 01/10/2026 conserva los antecedentes.
+- Evaluar la protección de contraseñas filtradas, todavía desactivada en la revisión del 09/10/2026.
+- Optimizar la carga del paquete principal: el build conserva un aviso de tamaño, aproximadamente 1,59 MB antes de gzip.
+- Publicar el frontend que acompaña las funciones SQL actualizadas.
+
+Los informes son históricos: [01/10 — revisión inicial](docs/auditoria-2026-10-01.md), [02/10 — consistencia](docs/auditoria-consistencia-2026-10-02.md), [06/10 — datos y roles](docs/auditoria-datos-roles-2026-10-06.md), [09/10 — reducción de código](docs/auditoria-reduccion-codigo-2026-10-09.md) y [09/10 — correcciones de código](docs/auditoria-codigo-2026-10-09.md). Los problemas descritos como pendientes en una revisión antigua pueden haber sido corregidos después; consultar el informe más reciente para ese alcance.
+
+## Despliegue y compatibilidad
+
+Las migraciones de seguimiento, rollos y auditoría del 09/10/2026 quedaron aplicadas al proyecto Supabase configurado durante los trabajos correspondientes. Los archivos locales documentan esos cambios, pero no deben aplicarse nuevamente al remoto sin reconciliar su historial.
+
+Antes de publicar, ejecutar `pnpm check` y desplegar juntos los cambios de interfaz y servicios. La función de edición de stock exige `inventario_esperado`; un cliente anterior que no lo envíe recibe un rechazo y necesita la versión actualizada del frontend. Generar un build local no publica el sitio.
+
+Para un entorno distinto, revisar las dependencias del esquema y las políticas de acceso antes de aplicar migraciones. Mantener las claves públicas en el frontend y las claves secretas fuera de Vite. Esta documentación no cambia permisos ni autoriza modificar las excepciones de acceso por sí sola.
 
 ## Políticas y Reglas de Negocio
 
@@ -195,8 +226,8 @@ Puede:
 - Gestionar entregas.
 - Aprobar solicitudes de compra.
 - Confirmar compras.
-- Validar devoluciones.
-- Registrar observaciones sobre devoluciones.
+- Registrar devoluciones con ingreso directo de stock.
+- Actualizar avances de obra y gestionar incidencias de garantía.
 
 Las operaciones que modifican stock deben mantener trazabilidad del usuario responsable.
 
@@ -223,6 +254,7 @@ Reglas:
 7. Al cerrar sesión deben eliminarse correctamente los datos locales de autenticación.
 8. Después de cerrar sesión, el usuario debe poder iniciar sesión nuevamente sin errores.
 9. Las rutas protegidas no deben poder abrirse directamente sin una sesión válida.
+10. La sesión persistida debe comprobar perfil activo e inactividad; el límite actual es cinco minutos.
 
 ---
 
@@ -275,6 +307,21 @@ Imagen
 ```
 
 El **SKU identifica al material** dentro de las operaciones del sistema.
+
+## 5.1. Fotografías y unidades
+
+La fotografía guardada para el producto se muestra en el inventario y puede ampliarse. Las unidades disponibles son `UND`, `ROLLO`, `MTS`, `GLD` y `PAR`; los totales se separan por unidad. Crear o editar un material permite seleccionar su unidad. Cambiarla no convierte automáticamente el stock, el mínimo ni el precio.
+
+## 5.2. Rollos y metros restantes
+
+Para un producto en `ROLLO`, configurar **Metros por rollo** y registrar por sede los rollos completos y los metros restantes. Ejemplo: un rollo de 100 m con stock `2.35` se presenta como **2 rollos + 35 m**.
+
+El stock sigue almacenado como cantidad de rollos; `metros_por_rollo` permite calcular el remanente. Los metros restantes deben ser menores que la longitud del rollo y corresponder a la precisión del inventario, de tres decimales. Los metros derivados pueden necesitar hasta seis decimales para conservar longitudes decimales. Sin longitud configurada se conserva la cantidad fraccionada en `ROLLO`, sin inventar una equivalencia en metros.
+
+La tubería SKU `25958`, cuyo nombre indica expresamente 100 m, quedó configurada con esa longitud. Las demás longitudes necesitan confirmación. Las solicitudes mantienen la unidad de inventario y muestran la equivalencia en metros cuando está disponible; entregas y traslados admiten rollos parciales.
+
+La edición manual exige el stock original como referencia y rechaza datos desactualizados. Un campo vacío no se interpreta como una orden de poner el stock en cero.
+
 
 ---
 
@@ -614,6 +661,22 @@ Reglas:
 
 ---
 
+## 11.1. Avance y evidencias
+
+Estados de obra: `PLANIFICADO`, `EN_CONSTRUCCION`, `PAUSADO`, `FINALIZADO` y `CANCELADO`. El Coordinador actualiza el avance; los proyectos finalizados o cancelados quedan cerrados para cambios de estado.
+
+Las fotografías se clasifican como `PROCESO`, `INSTALACION_FINAL` o `INCIDENCIA`. Analista y Coordinador pueden registrar evidencias e incidencias según el estado del proyecto; el Gerente consulta. Las fotos se guardan en el bucket privado `proyectos-evidencias` y se visualizan con enlaces temporales.
+
+## 11.2. Garantía e incidencias
+
+La garantía de la empresa dura **un año calendario desde la fecha de finalización de la instalación**. El servidor calcula `garantia_hasta`; antes de finalizar, la garantía no tiene fecha de inicio.
+
+Una falla de una llave, tubería u otro elemento se registra como incidencia dentro del proyecto. Puede indicar producto, material, descripción, fecha y fotografías. La incidencia distingue el plazo (`DENTRO`, `FUERA` o `SIN_INICIO`) de la evaluación de cobertura (`PENDIENTE`, `CUBIERTA` o `NO_CUBIERTA`): estar dentro del plazo no aprueba automáticamente la cobertura.
+
+El Coordinador gestiona `ABIERTA`, `EN_REVISION`, `PROGRAMADA`, `EN_ATENCION`, `RESUELTA` y `RECHAZADA`, registra la atención/resolución y puede vincular un requerimiento del mismo proyecto. Registrar una incidencia no genera automáticamente una nueva solicitud de materiales.
+
+---
+
 # 12. Entregas
 
 Estados permitidos:
@@ -637,13 +700,15 @@ El sistema debe conservar:
 - Fecha.
 - Estado.
 
-Una entrega parcial no debe marcarse automáticamente como completa.
+Una entrega parcial no debe marcarse automáticamente como completa. Los saldos se calculan por material acumulando entregas y excluyendo las canceladas. El servidor rechaza cantidades superiores al saldo, materiales ajenos al requerimiento y líneas repetidas.
+
+El Analista registra entregas de sus propios requerimientos confirmados. Coordinador y Gerente consultan según su rol; el Gerente no registra entregas. `UND` y `PAR` requieren cantidades enteras; `ROLLO`, `MTS` y `GLD` admiten cantidades con hasta tres decimales.
 
 ---
 
 # 13. Devoluciones
 
-El módulo de devoluciones es gestionado inicialmente por el **Analista**.
+Analista y Coordinador pueden registrar devoluciones; el Gerente dispone de consulta.
 
 El objetivo es registrar materiales no utilizados y devolverlos al inventario correspondiente.
 
@@ -651,7 +716,7 @@ El objetivo es registrar materiales no utilizados y devolverlos al inventario co
 
 ## 13.1. Registro de devolución
 
-El Analista debe seleccionar:
+El Analista o Coordinador debe seleccionar:
 
 ```text
 Proyecto
@@ -677,47 +742,25 @@ SKU
 
 La devolución debe permitir adjuntar fotografías o evidencias del material no utilizado.
 
-Las evidencias deben quedar relacionadas con la devolución correspondiente.
+Las evidencias deben quedar relacionadas con la devolución correspondiente. Se admite JPG, PNG o WebP válido de hasta 5 MB por archivo; todas las fotografías se validan antes de subir y se limpian los archivos sin vincular cuando falla la operación.
 
 ---
 
 ## 13.3. Procesamiento
 
-Al registrar una devolución puede mostrarse un estado visual de procesamiento durante aproximadamente:
-
-```text
-3 – 5 segundos
-```
-
-Esto no reemplaza la confirmación real de la operación en la base de datos.
-
-La interfaz no debe indicar éxito hasta recibir confirmación del backend.
-
+El botón se bloquea mientras se procesa la operación y se consultan los saldos. No se aplica una espera artificial de 3–5 segundos: la interfaz solo indica éxito después de la confirmación del backend. Las consultas de proyectos anteriores se descartan para evitar mezclar saldos.
 ---
 
-## 13.4. Validación de devolución
+## 13.4. Registro e ingreso directo
 
-Después del registro realizado por el Analista, el **Coordinador** debe revisar la devolución.
+El flujo vigente registra la devolución como `VALIDADA` y aumenta el stock de la sede receptora en la misma operación. No requiere una validación posterior del Coordinador ni ofrece acciones separadas de validar/observar en el flujo actual.
 
-El Coordinador puede:
-
-```text
-VALIDAR
-```
-
-o registrar:
-
-```text
-OBSERVACIÓN
-```
-
-La devolución debe mantener la trazabilidad de quién realizó cada acción.
-
+Solo se pueden devolver cantidades disponibles de un mismo requerimiento por operación. La devolución conserva la evidencia, el usuario y su historial; el servidor controla el saldo para evitar ingresos repetidos.
 ---
 
 # 14. Actualización de stock por devolución
 
-Una devolución validada debe incrementar el stock de la sede indicada.
+Una devolución registrada correctamente incrementa el stock de la sede indicada en su registro atómico.
 
 Ejemplo:
 
@@ -756,7 +799,7 @@ Esto aplica especialmente a:
 - Aprobar solicitud.
 - Confirmar compra.
 - Registrar devolución.
-- Validar devolución.
+- Registrar el ingreso de una devolución.
 
 Mientras una operación esté siendo procesada, el botón correspondiente debe quedar temporalmente deshabilitado.
 
@@ -851,23 +894,7 @@ Los registros históricos deben mantenerse disponibles para consultas y auditor�
 
 Los documentos PDF generados desde requerimientos deben utilizar el diseño oficial definido para el sistema.
 
-La plantilla puede estar representada mediante JSON.
-
-La plantilla base debe permanecer sin datos específicos del requerimiento.
-
-Los campos se completarán dinámicamente utilizando la información de cada operación.
-
-Conceptualmente:
-
-```text
-PLANTILLA JSON
-      ↓
-Datos del requerimiento
-      ↓
-Renderizado
-      ↓
-PDF final
-```
+La implementación utiliza `pdf-lib` y un diseño definido en código; la vista previa utiliza PDF.js. Los datos del requerimiento se completan dinámicamente. No existe una plantilla JSON externa implementada.
 
 No deben almacenarse datos específicos de un requerimiento directamente dentro de la plantilla base.
 
@@ -1054,7 +1081,7 @@ Toda implementación nueva debe respetar los siguientes principios:
 |---|:---:|:---:|:---:|
 | Dashboard | ✅ | ✅ | ✅ |
 | Consultar inventario | ✅ | ✅ | ✅ |
-| Modificar inventario | ❌ | Limitado | ✅ |
+| Modificar inventario | ❌ | ❌ | ✅ |
 | Crear requerimiento | ❌ | ✅ | ❌ |
 | Enviar requerimiento | ❌ | ✅ | ❌ |
 | Validar requerimiento | ❌ | ❌ | ✅ |
@@ -1064,9 +1091,10 @@ Toda implementación nueva debe respetar los siguientes principios:
 | Gestionar transporte interno | ❌ | ❌ | Solo traslados de su sede |
 | Consultar proyectos | ✅ | ✅ | ✅ |
 | Registrar entrega | ❌ | ✅ | ✅ |
-| Registrar devolución | ❌ | ✅ | ❌ |
-| Validar devolución | ❌ | ❌ | ✅ |
-| Observar devolución | ❌ | ❌ | ✅ |
+| Registrar devolución con ingreso directo | ❌ | ✅ | ✅ |
+| Actualizar avance del proyecto | ❌ | ❌ | ✅ |
+| Registrar evidencias e incidencias | ❌ | ✅ | ✅ |
+| Evaluar cobertura y atender incidencias | ❌ | ❌ | ✅ |
 | Gestionar usuarios | ❌ | ❌ | ✅ |
 | Consultar reportes | ✅ | Según permiso | ✅ |
 
@@ -1082,14 +1110,13 @@ Cuando exista conflicto entre una acción disponible visualmente y los permisos 
 
 # 29. Excepciones vigentes de acceso
 
-Las siguientes diferencias entre el comportamiento actual de Supabase y la matriz de permisos quedan **documentadas y aceptadas temporalmente**. Esta sección no autoriza a corregirlas ni a ampliar o reducir permisos de forma implícita. No modificar políticas RLS, funciones RPC ni permisos relacionados sin una solicitud y aprobación explícitas.
+La excepción vigente de transporte queda **documentada y aceptada temporalmente**. La excepción anterior de entregas se conserva abajo como antecedente sustituido. Esta sección no autoriza a corregirlas ni a ampliar o reducir permisos de forma implícita. No modificar políticas RLS, funciones RPC ni permisos relacionados sin una solicitud y aprobación explícitas.
 
-## 29.1. Entregas
+## 29.1. Entregas — antecedente sustituido
 
-- Actualmente, las políticas de lectura permiten a un Analista consultar entregas e ítems de entrega que no pertenecen a sus requerimientos.
-- La función `registrar_entrega` permite actualmente a un Analista registrar una entrega asociada a un requerimiento confirmado de otro usuario.
-- Este comportamiento se conserva por decisión del proyecto. No cambiarlo como parte de otros trabajos ni asumir que la interfaz limita el acceso real.
-- Cualquier cambio futuro requiere revisar conjuntamente la función RPC, RLS de `entregas` y RLS de `entrega_items`, y probar los roles involucrados antes de aplicarlo.
+La excepción anterior permitía al Analista consultar y registrar entregas de requerimientos ajenos. Quedó sustituida por la migración `20261006142652_entrega_saldos_y_roles.sql`, documentada en la auditoría del 06/10/2026: el Analista opera sus propios requerimientos y los controles se aplican en RPC y RLS.
+
+No restablecer el acceso anterior ni modificar estos permisos como parte de una tarea ajena sin autorización explícita. Esta actualización del README solo documenta el cambio ya realizado.
 
 ## 29.2. Transporte interno
 
@@ -1124,8 +1151,8 @@ Supabase Storage
 
 **Proyecto:** JMP-PINGUS-INVENTARIO  
 **Documento:** Políticas y Reglas de Negocio  
-**Versión:** 1.2
+**Versión documental:** 1.3
 
-**Última actualización documental:** 01/10/2026
+**Última actualización documental:** 09/10/2026
 
-**Auditoría:** [Código, configuración y Supabase](docs/auditoria-2026-10-01.md)
+**Auditoría más reciente:** [Correcciones de código y Supabase](docs/auditoria-codigo-2026-10-09.md)
