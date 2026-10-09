@@ -125,16 +125,16 @@ const handleSubmit = async (e: React.FormEvent) => {
 
   return (
     <main className="auth-screen">
-      <section className="auth-card" aria-label="Acceso al sistema JIP">
+      <section className="auth-card" aria-label="Acceso al sistema JMP">
         <aside className="auth-visual">
-          <img className="auth-mascot" src={ASSETS.mascota} alt="Mascota de JIP" />
+          <img className="auth-mascot" src={ASSETS.mascota} alt="Mascota de JMP" />
         </aside>
 
         <div className="auth-form-panel">
           <div className="auth-form-wrap">
             <header className="auth-heading">
-              <img className="auth-form-logo" src={ASSETS.logo} alt="JIP" />
-              <span>Plataforma interna JIP</span>
+              <img className="auth-form-logo" src={ASSETS.logo} alt="JMP" />
+              <span>Plataforma interna JMP</span>
               <h1>Bienvenido</h1>
               <p>Inicia sesión para continuar con la gestión de materiales.</p>
             </header>
