@@ -3,7 +3,9 @@ import { formatStock } from '../../../utils/rollStock';
 import FieldError from "../../../components/FieldError";
 import { formatPrecio } from '../../../utils/materialPrice';
 import { SEDE_COLOR } from '../../../config/visualTokens';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useAppStore } from '../../../store/AppContext';
+import { validRollLength, validStockQuantity } from '../../../utils/stockQuantity';
 import { calcularEstado, estadoPorSede, estadoGeneral, MINIMO_INICIAL_INVENTARIO } from '../../../utils/inventoryStatus';
 
 
@@ -105,32 +107,14 @@ const ESTADO_BADGE: Record<string, string> = {
   AGOTADO: 'red',
 };
 
-<<<<<<< HEAD
-const SEDE_COLOR: Record<string, string> = {
-  Chiclayo: '#2563EB',
-  Chimbote: '#059669',
-  Trujillo: '#7C3AED',
-};
-
 const UNIDADES_MATERIAL: Record<string, string> = {
   UND: 'Unidades (UND)', ROLLO: 'Rollos (ROLLO)', MTS: 'Metros (MTS)', GLD: 'Galones (GLD)', PAR: 'Pares (PAR)',
 };
 
-const formatPrecio = (precio: number) =>
-  precio > 0
-    ? new Intl.NumberFormat('es-PE', {
-        style: 'currency',
-        currency: 'PEN',
-        minimumFractionDigits: 2,
-      }).format(precio)
-    : 'Sin precio';
-
-=======
->>>>>>> 86ec4212e4e58a1376218f6d1adbb98d96c1534b
-function ModalActions({ primaryLabel, onPrimary, onCancel }: { primaryLabel: string; onPrimary: () => void; onCancel: () => void }) {
+function ModalActions({ primaryLabel, onPrimary, onCancel, busy = false }: { primaryLabel: string; onPrimary: () => void; onCancel: () => void; busy?: boolean }) {
   return <div style={{ padding: '14px 22px', borderTop: '1px solid #E4E4E7', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-    <button className="btn btn-primary" onClick={onPrimary}>{primaryLabel}</button>
-    <button className="btn btn-ghost" onClick={onCancel}>Cancelar</button>
+    <button className="btn btn-primary" disabled={busy} onClick={onPrimary}>{primaryLabel}</button>
+    <button className="btn btn-ghost" disabled={busy} onClick={onCancel}>Cancelar</button>
   </div>;
 }
 
@@ -256,6 +240,14 @@ export default function InventarioView({
   const [editUnidad, setEditUnidad] = useState('UND');
   const [editMetrosPorRollo, setEditMetrosPorRollo] = useState('');
   const [categorias, setCategorias] = useState<Array<{ id: string; nombre: string }>>([]);
+  const { state, refreshRemoteData } = useAppStore();
+  const [saving, setSaving] = useState(false);
+  const pendingSave = useRef(false);
+  const [editRollErrors, setEditRollErrors] = useState<Record<string,string>>({});
+  const [newRollErrors, setNewRollErrors] = useState<Record<string,string>>({});
+  useEffect(() => setEditRollErrors({}), [editUnidad, editMetrosPorRollo]);
+  useEffect(() => setNewRollErrors({}), [form.unidad, form.metrosPorRollo]);
+  useEffect(() => setMateriales(state.materials), [state.materials]);
 
   // ====================================================
   // CARGAR MATERIALES
@@ -391,15 +383,15 @@ export default function InventarioView({
     if (
       form.minimo === '' ||
       isNaN(
-        parseFloat(form.minimo)
+        Number(form.minimo)
       )
     ) {
       e.minimo = 'Ingresa un stock mínimo válido.';
     }
 
-    if (Number(form.minimo) < 0) e.minimo = 'Ingresa un valor mayor o igual a cero.';
-    if (form.unidad === 'ROLLO' && form.metrosPorRollo && (!Number.isFinite(Number(form.metrosPorRollo)) || Number(form.metrosPorRollo) <= 0 || Number(form.metrosPorRollo) > 100000)) e.metrosPorRollo = 'Indica una longitud válida mayor que cero.';
-    for (const sede of SEDES) { const key = `stock${sede}` as 'stockChiclayo' | 'stockChimbote' | 'stockTrujillo'; if (!Number.isFinite(Number(form[key])) || Number(form[key]) < 0) e[key] = 'Revisa el stock inicial.'; }
+    if (!validStockQuantity(Number(form.minimo))) e.minimo = 'Ingresa un valor mayor o igual a cero.';
+    if (form.unidad === 'ROLLO' && form.metrosPorRollo && !validRollLength(Number(form.metrosPorRollo))) e.metrosPorRollo = 'Indica una longitud válida mayor que cero.';
+    for (const sede of SEDES) { const key = `stock${sede}` as 'stockChiclayo' | 'stockChimbote' | 'stockTrujillo'; if (!validStockQuantity(Number(form[key])) || newRollErrors[sede]) e[key] = newRollErrors[sede] || 'Usa un stock válido con hasta tres decimales.'; }
     return e;
   };
 
@@ -414,6 +406,7 @@ export default function InventarioView({
 
   const handleAddMaterial =
     async () => {
+      if (!canEdit || pendingSave.current) return;
 
       const e =
         validateAdd();
@@ -425,25 +418,26 @@ export default function InventarioView({
         return;
       }
 
+      pendingSave.current = true; setSaving(true);
       try {
 
         const chiclayo =
-          parseFloat(
+          Number(
             form.stockChiclayo
           ) || 0;
 
         const chimbote =
-          parseFloat(
+          Number(
             form.stockChimbote
           ) || 0;
 
         const trujillo =
-          parseFloat(
+          Number(
             form.stockTrujillo
           ) || 0;
 
         const minimo =
-          parseFloat(
+          Number(
             form.minimo
           ) || 0;
 
@@ -498,6 +492,7 @@ export default function InventarioView({
 
         setErrors({});
 
+        await refreshRemoteData();
         await cargarMateriales();
 
       } catch (error) {
@@ -508,9 +503,9 @@ export default function InventarioView({
         );
 
         onToast(
-          'Error al agregar material'
+          error instanceof Error || (error && typeof error === 'object' && 'message' in error) ? String(error.message) : 'Error al agregar material'
         );
-      }
+      } finally { pendingSave.current = false; setSaving(false); }
     };
 
   // ====================================================
@@ -559,41 +554,42 @@ export default function InventarioView({
   useEffect(() => {
     setEditWarnings(previous => Object.fromEntries(Object.entries(previous).filter(([key]) => {
       const value = key==='minimo' ? editMinimo : editStock[key];
-      return (key==='minimo' && !value?.trim()) || !Number.isFinite(Number(value)) || Number(value)<0;
+      return !value?.trim() || !validStockQuantity(Number(value)) || !!editRollErrors[key];
     })));
-  }, [editStock,editMinimo]);
+  }, [editStock,editMinimo,editRollErrors]);
   const handleSaveStock =
     async () => {
 
-      if (!selected) {
+      if (!selected || !canEdit || pendingSave.current) {
         return;
       }
 
       const warnings: Record<string,string> = {};
-      if (editUnidad === 'ROLLO' && editMetrosPorRollo && (!Number.isFinite(Number(editMetrosPorRollo)) || Number(editMetrosPorRollo) <= 0 || Number(editMetrosPorRollo) > 100000)) { onToast('Indica una longitud de rollo válida, mayor que cero y hasta 100000 m.'); return; }
-      for(const sede of SEDES) if(!Number.isFinite(Number(editStock[sede])) || Number(editStock[sede])<0) warnings[sede] = 'Ingresa un stock mayor o igual a cero.';
-      if(!editMinimo.trim() || !Number.isFinite(Number(editMinimo)) || Number(editMinimo)<0) warnings.minimo = 'Ingresa un mínimo válido mayor o igual a cero.';
+      if (editUnidad === 'ROLLO' && editMetrosPorRollo && !validRollLength(Number(editMetrosPorRollo))) { onToast('Indica una longitud de rollo válida, mayor que cero y hasta 100000 m.'); return; }
+      for(const sede of SEDES) if(!editStock[sede]?.trim() || !validStockQuantity(Number(editStock[sede])) || editRollErrors[sede]) warnings[sede] = editRollErrors[sede] || 'Completa el stock con un valor válido y hasta tres decimales.';
+      if(!editMinimo.trim() || !validStockQuantity(Number(editMinimo))) warnings.minimo = 'Ingresa un mínimo válido mayor o igual a cero.';
       setEditWarnings(warnings);
       if(Object.keys(warnings).length) return;
+      pendingSave.current = true; setSaving(true);
       try {
 
         const chiclayo =
-          parseFloat(
+          Number(
             editStock.Chiclayo
           ) || 0;
 
         const chimbote =
-          parseFloat(
+          Number(
             editStock.Chimbote
           ) || 0;
 
         const trujillo =
-          parseFloat(
+          Number(
             editStock.Trujillo
           ) || 0;
 
         const minimo =
-          parseFloat(
+          Number(
             editMinimo
           ) || 0;
 
@@ -622,7 +618,8 @@ export default function InventarioView({
             minimo,
 
             estado,
-          }
+          },
+          selected
         );
 
         onToast(
@@ -633,6 +630,7 @@ export default function InventarioView({
 
         setEditMode(false);
 
+        await refreshRemoteData();
         await cargarMateriales();
 
       } catch (error) {
@@ -643,9 +641,9 @@ export default function InventarioView({
         );
 
         onToast(
-          'Error al actualizar stock'
+          error instanceof Error || (error && typeof error === 'object' && 'message' in error) ? String(error.message) : 'Error al actualizar stock'
         );
-      }
+      } finally { pendingSave.current = false; setSaving(false); }
     };
 
   // ====================================================
@@ -1980,7 +1978,7 @@ export default function InventarioView({
                     </label>
 
 
-                    {editUnidad === 'ROLLO' && Number(editMetrosPorRollo) > 0 ? <RollStockInput key={`${s}-${editMetrosPorRollo}`} stock={editStock[s]} length={Number(editMetrosPorRollo)} sede={s} onChange={value => setEditStock(previous => ({ ...previous, [s]: value }))} /> :                     <input aria-invalid={editWarnings[s] ? true : undefined}
+                    {editUnidad === 'ROLLO' && Number(editMetrosPorRollo) > 0 ? <RollStockInput key={`${s}-${editMetrosPorRollo}`} stock={editStock[s]} length={Number(editMetrosPorRollo)} sede={s} onError={message => setEditRollErrors(previous => ({ ...previous, [s]: message }))} onChange={value => setEditStock(previous => ({ ...previous, [s]: value }))} /> :                     <input aria-invalid={editWarnings[s] ? true : undefined}
                       className=
                         "input-field"
 
@@ -2051,7 +2049,7 @@ export default function InventarioView({
             </div>
 
 
-            <ModalActions primaryLabel="Guardar cambios" onPrimary={handleSaveStock} onCancel={() => { setEditMode(false); setSelected(null); }} />
+            <ModalActions busy={saving} primaryLabel="Guardar cambios" onPrimary={handleSaveStock} onCancel={() => { setEditMode(false); setSelected(null); }} />
 
           </div>
 
@@ -2431,7 +2429,7 @@ export default function InventarioView({
                             {s}
                           </label>
 
-                          {form.unidad === 'ROLLO' && Number(form.metrosPorRollo) > 0 ? <RollStockInput key={`${s}-${form.metrosPorRollo}`} stock={form[key]} length={Number(form.metrosPorRollo)} sede={s} onChange={value => setForm(previous => ({ ...previous, [key]: value }))} /> : <input
+                          {form.unidad === 'ROLLO' && Number(form.metrosPorRollo) > 0 ? <RollStockInput key={`${s}-${form.metrosPorRollo}`} stock={form[key]} length={Number(form.metrosPorRollo)} sede={s} onError={message => setNewRollErrors(previous => ({ ...previous, [s]: message }))} onChange={value => setForm(previous => ({ ...previous, [key]: value }))} /> : <input
                             className=
                               "input-field"
 
@@ -2477,7 +2475,7 @@ export default function InventarioView({
             </div>
 
 
-            <ModalActions primaryLabel="Agregar al catálogo" onPrimary={handleAddMaterial} onCancel={() => setShowAdd(false)} />
+            <ModalActions busy={saving} primaryLabel="Agregar al catálogo" onPrimary={handleAddMaterial} onCancel={() => setShowAdd(false)} />
 
           </div>
 

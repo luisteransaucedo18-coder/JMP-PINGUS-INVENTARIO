@@ -1,5 +1,5 @@
 import FieldError from "../../../components/FieldError";
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 
 import { SEDES, Sede } from "../../../domain/types"
 
@@ -71,6 +71,8 @@ export default function DevolucionesView({
   const [files, setFiles] = useState<File[]>([])
 
   const [submitting, setSubmitting] = useState(false)
+  const pendingSubmit = useRef(false);
+  const [loadingBalances, setLoadingBalances] = useState(false);
 
   const refresh = async () => {
     try {
@@ -89,14 +91,15 @@ export default function DevolucionesView({
   }, [])
 
   useEffect(() => {
-    if (!selectedProject) {
-      setSaldos([])
-      return
-    }
-    void obtenerSaldosDevolucion(selectedProject)
-      .then(setSaldos)
-      .catch((e) => onToast(e.message))
-  }, [selectedProject])
+    let active = true;
+    setSaldos([]);
+    setLoadingBalances(!!selectedProject);
+    if (selectedProject) void obtenerSaldosDevolucion(selectedProject)
+      .then(data => { if (active) setSaldos(data); })
+      .catch(error => { if (active) onToast(error.message); })
+      .finally(() => { if (active) setLoadingBalances(false); });
+    return () => { active = false; };
+  }, [selectedProject]);
 
   const project = state.proyectos.find((p) => p.id === selectedProject)
 
@@ -129,6 +132,8 @@ export default function DevolucionesView({
     setWarnings(previous => Object.fromEntries(Object.entries(previous).filter(([key]) => key==='evidence' ? !files.length : !(cantidades[key]>0))));
   }, [cantidades,files]);
   const submit = async () => {
+    if (pendingSubmit.current || loadingBalances) return;
+    if (!selectedItems.length) { onToast('Selecciona materiales con saldo disponible para devolver.'); return; }
     const errors: Record<string,string> = {};
     if (!selectedItems.length && saldos.length) errors[`${saldos[0].requerimientoId}:${saldos[0].skuId}`] = 'Indica una cantidad a devolver en al menos un material.';
     if (!files.length) errors.evidence = 'Adjunta al menos una fotografía de la devolución.';
@@ -141,6 +146,7 @@ export default function DevolucionesView({
     setWarnings(errors);
     if(Object.keys(errors).length) return;
 
+    pendingSubmit.current = true;
     setSubmitting(true)
 
     try {
@@ -171,6 +177,7 @@ export default function DevolucionesView({
           : "No se pudo registrar la devolución.",
       )
     } finally {
+      pendingSubmit.current = false;
       setSubmitting(false)
     }
   }
@@ -321,7 +328,7 @@ export default function DevolucionesView({
                 type="file"
                 aria-invalid={warnings.evidence ? true : undefined}
                 aria-describedby={warnings.evidence ? "return-evidence-error" : undefined}
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 multiple
                 required
                 onChange={(event) =>
@@ -345,7 +352,7 @@ export default function DevolucionesView({
               </svg>
               <span>
                 <strong>Agregar fotografías</strong>
-                <small>Selecciona imágenes JPG, PNG o WEBP</small>
+                <small>JPG, PNG o WEBP · máximo 5 MB por fotografía</small>
               </span>
             </label>
           <FieldError id="return-evidence-error" message={warnings.evidence} />
@@ -385,7 +392,7 @@ export default function DevolucionesView({
           </div>
           <button
             className="btn btn-primary"
-            disabled={submitting}
+            disabled={submitting || loadingBalances}
             onClick={() => void submit()}
             style={{ marginTop: 14 }}
           >

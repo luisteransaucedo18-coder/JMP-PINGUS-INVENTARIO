@@ -36,6 +36,11 @@ try {
   await page.getByLabel('Metros por rollo',{exact:false}).fill('100');
   assert.equal(await page.getByLabel('Rollos completos — Chiclayo').inputValue(),'2');
   assert.equal(await page.getByLabel('Metros restantes — Chiclayo').inputValue(),'35');
+  await page.getByLabel('Metros restantes — Chiclayo').fill('');
+  await page.getByRole('button',{name:/Guardar/}).click();assert.equal(writes.length,0);
+  await page.getByLabel('Metros por rollo',{exact:false}).fill('200');
+  assert.equal(await page.getByLabel('Metros restantes — Chiclayo').inputValue(),'70');
+  await page.getByLabel('Metros por rollo',{exact:false}).fill('100');
   await page.getByLabel('Metros restantes — Chiclayo').fill('100');
   await page.getByRole('button',{name:/Guardar/}).click();assert.equal(writes.length,0);
   await page.getByLabel('Rollos completos — Chiclayo').fill('3');
@@ -45,6 +50,7 @@ try {
   await page.waitForFunction(()=>!document.querySelector('#edit-material-unit'));
   assert.equal(writes[0].payload.p_stock_sedes.Chiclayo,3.25);
   assert.equal(writes[0].payload.p_campos.metros_por_rollo,100);
+  assert.equal(writes[0].payload.p_campos.inventario_esperado.stock_sedes.Chiclayo,2.35);
   assert.equal(errors.length,0,errors.join('\n'));
   console.log(`Rollos + metros: ${width}px OK`);
   await page.close();

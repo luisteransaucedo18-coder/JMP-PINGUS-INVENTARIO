@@ -100,6 +100,7 @@ before(async () => {
   await db.exec(migration)
   await db.exec(`
     create schema transporte_privado;
+    create schema storage; create table storage.buckets(id text,file_size_limit bigint,allowed_mime_types text[]);
     create type public.estado_entrega as enum ('COMPLETA','PARCIAL','CANCELADA');
     alter table public.perfiles add column estado text default 'ACTIVO';
     create table public.proyectos(id uuid primary key,nombre text);
@@ -109,9 +110,27 @@ before(async () => {
     create table public.entrega_items(entrega_id uuid,material_sku text,material_nombre text,cantidad_solicitada numeric,cantidad_entregada numeric);
   `)
   await db.exec(readFileSync(new URL('../supabase/migrations/20261009161249_materiales_rollos_metros_restantes.sql', import.meta.url), 'utf8'))
+  await db.exec(`create function public.recalcular_estado_material(text) returns void language sql as $$ select $$; create function public.actualizar_estado_por_stock() returns trigger language plpgsql as $$begin return new; end$$; create function public.actualizar_estado_por_minimo() returns trigger language plpgsql as $$begin return new; end$$;`);
+  await db.exec(readFileSync(new URL('../supabase/migrations/20261009164148_auditoria_guardado_inventario.sql', import.meta.url), 'utf8'));
 })
 
 after(() => db.close())
+
+test('una edición antigua no sobrescribe movimientos y el servidor rechaza redondeos e inactivos', async () => {
+  const sku='AUDIT-TEST';
+  await as('coordinador','select public.crear_material_con_inventario($1,$2)',[{...material,sku},stocks]);
+  const expected={stock_sedes:stocks,unidad:'UND',metros_por_rollo:null,stock_minimo:2};
+  await db.query('update inventario_sedes set stock=stock-1 where material_sku=$1 and sede=$2',[sku,'Chiclayo']);
+  await assert.rejects(as('coordinador','select public.actualizar_material_con_inventario($1,$2,$3)',[sku,{inventario_esperado:expected},stocks]),/cambiaron/);
+  assert.equal(Number((await db.query("select stock from inventario_sedes where material_sku=$1 and sede='Chiclayo'",[sku])).rows[0].stock),3);
+  await assert.rejects(as('coordinador','select public.actualizar_material_con_inventario($1,$2,$3)',[sku,{},stocks]),/Actualiza el inventario/);
+  await assert.rejects(as('coordinador','select public.crear_material_con_inventario($1,$2)',[{...material,sku:'BAD-PRECISION'},{...stocks,Chiclayo:1.0001}]),/tres decimales/);
+  await assert.rejects(as('coordinador','select public.actualizar_material_con_inventario($1,$2)',[sku,{stock_minimo:'NaN'}]),/fuera del límite/);
+  await db.query("update perfiles set estado='INACTIVO' where id=$1",[ids.coordinador]);
+  await assert.rejects(as('coordinador','select public.actualizar_material_con_inventario($1,$2)',[sku,{nombre:'No permitido'}]),/Solo un coordinador/);
+  await db.query("update perfiles set estado='ACTIVO' where id=$1",[ids.coordinador]);
+  assert.equal((await db.query("select has_function_privilege('authenticated','public.recalcular_estado_material(text)','execute') allowed")).rows[0].allowed,false);
+});
 
 test('configura metros por rollo conservando stock, limpia longitud al cambiar unidad y permite entregas parciales', async () => {
   const roll = { ...material, sku: 'ROLL-TEST', unidad: 'ROLLO', metros_por_rollo: 100 };
@@ -153,7 +172,7 @@ test("crea material y stock de las tres sedes como una sola operación", async (
 test("edita material y stocks juntos, y conserva stocks si no se envían", async () => {
   await as("coordinador", "select public.actualizar_material_con_inventario($1, $2, $3)", [
     material.sku,
-    { descripcion: "Actualizado en una operación" },
+    { descripcion: "Actualizado en una operación", inventario_esperado: { stock_sedes: stocks, unidad: "UND", metros_por_rollo: null, stock_minimo: 2 } },
     { Chiclayo: 6, Chimbote: 2, Trujillo: 1 },
   ])
   await as("coordinador", "select public.actualizar_material_con_inventario($1, $2, null)", [

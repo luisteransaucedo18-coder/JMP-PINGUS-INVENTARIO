@@ -6,6 +6,12 @@ const require = createRequire(import.meta.resolve('vite'));
 const postcss = require('postcss');
 const files = dir => readdirSync(dir, { withFileTypes: true }).flatMap(entry => entry.isDirectory() ? files(`${dir}/${entry.name}`) : [`${dir}/${entry.name}`]);
 const sources = files('src');
+const conflictMarkers = [];
+for (const file of [...sources, ...files('tests'), ...files('scripts'), ...files('supabase/migrations')]) {
+  readFileSync(file, 'utf8').split(/\r?\n/).forEach((line, index) => {
+    if (/^(?:<{7}|={7}|>{7})(?:\s|$)/.test(line)) conflictMarkers.push({ file, line: index + 1 });
+  });
+}
 const exactRules = new Map(), selectorRules = new Map(), literals = new Map();
 const repeatedDeclarations = [], emptyFiles = [];
 const definedClasses = new Set(), usedClasses = new Set();
@@ -56,6 +62,7 @@ for (const file of sources) {
 const duplicates = map => [...map.values()].filter(locations => locations.length > 1);
 const report = {
   filesScanned: sources.length,
+  conflictMarkers,
   exactDuplicateCssRules: duplicates(exactRules),
   repeatedCssSelectors: duplicates(selectorRules),
   repeatedDeclarations,
@@ -67,3 +74,4 @@ const report = {
 mkdirSync('test-results/auditoria', { recursive: true });
 writeFileSync('test-results/auditoria/consistencia.json', JSON.stringify(report, null, 2));
 console.log(JSON.stringify({ ...report, repeatedCssSelectors: report.repeatedCssSelectors.length }, null, 2));
+if (conflictMarkers.length) process.exitCode = 1;

@@ -14,7 +14,8 @@ const load = (source, require) => {
   return exports;
 };
 const status = load(readFileSync(new URL('../src/utils/inventoryStatus.ts', import.meta.url), 'utf8'), () => { throw new Error('Unexpected import'); });
-const rollStock = load(readFileSync(new URL('../src/utils/rollStock.ts', import.meta.url), 'utf8'), () => {});
+const quantities = load(readFileSync(new URL('../src/utils/stockQuantity.ts', import.meta.url), 'utf8'), () => {});
+const rollStock = load(readFileSync(new URL('../src/utils/rollStock.ts', import.meta.url), 'utf8'), () => quantities);
 const material = {
   id: 'SKU-001', nombre: 'Cable', categoria: 'Herramientas', descripcion: 'Cable', unidad: 'UND',
   minimo: 10, precioUnitario: 0, estado: 'OK',
@@ -25,15 +26,14 @@ function render(sede, filtro = '', materials = [material]) {
   const states = [materials, false, false, '', '', filtro, sede, null, false, false, null];
   let index = 0;
   const { default: Inventory } = load(source, name => {
-    if (name === 'react') return { ...React, useEffect: () => {}, useState: initial => [index < states.length ? states[index++] : initial, () => {}] };
+    if (name === 'react') return { ...React, useEffect: () => {}, useState: initial => [index < states.length ? states[index++] : initial, () => {}], useRef: value => ({ current: value }) };
     if (name === 'react/jsx-runtime') return jsxRuntime;
     if (name.endsWith('/inventoryStatus')) return status;
-<<<<<<< HEAD
+    if (name.endsWith('/stockQuantity')) return quantities;
     if (name.endsWith('/rollStock')) return rollStock;
+    if (name.endsWith('/AppContext')) return { useAppStore: () => ({ state: { materials: [] }, refreshRemoteData: async () => {} }) };
     if (name.endsWith('/RollStockInput')) return { default: () => null };
-=======
     if (name.endsWith('/materialPrice') || name.endsWith('/visualTokens')) return load(readFileSync(new URL(`../src/${name.endsWith('/materialPrice') ? 'utils/materialPrice' : 'config/visualTokens'}.ts`, import.meta.url), 'utf8'), () => { throw new Error('Unexpected import'); });
->>>>>>> 86ec4212e4e58a1376218f6d1adbb98d96c1534b
     if (name.endsWith('/domain/types')) return { SEDES: ['Chiclayo', 'Chimbote', 'Trujillo'] };
     if (name.endsWith('/materialService')) return {};
     if (name.endsWith('/FieldError')) return { default: () => null };
@@ -76,7 +76,10 @@ test('compras muestra agotados con mínimo cero y bajos de la sede, aunque el ca
       if (name === 'react/jsx-runtime') return jsxRuntime;
       if (name.endsWith('/AppContext')) return { useAppStore: () => ({ state: { materials: [zero, low] }, refreshRemoteData: async () => {} }) };
       if (name.endsWith('/inventoryStatus')) return status;
+    if (name.endsWith('/stockQuantity')) return quantities;
     if (name.endsWith('/rollStock')) return rollStock;
+    if (name.endsWith('/stockQuantity')) return quantities;
+    if (name.endsWith('/AppContext')) return { useAppStore: () => ({ state: { materials: [] }, refreshRemoteData: async () => {} }) };
     if (name.endsWith('/RollStockInput')) return { default: () => null };
       if (name.endsWith('/domain/types')) return { SEDES: ['Chiclayo', 'Chimbote', 'Trujillo'] };
       if (name.endsWith('/MaterialPreviewModal')) return { default: () => null, PreviewBtn: () => null };
@@ -100,7 +103,10 @@ test('el servicio conserva existencias de BD y deriva la alerta general desde es
   const inventory = [{ material_sku: 'ZERO', sede: 'Chiclayo', stock: 0 }, { material_sku: 'ZERO', sede: 'Chimbote', stock: 5 }, { material_sku: 'ZERO', sede: 'Trujillo', stock: 100 }];
   const service = load(readFileSync(new URL('../src/services/materialService.ts', import.meta.url), 'utf8'), name => {
     if (name.endsWith('/inventoryStatus')) return status;
+    if (name.endsWith('/stockQuantity')) return quantities;
     if (name.endsWith('/rollStock')) return rollStock;
+    if (name.endsWith('/stockQuantity')) return quantities;
+    if (name.endsWith('/AppContext')) return { useAppStore: () => ({ state: { materials: [] }, refreshRemoteData: async () => {} }) };
     if (name.endsWith('/RollStockInput')) return { default: () => null };
     if (name === './supabase') return { supabase: { from: table => ({ select: () => { const result = Promise.resolve({ data: table === 'materiales' ? rows : inventory, error: null }); result.order = () => result; return result; } }) } };
     throw new Error(`Unexpected import ${name}`);
@@ -158,9 +164,13 @@ test('inventario separa los totales por unidad y conserva rollos parciales', () 
 test('la vista previa usa ROLLO en el mínimo y en todas las existencias', () => {
   const previewSource = readFileSync(new URL('../src/components/MaterialPreviewModal.tsx', import.meta.url), 'utf8');
   const { default: Preview } = load(previewSource, name => {
+    if (name.endsWith('/materialPrice') || name.endsWith('/visualTokens')) return load(readFileSync(new URL(`../src/${name.endsWith('/materialPrice') ? 'utils/materialPrice' : 'config/visualTokens'}.ts`, import.meta.url), 'utf8'), () => { throw new Error('Unexpected import'); });
     if (name === 'react/jsx-runtime') return jsxRuntime;
     if (name.endsWith('/inventoryStatus')) return status;
+    if (name.endsWith('/stockQuantity')) return quantities;
     if (name.endsWith('/rollStock')) return rollStock;
+    if (name.endsWith('/stockQuantity')) return quantities;
+    if (name.endsWith('/AppContext')) return { useAppStore: () => ({ state: { materials: [] }, refreshRemoteData: async () => {} }) };
     if (name.endsWith('/RollStockInput')) return { default: () => null };
     if (name.endsWith('/domain/types')) return { SEDES: ['Chiclayo', 'Chimbote', 'Trujillo'] };
     throw new Error(`Unexpected import ${name}`);
@@ -178,7 +188,10 @@ test('el panel separa las sedes y explica el rango de referencia 30', () => {
     if (name === 'react-dom') return { createPortal: content => content };
     if (name === 'react/jsx-runtime') return jsxRuntime;
     if (name.endsWith('/inventoryStatus')) return status;
+    if (name.endsWith('/stockQuantity')) return quantities;
     if (name.endsWith('/rollStock')) return rollStock;
+    if (name.endsWith('/stockQuantity')) return quantities;
+    if (name.endsWith('/AppContext')) return { useAppStore: () => ({ state: { materials: [] }, refreshRemoteData: async () => {} }) };
     if (name.endsWith('/RollStockInput')) return { default: () => null };
     if (name.endsWith('/domain/types')) return { SEDES: ['Chiclayo', 'Chimbote', 'Trujillo'] };
     throw new Error(`Unexpected import ${name}`);

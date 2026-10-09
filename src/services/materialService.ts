@@ -1,5 +1,6 @@
 import { supabase } from "./supabase"
 import { estadoGeneral } from '../utils/inventoryStatus'
+import { validRollLength, validStockQuantity } from '../utils/stockQuantity'
 
 import type { Material, Sede } from "../domain/types"
 
@@ -163,6 +164,7 @@ export async function obtenerMateriales(): Promise<Material[]> {
 // ======================================================
 
 export async function crearMaterial(material: Material) {
+  validateQuantities(material);
   const { data, error } = await supabase.rpc("crear_material_con_inventario", {
     p_material: {
       sku: material.id,
@@ -202,8 +204,15 @@ export async function actualizarMaterial(
   id: string,
 
   cambios: Partial<Material>,
+  anterior?: Material,
 ) {
+  validateQuantities(cambios);
   const payload: Record<string, unknown> = {}
+  if (cambios.stockSedes) {
+    if (!anterior || anterior.id !== id) throw new Error('Actualiza el inventario antes de editar el stock.');
+    payload.inventario_esperado = { stock_sedes: anterior.stockSedes, unidad: anterior.unidad,
+      metros_por_rollo: anterior.metrosPorRollo ?? null, stock_minimo: anterior.minimo };
+  }
 
   if (cambios.nombre !== undefined) {
     payload.nombre = cambios.nombre
@@ -254,4 +263,13 @@ export async function actualizarMaterial(
     ...mapMaterialDBToMaterial(data as MaterialDB),
     stockSedes: cambios.stockSedes ?? await obtenerStockSedes(id),
   }
+}
+
+function validateQuantities(material: Partial<Material>) {
+  if (material.stockSedes && Object.values(material.stockSedes).some(stock => !validStockQuantity(stock)))
+    throw new Error('El stock debe ser válido, no negativo y tener hasta tres decimales.');
+  if (material.minimo !== undefined && !validStockQuantity(material.minimo))
+    throw new Error('Indica un mínimo válido con hasta tres decimales.');
+  if (material.metrosPorRollo !== undefined && material.metrosPorRollo !== 0 && !validRollLength(material.metrosPorRollo))
+    throw new Error('Indica una longitud de rollo válida con hasta tres decimales.');
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { rollParts, stockFromRollParts } from '../utils/rollStock';
 
-export default function RollStockInput({ stock, length, sede, onChange }: { stock: string; length: number; sede: string; onChange: (value: string) => void }) {
+export default function RollStockInput({ stock, length, sede, onChange, onError }: { stock: string; length: number; sede: string; onChange: (value: string) => void; onError: (error: string) => void }) {
   const initial = rollParts(Number(stock) || 0, length);
   const [rollos, setRollos] = useState(String(initial.rollos));
   const [metros, setMetros] = useState(String(initial.metros));
@@ -9,9 +9,10 @@ export default function RollStockInput({ stock, length, sede, onChange }: { stoc
   function update(nextRollos: string, nextMetros: string) {
     setRollos(nextRollos); setMetros(nextMetros);
     try {
+      if (!nextRollos.trim() || !nextMetros.trim()) throw new Error('Completa ambos campos; usa cero cuando no haya existencias.');
       const value = stockFromRollParts(Number(nextRollos), Number(nextMetros), length);
-      setError(''); onChange(String(value));
-    } catch (err) { setError((err as Error).message); onChange('NaN'); }
+      setError(''); onError(''); onChange(String(value));
+    } catch (err) { const message = (err as Error).message; setError(message); onError(message); }
   }
   return <div>
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>

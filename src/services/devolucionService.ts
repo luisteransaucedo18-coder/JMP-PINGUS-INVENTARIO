@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import { Entrega, Sede } from '../domain/types';
 import { publicCode } from '../utils/publicCode';
 import { limaDate, limaTime } from '../utils/limaDate';
+import { validateProfilePhoto } from '../utils/profilePhoto';
 
 type EstadoDevolucion = 'PENDIENTE_VALIDACION' | 'OBSERVADA' | 'VALIDADA';
 export interface SaldoDevolucion { requerimientoId: string; requerimientoCodigo: string; skuId: string; nombre: string; unidad: string; disponible: number; }
@@ -35,24 +36,36 @@ export async function obtenerDevoluciones(): Promise<Devolucion[]> {
 }
 
 async function cargarEvidencias(id: string, files: File[]): Promise<string[]> {
+  if (!files.length) throw new Error('Adjunta al menos una fotografía de la devolución.');
+  const extensions = await Promise.all(files.map(validateProfilePhoto));
   const { data: auth, error: authError } = await supabase.auth.getUser();
   if (authError || !auth.user) throw authError ?? new Error('No se encontró una sesión activa.');
   const paths: string[] = [];
-  for (const file of files) {
-    const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+  try { for (const [index, file] of files.entries()) {
+    const extension = extensions[index];
     const path = `${auth.user.id}/${id}/${crypto.randomUUID()}.${extension}`;
     const { error } = await supabase.storage.from('evidencias-devoluciones').upload(path, file, { contentType: file.type, upsert: false });
-    if (error) { await supabase.storage.from('evidencias-devoluciones').remove(paths); throw error; }
+    if (error) throw error;
     paths.push(path);
-  }
+  } } catch (error) { await limpiarEvidencias(paths); throw error; }
   return paths;
+}
+
+async function limpiarEvidencias(paths: string[]) {
+  if (!paths.length) return;
+  try {
+    const { error } = await supabase.storage.from('evidencias-devoluciones').remove(paths);
+    if (error) console.error('No se pudieron limpiar evidencias sin vincular:', error);
+  } catch (error) { console.error('No se pudieron limpiar evidencias sin vincular:', error); }
 }
 
 export async function registrarDevolucion(input: { requerimientoId: string; sedeReceptora: Sede; items: DevolucionItem[]; files: File[] }): Promise<void> {
   const id = crypto.randomUUID();
   const paths = await cargarEvidencias(id, input.files);
-  const { error } = await supabase.rpc('registrar_devolucion', { p_id: id, p_requerimiento_id: input.requerimientoId, p_sede_receptora: input.sedeReceptora, p_items: input.items.map(i => ({ material_sku: i.skuId, material_nombre: i.nombre, unidad: i.unidad, cantidad: i.cantidad })), p_evidencias: paths });
-  if (error) { await supabase.storage.from('evidencias-devoluciones').remove(paths); throw error; }
+  try {
+    const { error } = await supabase.rpc('registrar_devolucion', { p_id: id, p_requerimiento_id: input.requerimientoId, p_sede_receptora: input.sedeReceptora, p_items: input.items.map(i => ({ material_sku: i.skuId, material_nombre: i.nombre, unidad: i.unidad, cantidad: i.cantidad })), p_evidencias: paths });
+    if (error) throw error;
+  } catch (error) { await limpiarEvidencias(paths); throw error; }
 }
 
 export async function registrarEntrega(requerimientoId: string, tecnico: string, dni: string, observaciones: string, items: { skuId: string; nombre: string; cantidadSolicitada: number; cantidadEntregada: number }[]): Promise<{ codigo: string; fecha: string; hora: string }> {
