@@ -75,6 +75,8 @@ export interface Material {
 
   unidad: string
 
+  metrosPorRollo?: number
+
   marca?: string
 
   // Stock por sede.

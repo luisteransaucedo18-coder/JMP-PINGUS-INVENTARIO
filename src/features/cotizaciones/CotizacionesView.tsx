@@ -1076,7 +1076,7 @@ export default function CotizacionesView({
               <thead>
                 <tr>
                   <th>MATERIAL / PARTIDA</th>
-                  <th>CANTIDAD / UND</th>
+                  <th>CANTIDAD</th>
                   <th>PRECIO</th>
                   <th>TOTAL</th>
                 </tr>

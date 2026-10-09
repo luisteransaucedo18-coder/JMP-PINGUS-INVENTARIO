@@ -141,7 +141,7 @@ export default function MisSolicitudesView({ onToast, onNav }: Props) {
                     <tr key={i}>
                       <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#2563EB' }}>{m.skuId}</td>
                       <td style={{ fontSize: 12 }}>{m.nombre}</td>
-                      <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{m.cantidad} UND</td>
+                      <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{m.cantidad} {m.unidad ?? state.materials.find(mat => mat.id === m.skuId)?.unidad ?? 'UND'}</td>
                     </tr>
                   ))}
                 </tbody>

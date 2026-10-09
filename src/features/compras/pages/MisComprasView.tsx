@@ -142,7 +142,7 @@ export default function MisComprasView({ onNav, onToast }: Props) {
                   <tr key={i}>
                     <td style={{ fontFamily: 'monospace', fontSize: 10.5, color: '#2563EB' }}>{it.skuId || '—'}</td>
                     <td style={{ fontSize: 12.5, fontWeight: 500 }}>{it.nombre}</td>
-                    <td style={{ fontFamily: 'monospace', fontWeight: 700 }}>{it.cantidadSolicitada} UND</td>
+                    <td style={{ fontFamily: 'monospace', fontWeight: 700 }}>{it.cantidadSolicitada} {state.materials.find(mat => mat.id === it.skuId)?.unidad ?? 'UND'}</td>
                     <td style={{ fontFamily: 'monospace', color: '#8B8FA8' }}>{it.precioUnitario ? `S/. ${it.precioUnitario.toFixed(2)}` : '—'}</td>
                     <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#2563EB' }}>{it.precioUnitario ? `S/. ${(it.cantidadSolicitada * it.precioUnitario).toFixed(2)}` : '—'}</td>
                   </tr>

@@ -1,5 +1,5 @@
 export function admiteDecimales(unidad: string) {
-  return ["MTS", "GLD"].includes(unidad.trim().toUpperCase())
+  return ["MTS", "GLD", "ROLLO"].includes(unidad.trim().toUpperCase())
 }
 export function validarCantidad(
   cantidad: number,

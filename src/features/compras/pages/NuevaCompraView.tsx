@@ -829,7 +829,7 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
                 >
                   {stock === null
                     ? '—'
-                    : `${stock} UND`}
+                    : `${stock} ${mat?.unidad ?? 'UND'}`}
                 </div>
 
                 {/* =========================================

@@ -1,3 +1,5 @@
+import RollStockInput from '../../../components/RollStockInput';
+import { formatStock } from '../../../utils/rollStock';
 import FieldError from "../../../components/FieldError";
 import { useEffect, useState } from 'react';
 import { calcularEstado, estadoPorSede, estadoGeneral, MINIMO_INICIAL_INVENTARIO } from '../../../utils/inventoryStatus';
@@ -5,6 +7,7 @@ import { calcularEstado, estadoPorSede, estadoGeneral, MINIMO_INICIAL_INVENTARIO
 
 import {
   obtenerMateriales,
+  obtenerCategoriasMaterial,
   crearMaterial,
   actualizarMaterial,
 } from '../../../services/materialService';
@@ -38,6 +41,8 @@ const BLANK_FORM = {
   nombre: '',
   descripcion: '',
   categoria: '',
+  unidad: 'UND',
+  metrosPorRollo: '',
   stockChiclayo: '',
   stockChimbote: '',
   stockTrujillo: '',
@@ -65,6 +70,10 @@ const SEDE_COLOR: Record<string, string> = {
   Chiclayo: '#2563EB',
   Chimbote: '#059669',
   Trujillo: '#7C3AED',
+};
+
+const UNIDADES_MATERIAL: Record<string, string> = {
+  UND: 'Unidades (UND)', ROLLO: 'Rollos (ROLLO)', MTS: 'Metros (MTS)', GLD: 'Galones (GLD)', PAR: 'Pares (PAR)',
 };
 
 const formatPrecio = (precio: number) =>
@@ -202,6 +211,9 @@ export default function InventarioView({
 
   const [editMinimo, setEditMinimo] =
     useState('');
+  const [editUnidad, setEditUnidad] = useState('UND');
+  const [editMetrosPorRollo, setEditMetrosPorRollo] = useState('');
+  const [categorias, setCategorias] = useState<Array<{ id: string; nombre: string }>>([]);
 
   // ====================================================
   // CARGAR MATERIALES
@@ -213,8 +225,8 @@ export default function InventarioView({
     try {
       setLoading(true);
 
-      const data =
-        await obtenerMateriales();
+      const [data, catalogoCategorias] = await Promise.all([obtenerMateriales(), obtenerCategoriasMaterial()]);
+      setCategorias(catalogoCategorias);
 
       setMateriales(
         data ?? []
@@ -344,6 +356,8 @@ export default function InventarioView({
     }
 
     if (Number(form.minimo) < 0) e.minimo = 'Ingresa un valor mayor o igual a cero.';
+    if (form.unidad === 'ROLLO' && form.metrosPorRollo && (!Number.isFinite(Number(form.metrosPorRollo)) || Number(form.metrosPorRollo) <= 0 || Number(form.metrosPorRollo) > 100000)) e.metrosPorRollo = 'Indica una longitud válida mayor que cero.';
+    for (const sede of SEDES) { const key = `stock${sede}` as 'stockChiclayo' | 'stockChimbote' | 'stockTrujillo'; if (!Number.isFinite(Number(form[key])) || Number(form[key]) < 0) e[key] = 'Revisa el stock inicial.'; }
     return e;
   };
 
@@ -414,7 +428,8 @@ export default function InventarioView({
           categoria:
             form.categoria,
 
-          unidad: 'UND',
+          unidad: form.unidad,
+          metrosPorRollo: form.unidad === 'ROLLO' ? Number(form.metrosPorRollo) || undefined : undefined,
 
           stockSedes: {
             Chiclayo: chiclayo,
@@ -467,6 +482,8 @@ export default function InventarioView({
     setSelected(m);
 
     setEditMode(true);
+    setEditUnidad(m.unidad || 'UND');
+    setEditMetrosPorRollo(m.metrosPorRollo ? String(m.metrosPorRollo) : '');
 
     setEditStock({
       Chiclayo:
@@ -511,6 +528,7 @@ export default function InventarioView({
       }
 
       const warnings: Record<string,string> = {};
+      if (editUnidad === 'ROLLO' && editMetrosPorRollo && (!Number.isFinite(Number(editMetrosPorRollo)) || Number(editMetrosPorRollo) <= 0 || Number(editMetrosPorRollo) > 100000)) { onToast('Indica una longitud de rollo válida, mayor que cero y hasta 100000 m.'); return; }
       for(const sede of SEDES) if(!Number.isFinite(Number(editStock[sede])) || Number(editStock[sede])<0) warnings[sede] = 'Ingresa un stock mayor o igual a cero.';
       if(!editMinimo.trim() || !Number.isFinite(Number(editMinimo)) || Number(editMinimo)<0) warnings.minimo = 'Ingresa un mínimo válido mayor o igual a cero.';
       setEditWarnings(warnings);
@@ -551,6 +569,8 @@ export default function InventarioView({
         await actualizarMaterial(
           selected.id,
           {
+            unidad: editUnidad,
+            metrosPorRollo: editUnidad === 'ROLLO' ? Number(editMetrosPorRollo) || 0 : 0,
             stockSedes: {
               Chiclayo: chiclayo,
               Chimbote: chimbote,
@@ -590,11 +610,14 @@ export default function InventarioView({
   // KPI STOCK TOTAL
   // ====================================================
 
-  const totalStock =
+  const stockPorUnidad =
     materiales.reduce(
-      (total, material) =>
-        total + sedesVisibles.reduce((sum, sede) => sum + obtenerStockSede(material, sede), 0),
-      0
+      (totales, material) => {
+        const unidad = material.unidad || 'UND';
+        totales[unidad] = (totales[unidad] ?? 0) + sedesVisibles.reduce((sum, sede) => sum + obtenerStockSede(material, sede), 0);
+        return totales;
+      },
+      {} as Record<string, number>
     );
 
   // ====================================================
@@ -699,19 +722,10 @@ export default function InventarioView({
               color: '#18181B',
             }}
           >
-            {totalStock.toLocaleString(
-              'es-PE'
+            {Object.entries(stockPorUnidad).sort(([a], [b]) => a.localeCompare(b)).map(([unidad, cantidad]) =>
+              <div key={unidad} style={{ fontSize: 18, lineHeight: 1.5 }}>{cantidad.toLocaleString('es-PE', { maximumFractionDigits: 3 })} <span style={{ fontSize: 12 }}>{unidad}</span></div>
             )}
-
-            {' '}
-
-            <span
-              style={{
-                fontSize: 12,
-              }}
-            >
-              UND
-            </span>
+            {!materiales.length && 'Sin existencias'}
           </div>
 
         </div>
@@ -1303,7 +1317,7 @@ export default function InventarioView({
                                         : '#18181B',
                                   }}
                                 >
-                                  {stock}
+                                  {m.unidad === 'ROLLO' ? formatStock(stock, m) : stock}
                                 </td>
 
                               );
@@ -1328,10 +1342,7 @@ export default function InventarioView({
                           >
 
                             {
-                              obtenerStockSede(
-                                m,
-                                sedeView
-                              )
+                              formatStock(obtenerStockSede(m, sedeView), m)
                             }
 
                           </td>
@@ -1354,7 +1365,7 @@ export default function InventarioView({
                                 700,
                             }}
                           >
-                            {total}
+                            {m.unidad === 'ROLLO' ? formatStock(total, m) : total}
                           </td>
 
                         )}
@@ -1641,8 +1652,7 @@ export default function InventarioView({
                         '#DC2626',
                     }}
                   >
-                    {selected.minimo}
-                    {' UND'}
+                    {formatStock(selected.minimo, selected)}
                   </div>
 
                 </div>
@@ -1710,12 +1720,7 @@ export default function InventarioView({
                         '#059669',
                     }}
                   >
-                    {
-                      obtenerStockTotal(
-                        selected
-                      )
-                    }
-                    {' UND'}
+                    {formatStock(obtenerStockTotal(selected), selected)}
                   </div>
 
                 </div>
@@ -1840,7 +1845,7 @@ export default function InventarioView({
                               'monospace',
                           }}
                         >
-                          {stock}
+                          {selected.unidad === 'ROLLO' ? formatStock(stock, selected) : stock}
 
                           {' '}
 
@@ -1856,7 +1861,7 @@ export default function InventarioView({
                                 '#A1A1AA',
                             }}
                           >
-                            UND
+                            {selected.unidad || 'UND'}
                           </span>
 
                         </span>
@@ -1967,6 +1972,15 @@ export default function InventarioView({
 
             <MaterialModalHeader material={selected} editing />
 
+            <div style={{ padding: '16px 22px 0' }}>
+              <label htmlFor="edit-material-unit">Unidad de inventario</label>
+              <select id="edit-material-unit" className="select-field" style={{ width: '100%', marginTop: 6 }} value={editUnidad} onChange={event => setEditUnidad(event.target.value)}>
+                {Object.entries(UNIDADES_MATERIAL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </select>
+              {editUnidad !== selected.unidad && <p style={{ fontSize: 12, color: '#52525B', margin: '8px 0 0' }}>Revisa el stock de cada sede y el mínimo en {editUnidad}. Cambiar la unidad no convierte las cantidades ni los precios automáticamente.</p>}
+              {editUnidad === 'ROLLO' && <label style={{ display: 'block', marginTop: 12 }}>Metros por rollo<input className="input-field" type="number" min="0.001" max="100000" step="0.001" value={editMetrosPorRollo} onChange={event => setEditMetrosPorRollo(event.target.value)} /><span style={{ fontSize: 12 }}>Configura la longitud para registrar y visualizar metros restantes. El stock actual se conserva.</span></label>}
+            </div>
+
 
             <div
               style={{
@@ -2032,12 +2046,12 @@ export default function InventarioView({
                       />
 
                       Stock {s}
-                      {' (UND)'}
+                      {` (${editUnidad})`}
 
                     </label>
 
 
-                    <input aria-invalid={editWarnings[s] ? true : undefined}
+                    {editUnidad === 'ROLLO' && Number(editMetrosPorRollo) > 0 ? <RollStockInput key={`${s}-${editMetrosPorRollo}`} stock={editStock[s]} length={Number(editMetrosPorRollo)} sede={s} onChange={value => setEditStock(previous => ({ ...previous, [s]: value }))} /> :                     <input aria-invalid={editWarnings[s] ? true : undefined}
                       className=
                         "input-field"
 
@@ -2063,7 +2077,7 @@ export default function InventarioView({
                           })
                         )
                       }
-                    />
+                    />}
 <FieldError message={editWarnings[s]} />
 
                   </div>
@@ -2093,7 +2107,7 @@ export default function InventarioView({
                   }}
                 >
                   Stock mínimo
-                  {' (por sede)'}
+                  {` (por sede, ${editUnidad})`}
                 </label>
 
 
@@ -2380,20 +2394,14 @@ export default function InventarioView({
                     — Seleccionar —
                   </option>
 
-                  {[
-                    'Gas Natural',
-                    'EPP',
-                    'Herramientas',
-                    'Señalética',
-                    'Otro',
-                  ].map(
+                  {categorias.map(
                     (c) => (
 
                       <option
-                        key={c}
-                        value={c}
+                        key={c.id}
+                        value={c.id}
                       >
-                        {c}
+                        {c.nombre}
                       </option>
 
                     )
@@ -2408,9 +2416,17 @@ export default function InventarioView({
               {/* MÍNIMO */}
 
               <div>
+                <label htmlFor="new-material-unit">Unidad de inventario *</label>
+                <select id="new-material-unit" className="select-field" style={{ width: '100%' }} value={form.unidad} onChange={event => setForm(previous => ({ ...previous, unidad: event.target.value }))}>
+                  {Object.entries(UNIDADES_MATERIAL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                </select>
+                {form.unidad === 'ROLLO' && <label style={{ display: 'block', marginTop: 12 }}>Metros por rollo<input className="input-field" type="number" min="0.001" max="100000" step="0.001" value={form.metrosPorRollo} onChange={event => setForm(previous => ({ ...previous, metrosPorRollo: event.target.value }))} /><FieldError message={errors.metrosPorRollo} /></label>}
+              </div>
+
+              <div>
 
                 <label>
-                  Stock mínimo por sede
+                  Stock mínimo por sede ({form.unidad})
                 </label>
 
                 <input aria-invalid={errors.minimo ? true : undefined} aria-describedby={errors.minimo ? "material-minimo-error" : undefined}
@@ -2475,7 +2491,7 @@ export default function InventarioView({
                       600,
                   }}
                 >
-                  Stock inicial por sede
+                  Stock inicial por sede ({form.unidad})
                 </div>
 
 
@@ -2485,7 +2501,7 @@ export default function InventarioView({
                       'grid',
 
                     gridTemplateColumns:
-                      '1fr 1fr 1fr',
+                      form.unidad === 'ROLLO' && Number(form.metrosPorRollo) > 0 ? '1fr' : '1fr 1fr 1fr',
 
                     gap: 10,
                   }}
@@ -2510,7 +2526,7 @@ export default function InventarioView({
                             {s}
                           </label>
 
-                          <input
+                          {form.unidad === 'ROLLO' && Number(form.metrosPorRollo) > 0 ? <RollStockInput key={`${s}-${form.metrosPorRollo}`} stock={form[key]} length={Number(form.metrosPorRollo)} sede={s} onChange={value => setForm(previous => ({ ...previous, [key]: value }))} /> : <input
                             className=
                               "input-field"
 
@@ -2541,7 +2557,7 @@ export default function InventarioView({
                                 })
                               )
                             }
-                          />
+                          />}<FieldError message={errors[key]} />
 
                         </div>
 

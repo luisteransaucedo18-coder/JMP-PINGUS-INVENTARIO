@@ -98,9 +98,40 @@ before(async () => {
     "utf8",
   )
   await db.exec(migration)
+  await db.exec(`
+    create schema transporte_privado;
+    create type public.estado_entrega as enum ('COMPLETA','PARCIAL','CANCELADA');
+    alter table public.perfiles add column estado text default 'ACTIVO';
+    create table public.proyectos(id uuid primary key,nombre text);
+    create table public.requerimientos(id uuid primary key,estado text,analista_id uuid,proyecto_id uuid);
+    create table public.requerimiento_items(requerimiento_id uuid,material_sku text,material_nombre text,unidad text,cantidad numeric);
+    create table public.entregas(id uuid primary key,requerimiento_id uuid,proyecto_nombre text,tecnico text,dni_tecnico text,responsable_entrega_id uuid,fecha_hora timestamptz,estado public.estado_entrega,observaciones text);
+    create table public.entrega_items(entrega_id uuid,material_sku text,material_nombre text,cantidad_solicitada numeric,cantidad_entregada numeric);
+  `)
+  await db.exec(readFileSync(new URL('../supabase/migrations/20261009161249_materiales_rollos_metros_restantes.sql', import.meta.url), 'utf8'))
 })
 
 after(() => db.close())
+
+test('configura metros por rollo conservando stock, limpia longitud al cambiar unidad y permite entregas parciales', async () => {
+  const roll = { ...material, sku: 'ROLL-TEST', unidad: 'ROLLO', metros_por_rollo: 100 };
+  await as('coordinador', 'select public.crear_material_con_inventario($1,$2)', [roll, { ...stocks, Chiclayo: 2.35 }]);
+  let row = (await db.query("select metros_por_rollo,(select stock from inventario_sedes where material_sku=sku and sede='Chiclayo') stock from materiales where sku='ROLL-TEST'")).rows[0];
+  assert.equal(Number(row.metros_por_rollo),100); assert.equal(Number(row.stock),2.35);
+  await assert.rejects(as('coordinador','select public.actualizar_material_con_inventario($1,$2)', ['ROLL-TEST',{metros_por_rollo:-1}]),/check constraint/);
+  const req='40000000-0000-0000-0000-000000000001';
+  await db.query('insert into requerimientos(id,estado,analista_id) values($1,\'CONFIRMADO\',$2)',[req,ids.analista]);
+  await db.query('insert into requerimiento_items values($1,$2,$3,$4,$5)',[req,'ROLL-TEST','Tubo','ROLLO',0.35]);
+  const delivery = [{material_sku:'ROLL-TEST',cantidad_entregada:0.35}];
+  await as('coordinador','select public.registrar_entrega($1,$2,$3,$4,$5)',[req,'Técnico','','',delivery]);
+  assert.equal(Number((await db.query("select cantidad_entregada from entrega_items where material_sku='ROLL-TEST'")).rows[0].cantidad_entregada),0.35);
+  await assert.rejects(as('coordinador','select public.registrar_entrega($1,$2,$3,$4,$5)',[req,'Técnico','','',delivery]),/saldo pendiente/);
+  const valid=(await db.query("select transporte_privado.cantidad_valida(0.35,'ROLLO') rollo,transporte_privado.cantidad_valida(0.35,'UND') und,transporte_privado.cantidad_valida(0.0001,'ROLLO') precision_ok")).rows[0];
+  assert.deepEqual(valid,{rollo:true,und:false,precision_ok:false});
+  await as('coordinador','select public.actualizar_material_con_inventario($1,$2)', ['ROLL-TEST',{unidad:'MTS'}]);
+  row=(await db.query("select metros_por_rollo from materiales where sku='ROLL-TEST'")).rows[0];
+  assert.equal(row.metros_por_rollo,null);
+});
 
 test("crea material y stock de las tres sedes como una sola operación", async () => {
   await as("coordinador", "select public.crear_material_con_inventario($1, $2)", [material, stocks])

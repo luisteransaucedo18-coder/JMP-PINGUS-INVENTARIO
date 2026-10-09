@@ -149,7 +149,7 @@ function EntregaForm({ req, usuario, onDone, onCancel }: { req: Requerimiento; u
     items.forEach((item,index) => {
       const unit = req.materiales.find(m => m.skuId === item.skuId)?.unidad ?? 'UND';
       if (!Number.isFinite(item.cantidadEntregada) || item.cantidadEntregada<0) e[`quantity-${index}`] = 'Ingresa una cantidad válida mayor o igual a cero.';
-      else if (['UND','ROLLO','PAR'].includes(unit) && !Number.isInteger(item.cantidadEntregada)) e[`quantity-${index}`] = `La unidad ${unit} requiere una cantidad entera.`;
+      else if (['UND','PAR'].includes(unit) && !Number.isInteger(item.cantidadEntregada)) e[`quantity-${index}`] = `La unidad ${unit} requiere una cantidad entera.`;
       else if (item.cantidadEntregada > (balance.rows.find(r => r.skuId === item.skuId)?.remaining ?? 0)) e[`quantity-${index}`] = 'La cantidad supera el saldo pendiente. Actualiza el requerimiento.';
     });
     if (balance.hasExcess) e.submit = 'Este requerimiento tiene entregas superiores a lo solicitado. Solicita su revisión antes de registrar otra entrega.';
@@ -256,7 +256,7 @@ function EntregaForm({ req, usuario, onDone, onCancel }: { req: Requerimiento; u
                   </div>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <input id={`delivery-quantity-${i}`} aria-invalid={errors[`quantity-${i}`] ? true : undefined} aria-describedby={errors[`quantity-${i}`] ? `delivery-quantity-${i}-error` : undefined} type="number" min="0" step={["UND", "ROLLO", "PAR"].includes(unit) ? 1 : "any"} max={item.cantidadSolicitada}
+                      <input id={`delivery-quantity-${i}`} aria-invalid={errors[`quantity-${i}`] ? true : undefined} aria-describedby={errors[`quantity-${i}`] ? `delivery-quantity-${i}-error` : undefined} type="number" min="0" step={["UND", "PAR"].includes(unit) ? 1 : "any"} max={item.cantidadSolicitada}
                         value={item.cantidadEntregada}
                         onChange={e => updateQty(i, e.target.value)}
                         style={{ width: 70, padding: '6px 8px', border: `1px solid ${item.cantidadEntregada < item.cantidadSolicitada ? '#FDE68A' : '#BBF7D0'}`, borderRadius: 6, fontSize: 13, fontWeight: 700, textAlign: 'center', fontFamily: 'monospace', background: item.cantidadEntregada === 0 ? '#FFF5F5' : item.cantidadEntregada < item.cantidadSolicitada ? '#FFFBEB' : '#F0FDF4' }}

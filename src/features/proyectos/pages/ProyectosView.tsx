@@ -107,7 +107,7 @@ function ProjectDetail({ proyecto, onBack, role, onToast, onNav, managerSurface 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         {r.materiales.slice(0, 2).map(m => (
                           <div key={m.skuId} style={{ fontSize: 11, color: '#52525B' }}>
-                            <span style={{ fontFamily: 'monospace', color: '#2563EB' }}>{m.skuId}</span> · {m.cantidad} UND
+                            <span style={{ fontFamily: 'monospace', color: '#2563EB' }}>{m.skuId}</span> · {m.cantidad} {m.unidad ?? state.materials.find(mat => mat.id === m.skuId)?.unidad ?? 'UND'}
                           </div>
                         ))}
                         {r.materiales.length > 2 && <div style={{ fontSize: 10.5, color: '#A1A1AA' }}>+{r.materiales.length - 2} más</div>}
@@ -166,7 +166,7 @@ function ProjectDetail({ proyecto, onBack, role, onToast, onNav, managerSurface 
                     <tr key={material.skuId}>
                       <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#2563EB' }}>{material.skuId}</td>
                       <td style={{ fontSize: 12 }}>{material.nombre}</td>
-                      <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{material.cantidad} UND</td>
+                      <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{material.cantidad} {material.unidad ?? state.materials.find(mat => mat.id === material.skuId)?.unidad ?? 'UND'}</td>
                     </tr>
                   ))}
                 </tbody>

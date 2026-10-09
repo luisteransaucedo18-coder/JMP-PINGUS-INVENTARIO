@@ -258,9 +258,9 @@ export default function RequerimientosView({ onToast, onNav }: Props) {
                           {mat && <PreviewBtn onClick={e => { e.stopPropagation(); setPreviewMat(mat); }} />}
                         </td>
                         <td style={{ fontSize: 12 }}>{m.nombre}</td>
-                        <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{m.cantidad} UND</td>
+                        <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{m.cantidad} {m.unidad ?? mat?.unidad ?? 'UND'}</td>
                         <td style={{ fontFamily: 'monospace', fontWeight: 600, color: stock === null ? '#A1A1AA' : ok ? '#059669' : '#DC2626' }}>
-                          {stock === null ? '—' : `${stock} UND`}
+                          {stock === null ? '—' : `${stock} ${mat?.unidad ?? m.unidad ?? 'UND'}`}
                           {!ok && stock !== null && (
                             <span style={{ fontSize: 10, display: 'block', color: '#DC2626' }}>
                               faltan {Math.max(m.cantidad - stock, 0)} {m.unidad ?? mat?.unidad ?? 'UND'}

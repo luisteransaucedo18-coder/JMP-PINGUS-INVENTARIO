@@ -1,4 +1,5 @@
 import ValidatedForm from "../../../components/ValidatedForm";
+import { formatStock } from '../../../utils/rollStock';
 import { useState } from "react"
 
 import { useAppStore } from "../../../store/AppContext"
@@ -145,6 +146,7 @@ export default function RequerimientoCotizado({
                 cantidades están expresadas en la unidad de inventario.
               </p>
               {quote.presupuesto.materiales.map((m) => {
+                const catalogMaterial = state.materials.find(material => material.id === m.sku);
                 const remaining = remainingMaterial(
                   m,
                   family,
@@ -185,6 +187,7 @@ export default function RequerimientoCotizado({
                         }
                       />
                       <span className="material-request-unit" aria-hidden="true">{m.unidadCatalogo}</span>
+                      {m.unidadCatalogo === 'ROLLO' && catalogMaterial?.metrosPorRollo && <small>{formatStock(amounts[m.id] ?? 0, catalogMaterial)}. 1 rollo = {catalogMaterial.metrosPorRollo} m.</small>}
                     </Field></div>
                   </div>
                 )

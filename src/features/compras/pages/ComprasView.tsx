@@ -65,8 +65,7 @@ export default function ComprasView({ onToast }: Props) {
     try {
       await confirmarCompra(c.uuid, notaCompra);
       await refreshRemoteData();
-      const totalItems = c.items.reduce((s, it) => s + it.cantidadSolicitada, 0);
-      onToast(`✓ Compra confirmada — ${totalItems} UND ingresadas al stock de ${c.sede}`);
+      onToast(`✓ Compra confirmada — stock de ${c.sede} actualizado`);
       closeModal();
     } catch (error) {
       onToast(error instanceof Error ? error.message : 'No se pudo confirmar la compra');
@@ -231,11 +230,11 @@ export default function ComprasView({ onToast }: Props) {
                         </td>
                         <td style={{ fontFamily: 'monospace', fontSize: 10.5, color: '#2563EB' }}>{it.skuId || '—'}</td>
                         <td style={{ fontSize: 12.5, fontWeight: 500 }}>{it.nombre}</td>
-                        <td style={{ fontFamily: 'monospace', fontWeight: 700 }}>{it.cantidadSolicitada} UND</td>
+                        <td style={{ fontFamily: 'monospace', fontWeight: 700 }}>{it.cantidadSolicitada} {mat?.unidad ?? 'UND'}</td>
                         <td style={{ fontFamily: 'monospace', color: '#8B8FA8' }}>{it.precioUnitario ? `S/. ${it.precioUnitario.toFixed(2)}` : '—'}</td>
                         <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#2563EB' }}>{sub > 0 ? `S/. ${sub.toFixed(2)}` : '—'}</td>
                         <td style={{ fontFamily: 'monospace', fontWeight: 600, color: stock === null ? '#C4C6D8' : stock === 0 ? '#DC2626' : '#059669' }}>
-                          {stock === null ? '—' : `${stock} UND`}
+                          {stock === null ? '—' : `${stock} ${mat?.unidad ?? 'UND'}`}
                           {mat && stock !== null && stock < mat.minimo && (
                             <div style={{ fontSize: 9.5, color: '#DC2626' }}>bajo mínimo</div>
                           )}
@@ -343,9 +342,9 @@ export default function ComprasView({ onToast }: Props) {
                           <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 14px', borderBottom: i < selected.items.length - 1 ? '1px solid #F0F2FF' : 'none' }}>
                             <div style={{ fontSize: 12.5, color: '#1A1D23', fontWeight: 500, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.nombre}</div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, fontFamily: 'monospace', fontSize: 12 }}>
-                              <span style={{ color: '#8B8FA8' }}>{stockActual} UND</span>
+                              <span style={{ color: '#8B8FA8' }}>{stockActual} {mat?.unidad ?? 'UND'}</span>
                               <span style={{ color: '#C4C6D8' }}>→</span>
-                              <span style={{ fontWeight: 800, color: '#059669' }}>{stockNuevo} UND</span>
+                              <span style={{ fontWeight: 800, color: '#059669' }}>{stockNuevo} {mat?.unidad ?? 'UND'}</span>
                               <span style={{ fontSize: 11, color: '#059669', background: '#CCFBF1', borderRadius: 5, padding: '1px 6px' }}>+{it.cantidadSolicitada}</span>
                             </div>
                           </div>

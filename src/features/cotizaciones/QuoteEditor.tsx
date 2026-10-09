@@ -807,7 +807,7 @@ export default function QuoteEditor({
                           )
                         }
                       />
-                      <Field label="UND">
+                      <Field label="Unidad cotizada">
                         <ExpandingTextField
                           className="input-field"
                           required

@@ -14,19 +14,22 @@ const load = (source, require) => {
   return exports;
 };
 const status = load(readFileSync(new URL('../src/utils/inventoryStatus.ts', import.meta.url), 'utf8'), () => { throw new Error('Unexpected import'); });
+const rollStock = load(readFileSync(new URL('../src/utils/rollStock.ts', import.meta.url), 'utf8'), () => {});
 const material = {
   id: 'SKU-001', nombre: 'Cable', categoria: 'Herramientas', descripcion: 'Cable', unidad: 'UND',
   minimo: 10, precioUnitario: 0, estado: 'OK',
   stockSedes: { Chiclayo: 0, Chimbote: 5, Trujillo: 100 },
 };
 const source = readFileSync(new URL('../src/features/inventario/pages/InventarioView.tsx', import.meta.url), 'utf8');
-function render(sede, filtro = '') {
-  const states = [[material], false, false, '', '', filtro, sede, null, false, false, null];
+function render(sede, filtro = '', materials = [material]) {
+  const states = [materials, false, false, '', '', filtro, sede, null, false, false, null];
   let index = 0;
   const { default: Inventory } = load(source, name => {
     if (name === 'react') return { ...React, useEffect: () => {}, useState: initial => [index < states.length ? states[index++] : initial, () => {}] };
     if (name === 'react/jsx-runtime') return jsxRuntime;
     if (name.endsWith('/inventoryStatus')) return status;
+    if (name.endsWith('/rollStock')) return rollStock;
+    if (name.endsWith('/RollStockInput')) return { default: () => null };
     if (name.endsWith('/domain/types')) return { SEDES: ['Chiclayo', 'Chimbote', 'Trujillo'] };
     if (name.endsWith('/materialService')) return {};
     if (name.endsWith('/FieldError')) return { default: () => null };
@@ -69,6 +72,8 @@ test('compras muestra agotados con mínimo cero y bajos de la sede, aunque el ca
       if (name === 'react/jsx-runtime') return jsxRuntime;
       if (name.endsWith('/AppContext')) return { useAppStore: () => ({ state: { materials: [zero, low] }, refreshRemoteData: async () => {} }) };
       if (name.endsWith('/inventoryStatus')) return status;
+    if (name.endsWith('/rollStock')) return rollStock;
+    if (name.endsWith('/RollStockInput')) return { default: () => null };
       if (name.endsWith('/domain/types')) return { SEDES: ['Chiclayo', 'Chimbote', 'Trujillo'] };
       if (name.endsWith('/MaterialPreviewModal')) return { default: () => null, PreviewBtn: () => null };
       if (name.endsWith('/FieldError')) return { default: () => null };
@@ -91,6 +96,8 @@ test('el servicio conserva existencias de BD y deriva la alerta general desde es
   const inventory = [{ material_sku: 'ZERO', sede: 'Chiclayo', stock: 0 }, { material_sku: 'ZERO', sede: 'Chimbote', stock: 5 }, { material_sku: 'ZERO', sede: 'Trujillo', stock: 100 }];
   const service = load(readFileSync(new URL('../src/services/materialService.ts', import.meta.url), 'utf8'), name => {
     if (name.endsWith('/inventoryStatus')) return status;
+    if (name.endsWith('/rollStock')) return rollStock;
+    if (name.endsWith('/RollStockInput')) return { default: () => null };
     if (name === './supabase') return { supabase: { from: table => ({ select: () => { const result = Promise.resolve({ data: table === 'materiales' ? rows : inventory, error: null }); result.order = () => result; return result; } }) } };
     throw new Error(`Unexpected import ${name}`);
   });
@@ -130,6 +137,36 @@ test('contadores y stock corresponden a la sede seleccionada', () => {
   assert.match(render('todas'), /AGOTADO \(todas las sedes\)<\/div><div[^>]*>1<\/div>/);
 });
 
+test('inventario separa los totales por unidad y conserva rollos parciales', () => {
+  const materials = [
+    { ...material, id: 'ROLL', unidad: 'ROLLO', stockSedes: { Chiclayo: 1.5, Chimbote: 0.5, Trujillo: 0 } },
+    { ...material, id: 'METRO', unidad: 'MTS', stockSedes: { Chiclayo: 100, Chimbote: 0, Trujillo: 0 } },
+    { ...material, stockSedes: { Chiclayo: 3, Chimbote: 0, Trujillo: 0 } },
+  ];
+  const html = render('todas', '', materials);
+  assert.match(html, />2 <span[^>]*>ROLLO<\/span>/);
+  assert.match(html, />100 <span[^>]*>MTS<\/span>/);
+  assert.match(html, />3 <span[^>]*>UND<\/span>/);
+  assert.doesNotMatch(html, />105 <span/);
+  assert.match(render('Chiclayo', '', materials), />1[.]5 <span[^>]*>ROLLO<\/span>/);
+});
+
+test('la vista previa usa ROLLO en el mínimo y en todas las existencias', () => {
+  const previewSource = readFileSync(new URL('../src/components/MaterialPreviewModal.tsx', import.meta.url), 'utf8');
+  const { default: Preview } = load(previewSource, name => {
+    if (name === 'react/jsx-runtime') return jsxRuntime;
+    if (name.endsWith('/inventoryStatus')) return status;
+    if (name.endsWith('/rollStock')) return rollStock;
+    if (name.endsWith('/RollStockInput')) return { default: () => null };
+    if (name.endsWith('/domain/types')) return { SEDES: ['Chiclayo', 'Chimbote', 'Trujillo'] };
+    throw new Error(`Unexpected import ${name}`);
+  });
+  const html = renderToStaticMarkup(Preview({ material: { ...material, unidad: 'ROLLO' }, onClose: () => {} }));
+  assert.match(html, /10 ROLLO/);
+  assert.match(html, />105 ROLLO</);
+  assert.doesNotMatch(html, /\bUND\b/);
+});
+
 test('el panel separa las sedes y explica el rango de referencia 30', () => {
   const dialogSource = readFileSync(new URL('../src/features/inventario/pages/StockStatusDialog.tsx', import.meta.url), 'utf8');
   const { default: Dialog } = load(dialogSource, name => {
@@ -137,6 +174,8 @@ test('el panel separa las sedes y explica el rango de referencia 30', () => {
     if (name === 'react-dom') return { createPortal: content => content };
     if (name === 'react/jsx-runtime') return jsxRuntime;
     if (name.endsWith('/inventoryStatus')) return status;
+    if (name.endsWith('/rollStock')) return rollStock;
+    if (name.endsWith('/RollStockInput')) return { default: () => null };
     if (name.endsWith('/domain/types')) return { SEDES: ['Chiclayo', 'Chimbote', 'Trujillo'] };
     throw new Error(`Unexpected import ${name}`);
   });

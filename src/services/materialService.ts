@@ -13,6 +13,7 @@ type MaterialDB = {
   categoria_id: number
 
   unidad: string | null
+  metros_por_rollo?: number | null
 
   marca?: string | null
 
@@ -46,6 +47,7 @@ function mapMaterialDBToMaterial(m: MaterialDB): Material {
     categoria: String(m.categoria_id),
 
     unidad: m.unidad?.trim() || "UND",
+    metrosPorRollo: m.metros_por_rollo == null ? undefined : Number(m.metros_por_rollo),
 
     marca: m.marca ?? undefined,
 
@@ -101,6 +103,12 @@ async function obtenerStockSedes(materialSku: string): Promise<Material["stockSe
 // OBTENER TODOS LOS MATERIALES
 
 // ======================================================
+
+export async function obtenerCategoriasMaterial(): Promise<Array<{ id: string; nombre: string }>> {
+  const { data, error } = await supabase.from('categorias_material').select('id,nombre').order('nombre');
+  if (error) throw error;
+  return (data ?? []).map(categoria => ({ id: String(categoria.id), nombre: categoria.nombre }));
+}
 
 export async function obtenerMateriales(): Promise<Material[]> {
   const [{ data, error }, { data: inventario, error: inventoryError }] =
@@ -162,6 +170,7 @@ export async function crearMaterial(material: Material) {
       descripcion: material.descripcion,
       categoria_id: Number(material.categoria),
       unidad: material.unidad,
+      metros_por_rollo: material.metrosPorRollo ?? null,
       marca: material.marca ?? null,
       stock_minimo: material.minimo,
       precio_unitario: material.precioUnitario,
@@ -211,6 +220,7 @@ export async function actualizarMaterial(
   if (cambios.unidad !== undefined) {
     payload.unidad = cambios.unidad
   }
+  if (cambios.metrosPorRollo !== undefined) payload.metros_por_rollo = cambios.metrosPorRollo || null;
 
   if (cambios.marca !== undefined) {
     payload.marca = cambios.marca

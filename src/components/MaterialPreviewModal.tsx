@@ -1,3 +1,4 @@
+import { formatStock } from '../utils/rollStock';
 import { estadoPorSede } from '../utils/inventoryStatus';
 import { Material, Sede, SEDES } from '../domain/types';
 
@@ -161,7 +162,7 @@ export default function MaterialPreviewModal({ material, onClose }: Props) {
             ['Categoría', material.categoria],
             ['Unidad de medida', material.unidad],
             ['Marca / Especificación', material.marca || '—'],
-            ['Mínimo por sede', `${material.minimo} UND`],
+            ['Mínimo por sede', formatStock(material.minimo, material)],
             ['Precio unitario', formatPrecio(material.precioUnitario)],
           ].map(([label, value]) => (
             <div key={label} style={{ background: '#F9FAFB', borderRadius: 8, padding: '10px 12px' }}>
@@ -182,7 +183,7 @@ export default function MaterialPreviewModal({ material, onClose }: Props) {
         {/* Stock por sede */}
         <div style={{ padding: '0 22px 22px' }}>
           <div style={{ fontSize: 10.5, color: '#A1A1AA', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>
-            Stock por sede — Total: <strong style={{ color: '#18181B' }}>{totalStock} UND</strong>
+            Stock por sede — Total: <strong style={{ color: '#18181B' }}>{formatStock(totalStock, material)}</strong>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             {SEDES.map(s => {
@@ -194,8 +195,8 @@ export default function MaterialPreviewModal({ material, onClose }: Props) {
               return (
                 <div key={s} style={{ flex: 1, background: underMin ? '#FFF5F5' : '#F9FAFB', border: `1px solid ${underMin ? '#FECACA' : '#E4E4E7'}`, borderRadius: 10, padding: '12px', textAlign: 'center' }}>
                   <div style={{ fontSize: 11, color: SEDE_COLOR[s], fontWeight: 700, marginBottom: 8 }}>{s}</div>
-                  <div style={{ fontSize: 24, fontWeight: 800, color: qty === 0 ? '#DC2626' : underMin ? '#D97706' : '#18181B', letterSpacing: '-0.02em' }}>{qty}</div>
-                  <div style={{ fontSize: 10.5, color: '#A1A1AA', marginBottom: 8 }}>UND</div>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: qty === 0 ? '#DC2626' : underMin ? '#D97706' : '#18181B', letterSpacing: '-0.02em' }}>{material.unidad === 'ROLLO' ? formatStock(qty, material) : qty}</div>
+                  <div style={{ fontSize: 10.5, color: '#A1A1AA', marginBottom: 8 }}>{material.unidad || 'UND'}</div>
                   <div style={{ height: 4, background: '#E4E4E7', borderRadius: 4, overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${pct}%`, background: qty === 0 ? '#DC2626' : SEDE_COLOR[s], borderRadius: 4 }} />
                   </div>
