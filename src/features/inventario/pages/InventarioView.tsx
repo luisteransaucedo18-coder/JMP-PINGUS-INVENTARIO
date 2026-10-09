@@ -1,4 +1,6 @@
 import FieldError from "../../../components/FieldError";
+import { formatPrecio } from '../../../utils/materialPrice';
+import { SEDE_COLOR } from '../../../config/visualTokens';
 import { useEffect, useState } from 'react';
 import { calcularEstado, estadoPorSede, estadoGeneral, MINIMO_INICIAL_INVENTARIO } from '../../../utils/inventoryStatus';
 
@@ -33,6 +35,43 @@ interface Props {
 // FORMULARIOS
 // ======================================================
 
+const FILTER_LABEL_STYLE = {
+    fontSize: 12,
+    color: '#71717A',
+    fontWeight: 500,
+    marginBottom: 8,
+} as const;
+
+const MATERIAL_CODE_STYLE = {
+    fontFamily: 'monospace',
+    fontSize: 13,
+    fontWeight: 700,
+} as const;
+
+const DETAIL_LABEL_STYLE = {
+    fontSize: 10,
+    color: '#71717A',
+    textTransform: 'uppercase',
+    marginBottom: 4,
+} as const;
+
+const DETAIL_VALUE_STYLE = {
+    fontSize: 13,
+    fontWeight: 500,
+} as const;
+
+const STOCK_LABEL_STYLE = {
+    display: 'block',
+    fontSize: 12,
+    fontWeight: 500,
+    color: '#52525B',
+    marginBottom: 6,
+} as const;
+
+const FULL_WIDTH_STYLE = {
+    gridColumn: '1/-1',
+} as const;
+
 const BLANK_FORM = {
   id: '',
   nombre: '',
@@ -60,21 +99,6 @@ const ESTADO_BADGE: Record<string, string> = {
   CRÍTICO: 'red',
   AGOTADO: 'red',
 };
-
-const SEDE_COLOR: Record<string, string> = {
-  Chiclayo: '#2563EB',
-  Chimbote: '#059669',
-  Trujillo: '#7C3AED',
-};
-
-const formatPrecio = (precio: number) =>
-  precio > 0
-    ? new Intl.NumberFormat('es-PE', {
-        style: 'currency',
-        currency: 'PEN',
-        minimumFractionDigits: 2,
-      }).format(precio)
-    : 'Sin precio';
 
 function ModalActions({ primaryLabel, onPrimary, onCancel }: { primaryLabel: string; onPrimary: () => void; onCancel: () => void }) {
   return <div style={{ padding: '14px 22px', borderTop: '1px solid #E4E4E7', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
@@ -656,12 +680,7 @@ export default function InventarioView({
         <div className="kpi-card">
 
           <div
-            style={{
-              fontSize: 12,
-              color: '#71717A',
-              fontWeight: 500,
-              marginBottom: 8,
-            }}
+            style={FILTER_LABEL_STYLE}
           >
             Total SKU
           </div>
@@ -682,12 +701,7 @@ export default function InventarioView({
         <div className="kpi-card">
 
           <div
-            style={{
-              fontSize: 12,
-              color: '#71717A',
-              fontWeight: 500,
-              marginBottom: 8,
-            }}
+            style={FILTER_LABEL_STYLE}
           >
             {sedeView === 'todas' ? 'Stock total' : `Stock en ${sedeView}`}
           </div>
@@ -743,12 +757,7 @@ export default function InventarioView({
             >
 
               <div
-                style={{
-                  fontSize: 12,
-                  color: '#71717A',
-                  fontWeight: 500,
-                  marginBottom: 8,
-                }}
+                style={FILTER_LABEL_STYLE}
               >
                 {s} {sedeView === 'todas' ? '(todas las sedes)' : `(${sedeView})`}
               </div>
@@ -1315,16 +1324,7 @@ export default function InventarioView({
                           'todas' && (
 
                           <td
-                            style={{
-                              fontFamily:
-                                'monospace',
-
-                              fontSize:
-                                13,
-
-                              fontWeight:
-                                700,
-                            }}
+                            style={MATERIAL_CODE_STYLE}
                           >
 
                             {
@@ -1343,16 +1343,7 @@ export default function InventarioView({
                           'todas' && (
 
                           <td
-                            style={{
-                              fontFamily:
-                                'monospace',
-
-                              fontSize:
-                                13,
-
-                              fontWeight:
-                                700,
-                            }}
+                            style={MATERIAL_CODE_STYLE}
                           >
                             {total}
                           </td>
@@ -1541,31 +1532,13 @@ export default function InventarioView({
                 <div>
 
                   <div
-                    style={{
-                      fontSize:
-                        10,
-
-                      color:
-                        '#71717A',
-
-                      textTransform:
-                        'uppercase',
-
-                      marginBottom:
-                        4,
-                    }}
+                    style={DETAIL_LABEL_STYLE}
                   >
                     Categoría
                   </div>
 
                   <div
-                    style={{
-                      fontSize:
-                        13,
-
-                      fontWeight:
-                        500,
-                    }}
+                    style={DETAIL_VALUE_STYLE}
                   >
                     {selected.categoria}
                   </div>
@@ -1576,31 +1549,13 @@ export default function InventarioView({
                 <div>
 
                   <div
-                    style={{
-                      fontSize:
-                        10,
-
-                      color:
-                        '#71717A',
-
-                      textTransform:
-                        'uppercase',
-
-                      marginBottom:
-                        4,
-                    }}
+                    style={DETAIL_LABEL_STYLE}
                   >
                     Unidad
                   </div>
 
                   <div
-                    style={{
-                      fontSize:
-                        13,
-
-                      fontWeight:
-                        500,
-                    }}
+                    style={DETAIL_VALUE_STYLE}
                   >
                     {selected.unidad ||
                       'UND'}
@@ -1612,19 +1567,7 @@ export default function InventarioView({
                 <div>
 
                   <div
-                    style={{
-                      fontSize:
-                        10,
-
-                      color:
-                        '#71717A',
-
-                      textTransform:
-                        'uppercase',
-
-                      marginBottom:
-                        4,
-                    }}
+                    style={DETAIL_LABEL_STYLE}
                   >
                     Stock mínimo por sede
                   </div>
@@ -1651,12 +1594,7 @@ export default function InventarioView({
                 <div>
 
                   <div
-                    style={{
-                      fontSize: 10,
-                      color: '#71717A',
-                      textTransform: 'uppercase',
-                      marginBottom: 4,
-                    }}
+                    style={DETAIL_LABEL_STYLE}
                   >
                     Precio unitario
                   </div>
@@ -1681,19 +1619,7 @@ export default function InventarioView({
                 <div>
 
                   <div
-                    style={{
-                      fontSize:
-                        10,
-
-                      color:
-                        '#71717A',
-
-                      textTransform:
-                        'uppercase',
-
-                      marginBottom:
-                        4,
-                    }}
+                    style={DETAIL_LABEL_STYLE}
                   >
                     Stock total
                   </div>
@@ -1989,22 +1915,7 @@ export default function InventarioView({
                   <div key={s}>
 
                     <label
-                      style={{
-                        display:
-                          'block',
-
-                        fontSize:
-                          12,
-
-                        fontWeight:
-                          500,
-
-                        color:
-                          '#52525B',
-
-                        marginBottom:
-                          6,
-                      }}
+                      style={STOCK_LABEL_STYLE}
                     >
 
                       <span
@@ -2075,22 +1986,7 @@ export default function InventarioView({
               <div>
 
                 <label
-                  style={{
-                    display:
-                      'block',
-
-                    fontSize:
-                      12,
-
-                    fontWeight:
-                      500,
-
-                    color:
-                      '#52525B',
-
-                    marginBottom:
-                      6,
-                  }}
+                  style={STOCK_LABEL_STYLE}
                 >
                   Stock mínimo
                   {' (por sede)'}
@@ -2201,10 +2097,7 @@ export default function InventarioView({
               {/* SKU */}
 
               <div
-                style={{
-                  gridColumn:
-                    '1/-1',
-                }}
+                style={FULL_WIDTH_STYLE}
               >
 
                 <label>
@@ -2264,10 +2157,7 @@ export default function InventarioView({
               {/* NOMBRE */}
 
               <div
-                style={{
-                  gridColumn:
-                    '1/-1',
-                }}
+                style={FULL_WIDTH_STYLE}
               >
 
                 <label>
@@ -2305,10 +2195,7 @@ export default function InventarioView({
               {/* DESCRIPCIÓN */}
 
               <div
-                style={{
-                  gridColumn:
-                    '1/-1',
-                }}
+                style={FULL_WIDTH_STYLE}
               >
 
                 <label>

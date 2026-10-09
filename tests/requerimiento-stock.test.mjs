@@ -2,11 +2,12 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import ts from 'typescript';
+const typesJs = ts.transpileModule(readFileSync(new URL('../src/domain/types.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.ESNext } }).outputText;
 
 const source = readFileSync(
   new URL('../src/utils/requirementStock.ts', import.meta.url),
   'utf8',
-);
+).replace("'../domain/types'", JSON.stringify(`data:text/javascript;base64,${Buffer.from(typesJs).toString('base64')}`));
 const { outputText } = ts.transpileModule(source, {
   compilerOptions: {
     module: ts.ModuleKind.ESNext,

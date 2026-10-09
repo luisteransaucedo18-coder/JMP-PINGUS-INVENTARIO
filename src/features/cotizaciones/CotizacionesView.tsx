@@ -1,3 +1,4 @@
+import { limaDate } from '../../utils/limaDate';
 import QuoteMaterialLabel from './QuoteMaterialLabel'
 import ValidatedForm from "../../components/ValidatedForm";
 import { publicCode } from "../../utils/publicCode";
@@ -200,7 +201,7 @@ export default function CotizacionesView({
   const [operationRevision, setOperationRevision] = useState(0)
 
   const [habilitationDate, setHabilitationDate] = useState(
-    new Date().toLocaleDateString("en-CA", { timeZone: "America/Lima" }),
+    limaDate(),
   )
 
   const [draftId, setDraftId] = useState(() =>
@@ -216,7 +217,7 @@ export default function CotizacionesView({
 
     monto: 0,
 
-    fecha: new Date().toLocaleDateString("en-CA", { timeZone: "America/Lima" }),
+    fecha: limaDate(),
 
     comprobante: "",
 
@@ -279,7 +280,7 @@ export default function CotizacionesView({
 
     setHabilitationDate(
       quote.fecha_habilitacion ??
-        new Date().toLocaleDateString("en-CA", { timeZone: "America/Lima" }),
+        limaDate(),
     )
 
     setExpense({
@@ -291,9 +292,7 @@ export default function CotizacionesView({
 
       monto: 0,
 
-      fecha: new Date().toLocaleDateString("en-CA", {
-        timeZone: "America/Lima",
-      }),
+      fecha: limaDate(),
 
       comprobante: "",
 
@@ -947,9 +946,7 @@ export default function CotizacionesView({
               {stateAction("ACEPTADA", "Registrar aceptación")}
               {stateAction("RECHAZADA", "Registrar rechazo")}
               {quote.presupuesto.vigencia <
-                new Date().toLocaleDateString("en-CA", {
-                  timeZone: "America/Lima",
-                }) && stateAction("VENCIDA", "Marcar vencida")}
+                limaDate() && stateAction("VENCIDA", "Marcar vencida")}
             </>
           )}
           {owner && !family.some((q) => q.estado === "CERRADA") && (

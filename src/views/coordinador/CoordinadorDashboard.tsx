@@ -1,10 +1,9 @@
 import { publicCode } from "../../utils/publicCode";
+import { SEDE_COLOR } from '../../config/visualTokens';
 import { useAppStore } from '../../store/AppContext';
 import { SEDES } from '../../domain/types';
 import { obtenerFaltantesRequerimiento } from '../../utils/requirementStock';
 import { QuotationSummary } from '../../features/cotizaciones/CotizacionesView';
-
-const SEDE_COLOR: Record<string, string> = { Chiclayo: '#2563EB', Chimbote: '#059669', Trujillo: '#7C3AED' };
 
 interface Props { onNav: (v: string) => void; }
 

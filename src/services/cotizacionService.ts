@@ -1,23 +1,5 @@
 import { supabase } from "./supabase"
 
-export type LegacyQuote = {
-  id: string
-  codigo: string
-  proyecto_id: string | null
-  version_actual: number
-  versiones: { numero: number, estado: string, presupuesto: Record<string, unknown> }[]
-}
-
-export async function obtenerCotizacionesAnteriores(): Promise<LegacyQuote[]> {
-  const { data, error } = await supabase.from('cotizaciones')
-    .select('id,codigo,proyecto_id,version_actual,versiones:cotizacion_versiones(numero,estado,presupuesto)')
-    .order('created_at', { ascending: false })
-  if (error) {
-    if (error.code === 'PGRST205' || error.code === '42P01') return []
-    throw new Error(error.message)
-  }
-  return (data ?? []) as LegacyQuote[]
-}
 import type {
   ProjectExpense,
   Quote,

@@ -5,7 +5,7 @@ export {
   validarArchivo,
 } from "./transporteValidation"
 import { supabase } from "./supabase"
-export const SEDES_TRANSPORTE = ["Chiclayo", "Chimbote", "Trujillo"] as const
+export { SEDES as SEDES_TRANSPORTE } from "../domain/types"
 export const ESTADOS_TRANSPORTE = [
   "BORRADOR",
   "EN_TRANSITO",

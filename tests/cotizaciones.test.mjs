@@ -6,10 +6,12 @@ import ts from "typescript"
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 
+const limaDateSource = ts.transpileModule(readFileSync(new URL('../src/utils/limaDate.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.ESNext } }).outputText;
+const limaDateUrl = `data:text/javascript;base64,${Buffer.from(limaDateSource).toString('base64')}`;
 const source = readFileSync(
   new URL("../src/features/cotizaciones/domain.ts", import.meta.url),
   "utf8",
-)
+).replace("'../../utils/limaDate'", JSON.stringify(limaDateUrl))
 const { outputText } = ts.transpileModule(source, {
   compilerOptions: {
     module: ts.ModuleKind.ESNext,
