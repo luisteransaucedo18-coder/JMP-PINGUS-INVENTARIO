@@ -1,3 +1,4 @@
+import { limaDate } from '../../utils/limaDate';
 import ValidatedForm from "../../components/ValidatedForm";
 import { useState } from "react"
 import { useAppStore } from "../../store/AppContext"
@@ -16,9 +17,7 @@ export default function QuotationReport({
 }) {
   const { state, refreshRemoteData } = useAppStore()
   const [month, setMonth] = useState(
-    new Date()
-      .toLocaleDateString("en-CA", { timeZone: "America/Lima" })
-      .slice(0, 7),
+    limaDate().slice(0, 7),
   )
   const [currency, setCurrency] = useState<"PEN" | "USD">("PEN")
   const [edit, setEdit] = useState(false)

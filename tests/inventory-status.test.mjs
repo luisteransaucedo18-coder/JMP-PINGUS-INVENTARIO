@@ -28,8 +28,12 @@ function render(sede, filtro = '', materials = [material]) {
     if (name === 'react') return { ...React, useEffect: () => {}, useState: initial => [index < states.length ? states[index++] : initial, () => {}] };
     if (name === 'react/jsx-runtime') return jsxRuntime;
     if (name.endsWith('/inventoryStatus')) return status;
+<<<<<<< HEAD
     if (name.endsWith('/rollStock')) return rollStock;
     if (name.endsWith('/RollStockInput')) return { default: () => null };
+=======
+    if (name.endsWith('/materialPrice') || name.endsWith('/visualTokens')) return load(readFileSync(new URL(`../src/${name.endsWith('/materialPrice') ? 'utils/materialPrice' : 'config/visualTokens'}.ts`, import.meta.url), 'utf8'), () => { throw new Error('Unexpected import'); });
+>>>>>>> 86ec4212e4e58a1376218f6d1adbb98d96c1534b
     if (name.endsWith('/domain/types')) return { SEDES: ['Chiclayo', 'Chimbote', 'Trujillo'] };
     if (name.endsWith('/materialService')) return {};
     if (name.endsWith('/FieldError')) return { default: () => null };
@@ -78,7 +82,7 @@ test('compras muestra agotados con mínimo cero y bajos de la sede, aunque el ca
       if (name.endsWith('/MaterialPreviewModal')) return { default: () => null, PreviewBtn: () => null };
       if (name.endsWith('/FieldError')) return { default: () => null };
       if (name.endsWith('/materialSearch')) return { searchMaterials: () => [] };
-      if (name.endsWith('/uniqueMaterials') || name.endsWith('/compraService')) return {};
+      if (name.endsWith('/compraService')) return {};
       throw new Error(`Unexpected import ${name}`);
     });
     return renderToStaticMarkup(Purchase({ onToast: () => {}, onNav: () => {} }));

@@ -1,6 +1,8 @@
 import { formatStock } from '../utils/rollStock';
 import { estadoPorSede } from '../utils/inventoryStatus';
-import { Material, Sede, SEDES } from '../domain/types';
+import { formatPrecio } from '../utils/materialPrice';
+import { SEDE_COLOR } from '../config/visualTokens';
+import { Material, SEDES } from '../domain/types';
 
 const CATEGORIA_COLORS: Record<string, { bg: string; accent: string; icon: string }> = {
   'Gas Natural': { bg: 'linear-gradient(135deg, #1D4ED8 0%, #2563EB 50%, #3B82F6 100%)', accent: '#93C5FD', icon: '⬟' },
@@ -15,17 +17,6 @@ const ESTADO_STYLE: Record<string, { bg: string; color: string }> = {
   CRÍTICO: { bg: '#FEE2E2', color: '#DC2626' },
   AGOTADO: { bg: '#F4F4F5', color: '#71717A' },
 };
-
-const SEDE_COLOR: Record<Sede, string> = { Chiclayo: '#2563EB', Chimbote: '#059669', Trujillo: '#7C3AED' };
-
-const formatPrecio = (precio: number) =>
-  precio > 0
-    ? new Intl.NumberFormat('es-PE', {
-        style: 'currency',
-        currency: 'PEN',
-        minimumFractionDigits: 2,
-      }).format(precio)
-    : 'Sin precio';
 
 function CatIllustration({categoria }: { categoria: string }) {
   const cfg = CATEGORIA_COLORS[categoria] || CATEGORIA_COLORS['Gas Natural'];

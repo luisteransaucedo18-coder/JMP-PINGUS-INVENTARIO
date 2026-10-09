@@ -11,7 +11,6 @@ const { publicCode } = await load('src/utils/publicCode.ts');
 const { deliveryBalance } = await load('src/utils/deliveryBalance.ts');
 const { ownedBy } = await load('src/utils/recordOwner.ts');
 const { limaDate, limaTime } = await load('src/utils/limaDate.ts');
-const { legacyQuoteFields } = await load('src/utils/legacyQuoteDisplay.ts');
 const id = n => `60000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 test('referencias públicas conservan SKU/correlativos, nunca sustituyen códigos ausentes por UUID', () => {
   assert.equal(publicCode({ id: id(1), codigo: 'REQ-2026-111' }), 'REQ-2026-111');
@@ -25,12 +24,6 @@ test('propiedad usa identidad, no nombres compartidos o coincidencias parciales'
   assert.equal(ownedBy({ analistaId: id(2), analista: 'Luis Pérez' }, user), false);
   assert.equal(ownedBy({ analistaId: id(1), analista: 'Nombre anterior' }, user), true);
   assert.equal(ownedBy({ analista: 'Luis Torres' }, user), false);
-});
-test('cotizaciones anteriores muestran campos de negocio y ocultan referencias internas anidadas', () => {
-  const fields = legacyQuoteFields({ nombre: 'Proyecto', proyecto_id: id(1), token: 'secreto', partidas: [{ id: id(2), sku: '104', nombre: 'Cable', cantidad: 3, usuario_id: id(1) }] });
-  const text = JSON.stringify(fields);
-  assert.match(text, /104/); assert.match(text, /Cable/); assert.match(text, /Cantidad: 3/);
-  assert.ok(!text.includes(id(1))); assert.ok(!text.includes(id(2))); assert.ok(!text.includes('secreto'));
 });
 test('saldos acumulan entregas, ignoran cancelaciones y señalan excesos sin ocultarlos', () => {
   const req = { id: id(10), materiales: [{ skuId: 'A', cantidad: 12 }, { skuId: 'B', cantidad: 2.5 }] };

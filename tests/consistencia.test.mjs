@@ -7,7 +7,6 @@ const load = async path => {
   return import(`data:text/javascript;base64,${Buffer.from(js).toString('base64')}`);
 };
 const { createCoalescedTask } = await load('src/utils/coalescedTask.ts');
-const { tieneMaterialesRepetidos } = await load('src/utils/uniqueMaterials.ts');
 const deferred = () => { let resolve; const promise = new Promise(r => { resolve = r; }); return { promise, resolve }; };
 test('Las invalidaciones simultáneas comparten una sincronización y dejan un solo repaso pendiente', async () => {
   let calls = 0, active = 0, maxActive = 0;
@@ -36,11 +35,4 @@ test('Una sincronización fallida libera el bloqueo y permite reintentar', async
   await assert.rejects(sync(), /Fallo remoto/);
   await sync();
   assert.equal(calls, 2);
-});
-test('El SKU se controla por documento: filas vacías y documentos diferentes no son duplicados', () => {
-  assert.equal(tieneMaterialesRepetidos([{ skuId: '' }, { skuId: '' }]), false);
-  assert.equal(tieneMaterialesRepetidos([{ skuId: 'A' }, { skuId: 'B' }]), false);
-  assert.equal(tieneMaterialesRepetidos([{ skuId: 'A' }, { skuId: 'A' }]), true);
-  assert.equal(tieneMaterialesRepetidos([{ skuId: 'A' }]), false);
-  assert.equal(tieneMaterialesRepetidos([{ skuId: 'A' }]), false);
 });

@@ -37,6 +37,3 @@ export function departmentForCity(city: string) {
   )
   return matches.length === 1 ? matches[0] : ""
 }
-export function validLocation(department: string, city: string) {
-  return (PERU_LOCATIONS[department] ?? []).includes(city)
-}

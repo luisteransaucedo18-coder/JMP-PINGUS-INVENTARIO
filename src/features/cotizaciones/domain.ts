@@ -1,3 +1,4 @@
+import { limaDate } from '../../utils/limaDate';
 import type { Sede } from "../../domain/types"
 
 export const MODALIDADES = ["COBRE", "PEALPE", "PEQUENOS", "FISE"] as const
@@ -282,9 +283,7 @@ export function defaultQuoteRates(
 }
 
 export function newBudget(sede: Sede = "Chiclayo"): QuoteBudget {
-  const today = new Date().toLocaleDateString("en-CA", {
-    timeZone: "America/Lima",
-  })
+  const today = limaDate()
   return {
     modalidad: "PEALPE",
     ciudad: "",

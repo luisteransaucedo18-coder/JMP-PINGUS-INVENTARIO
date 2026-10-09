@@ -31,8 +31,9 @@ try {
         if (table === 'requerimientos') data = sedes.flatMap((sede, i) => ['ENVIADO', 'CONFIRMADO', 'RECHAZADO'].map((estado, j) => ({ id: `qa-${i}-${j}`, codigo: `REQ-QA-${i}-${j}`, sede, ubicacion: 'Sede principal', descripcion: longName, tecnico: 'Técnico de prueba', fecha: new Date().toISOString().slice(0, 10), estado, proyecto: { id: 'project-qa', nombre: longName }, analista: { nombre: `Prueba ${role}` }, coordinador: { nombre: 'Coordinador de prueba' }, items: [], observaciones: longName, fecha_confirmacion: new Date().toISOString().slice(0, 10) })));
         return route.fulfill({ json: data });
       });
+      await page.addInitScript(id => localStorage.setItem(`jip:onboarding:v1:${id}`, 'completed'), user.id);
       await page.goto(process.env.QA_BASE_URL || 'http://localhost:8443');
-      await page.getByPlaceholder('correo@jip.pe').fill(`${role}@test.invalid`);
+      await page.getByRole('textbox', { name: 'Correo electrónico', exact: true }).fill(`${role}@test.invalid`);
       await page.locator('input[autocomplete="current-password"]').fill('test-password');
       await page.getByRole('button', { name: 'Ingresar al sistema' }).click();
       await page.locator('.app-header').waitFor({ timeout: 15000 });

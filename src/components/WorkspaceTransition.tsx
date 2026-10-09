@@ -2,6 +2,10 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ASSETS } from '../config/assets';
 import { useAppStore } from '../store/AppContext';
 
+// Resolve media against this module so previews use the server hosting the app.
+const penguinWebm = new URL('../assets/media/pinguino-caminando-alpha.webm', import.meta.url).href;
+const penguinMp4 = new URL('../assets/media/pinguino-caminando.mp4', import.meta.url).href;
+
 export function WorkspaceTransition({ ready, error = false, onRetry, onLogout, loggingOut, logoutError, onComplete }: {
   loggingOut?: boolean; logoutError?: string; ready: boolean; error?: boolean; onRetry?: () => void; onLogout?: () => void; onComplete: () => void;
 }) {
@@ -34,6 +38,13 @@ export function WorkspaceTransition({ ready, error = false, onRetry, onLogout, l
     void video.current.play().then(() => setVideoFailed(false)).catch(() => setVideoFailed(true));
   };
 
+  const retryVideo = () => {
+    if (!video.current) return;
+    setVideoFailed(false);
+    video.current.load();
+    play();
+  };
+
   return (
     <main className={`workspace-transition${leaving ? ' is-leaving' : ''}`} aria-labelledby="workspace-title">
       <section className="workspace-card">
@@ -41,10 +52,10 @@ export function WorkspaceTransition({ ready, error = false, onRetry, onLogout, l
           <video ref={video} autoPlay muted playsInline loop preload="auto" controls={false}
             disablePictureInPicture disableRemotePlayback aria-label="Pingüino JIP caminando"
             onCanPlay={play} onError={() => setVideoFailed(true)}>
-            <source src={`${import.meta.env.BASE_URL}media/pinguino-caminando-alpha.webm`} type="video/webm" />
-            <source src={`${import.meta.env.BASE_URL}media/pinguino-caminando.mp4`} type="video/mp4" />
+            <source src={penguinWebm} type="video/webm" />
+            <source src={penguinMp4} type="video/mp4" />
           </video>
-          {videoFailed && <button className="workspace-video-retry" onClick={play}>Reproducir video</button>}
+          {videoFailed && <button className="workspace-video-retry" onClick={retryVideo}>Reproducir video</button>}
         </div>
         <div className="workspace-brand"><img src={ASSETS.logo} alt="JIP" /></div>
         <div className="workspace-copy">

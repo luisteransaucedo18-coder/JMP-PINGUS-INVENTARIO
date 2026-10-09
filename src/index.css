@@ -627,7 +627,7 @@ body {
   transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
   width: 100%;
 }
-.input-field:focus {
+.input-field:focus, .select-field:focus {
   border-color: #2563EB;
   background: #fff;
   box-shadow: 0 0 0 3px rgba(37,99,235,0.08);
@@ -646,7 +646,6 @@ body {
   cursor: pointer;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
-.select-field:focus { border-color: #2563EB; background: #fff; box-shadow: 0 0 0 3px rgba(37,99,235,0.08); }
 
 /* ── Badges ── */
 .badge {
@@ -2086,12 +2085,7 @@ body {
     padding: 14px !important;
   }
 
-  .dashboard-kpi-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 10px !important;
-  }
-
-  .report-kpi-grid {
+  .dashboard-kpi-grid, .report-kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 10px !important;
   }

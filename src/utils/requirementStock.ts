@@ -1,4 +1,4 @@
-import type { Material, Requerimiento, Sede } from '../domain/types';
+import { SEDES, type Material, type Requerimiento, type Sede } from '../domain/types';
 
 export interface FaltanteRequerimiento {
   sku: string;
@@ -41,8 +41,7 @@ export function sugerirSedeOrigen(
   faltantes: FaltanteRequerimiento[],
   destino: Sede,
 ): Sede | undefined {
-  const sedes: Sede[] = ['Chiclayo', 'Chimbote', 'Trujillo'];
-  const opciones = sedes
+  const opciones = SEDES
     .filter(sede => sede !== destino)
     .map(sede => ({
       sede,
@@ -59,8 +58,7 @@ export function sedesConStockParaTraslado(
   faltantes: FaltanteRequerimiento[],
   destino: Sede,
 ): Sede[] {
-  const sedes: Sede[] = ['Chiclayo', 'Chimbote', 'Trujillo'];
-  return sedes.filter(sede =>
+  return SEDES.filter(sede =>
     sede !== destino && faltantes.some(item => (item.stockAlternativo[sede] ?? 0) > 0),
   );
 }

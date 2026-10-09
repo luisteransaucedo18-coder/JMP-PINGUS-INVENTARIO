@@ -35,7 +35,7 @@ try {
       return route.fulfill({ json: data });
     });
     await page.goto(process.env.QA_BASE_URL || 'http://127.0.0.1:8443');
-    await page.getByPlaceholder('correo@jip.pe').fill(user.email);
+    await page.getByRole('textbox', { name: 'Correo electrónico', exact: true }).fill(user.email);
     await page.locator('input[autocomplete="current-password"]').fill('qa-password');
     await page.getByRole('button', { name: 'Ingresar al sistema' }).click();
     await page.getByRole('button',{name:'Reintentar',exact:true}).waitFor();

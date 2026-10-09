@@ -234,8 +234,7 @@ function AppShell({ onLogout, loggingOut, logoutError }: { loggingOut: boolean; 
           notificationPanel={<NotificationsPanel
             open={notifOpen}
             onClose={() => setNotifOpen(false)}
-            role={session.role}
-            userName={session.name}
+            notifications={notifications}
             readIds={readIds}
             onMarkRead={setReadIds}
           />}

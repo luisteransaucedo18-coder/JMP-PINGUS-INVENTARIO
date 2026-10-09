@@ -18,7 +18,3 @@ export function estadoGeneral(material: Material): EstadoMaterial {
   const states = Object.values(material.stockSedes).map(stock => calcularEstado(Number(stock), material.minimo));
   return (['AGOTADO', 'CRÍTICO', 'BAJO', 'OK'] as const).find(state => states.includes(state)) ?? 'OK';
 }
-
-export function coincideEstadoSedes(material: Material, sedes: readonly Sede[], estado: string): boolean {
-  return !estado || sedes.some(sede => estadoPorSede(material, sede) === estado);
-}

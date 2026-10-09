@@ -298,17 +298,12 @@ function timeAgo(dateStr: string): string {
 interface Props {
   open: boolean;
   onClose: () => void;
-  role: Role;
-  userName: string;
-  readIds?: Set<string>;
-  onMarkRead?: React.Dispatch<React.SetStateAction<Set<string>>>;
+  notifications: Notif[];
+  readIds: Set<string>;
+  onMarkRead: React.Dispatch<React.SetStateAction<Set<string>>>;
 }
 
-export default function NotificationsPanel({ open, onClose, role, userName, readIds, onMarkRead }: Props) {
-  const notifications = useNotifications(role, userName);
-  const [localRead, setLocalRead] = useState<Set<string>>(new Set());
-  const read = readIds ?? localRead;
-  const setRead = onMarkRead ?? setLocalRead;
+export default function NotificationsPanel({ open, onClose, notifications, readIds: read, onMarkRead: setRead }: Props) {
   const [filter, setFilter] = useState<Notif['type'] | 'all'>('all');
   const panelRef = useRef<HTMLDivElement>(null);
 
