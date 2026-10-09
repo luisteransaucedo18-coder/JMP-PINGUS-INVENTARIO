@@ -53,11 +53,13 @@ export async function obtenerRequerimientos(): Promise<Requerimiento[]> {
 }
 
 export async function obtenerProyectos(): Promise<Proyecto[]> {
-  const { data, error } = await supabase.from('proyectos').select('id,nombre,ubicacion,sede,responsable,cliente,observaciones,created_at').eq('activo', true).order('created_at', { ascending: false });
+  const { data, error } = await supabase.from('proyectos').select('id,nombre,ubicacion,sede,responsable,cliente,observaciones,created_at,estado_obra,fecha_finalizacion,garantia_hasta,revision_obra').eq('activo', true).order('created_at', { ascending: false });
   if (error) throw error;
   return (data ?? []).map(project => ({ id: project.id, nombre: project.nombre, ubicacion: project.ubicacion,
     sede: project.sede as Sede, responsable: project.responsable, cliente: project.cliente,
-    observaciones: project.observaciones ?? undefined, creadoEn: project.created_at.slice(0, 10) }));
+    observaciones: project.observaciones ?? undefined, creadoEn: project.created_at.slice(0, 10),
+    estadoObra: project.estado_obra as Proyecto['estadoObra'], fechaFinalizacion: project.fecha_finalizacion ?? undefined,
+    garantiaHasta: project.garantia_hasta ?? undefined, revisionObra: project.revision_obra }));
 }
 
 export async function enviarSolicitud(id: string) {

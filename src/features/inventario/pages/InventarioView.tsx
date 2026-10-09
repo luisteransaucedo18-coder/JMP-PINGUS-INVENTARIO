@@ -103,6 +103,22 @@ function MaterialModalHeader({ material, editing = false }: { material: Material
   </div>;
 }
 
+function MaterialThumbnail({ material, onPreview }: { material: Material; onPreview: () => void }) {
+  const [failedImage, setFailedImage] = useState<string>();
+  const image = material.imagen?.trim();
+  return <button
+    type="button"
+    className="inventory-material-thumbnail"
+    aria-label={`Ver imagen de ${material.nombre}`}
+    title={`Ver imagen de ${material.nombre}`}
+    onClick={event => { event.stopPropagation(); onPreview(); }}
+  >
+    {image && failedImage !== image
+      ? <img src={image} alt={material.nombre} loading="lazy" decoding="async" onError={() => setFailedImage(image)} />
+      : <span>{image ? 'Imagen no disponible' : 'Sin imagen'}</span>}
+  </button>;
+}
+
 // ======================================================
 // COMPONENTE
 // ======================================================
@@ -1051,7 +1067,7 @@ export default function InventarioView({
               <tr>
 
               <th>SKU</th>
-                {showTechnical && <th>Imagen</th>}
+                <th>Imagen</th>
                   <th>Material</th>
 
                 <th>
@@ -1118,8 +1134,8 @@ export default function InventarioView({
                   <td
                     colSpan={
                       sedeView === 'todas'
-                        ? (canEdit ? 11 : 10) + (showTechnical ? 2 : 0)
-                        : (canEdit ? 8 : 7) + (showTechnical ? 2 : 0)
+                        ? (canEdit ? 12 : 11) + (showTechnical ? 1 : 0)
+                        : (canEdit ? 9 : 8) + (showTechnical ? 1 : 0)
                     }
 
                     style={{
@@ -1184,7 +1200,6 @@ export default function InventarioView({
                           {m.id}
                         </td>
 
-                        {showTechnical && <>
                         <td
                           onClick={(e) => e.stopPropagation()}
                           style={{
@@ -1192,40 +1207,8 @@ export default function InventarioView({
                             textAlign: 'center',
                           }}
                         >
-                          {m.imagen ? (
-                            <img
-                              src={m.imagen}
-                              alt={m.nombre}
-                              onClick={() => setPreviewMat(m)}
-                              style={{
-                                width: 48,
-                                height: 48,
-                                objectFit: 'contain',
-                                borderRadius: 6,
-                                cursor: 'pointer',
-                                background: '#F9FAFB',
-                                border: '1px solid #E4E4E7',
-                              }}
-                            />
-                          ) : (
-                            <div
-                              style={{
-                                width: 48,
-                                height: 48,
-                                borderRadius: 6,
-                                background: '#F4F4F5',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: 9,
-                                color: '#A1A1AA',
-                              }}
-                            >
-                              Sin imagen
-                            </div>
-                          )}
+                          <MaterialThumbnail material={m} onPreview={() => setPreviewMat(m)} />
                         </td>
-                        </>}
 
                         <td
                           style={{
@@ -2592,7 +2575,7 @@ export default function InventarioView({
 
         <MaterialPreviewModal
           material={
-            previewMat as any
+            previewMat
           }
 
           onClose={() =>

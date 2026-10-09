@@ -5,6 +5,8 @@ import { useAppStore } from '../../../store/AppContext';
 import { Proyecto, Requerimiento, Role, SEDES } from '../../../domain/types';
 import RequirementStatusTimeline from '../../../components/RequirementStatusTimeline';
 import CotizacionesView from '../../cotizaciones/CotizacionesView';
+import SeguimientoProyecto from '../components/SeguimientoProyecto';
+import { ESTADOS_OBRA, type EstadoObra } from '../seguimiento';
 
 interface Props { role: Role; onToast: (msg: string) => void; onNav?: (view: string) => void; }
 
@@ -53,7 +55,7 @@ function ProjectDetail({ proyecto, onBack, role, onToast, onNav, managerSurface 
               </div>
             )}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 100px)', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', width: 320, maxWidth: '100%', gap: 10 }}>
             {[
               { label: 'Total reqs.', value: reqs.length, color: '#2563EB', bg: '#DBEAFE' },
               { label: 'Confirmados', value: confirmados, color: '#059669', bg: '#CCFBF1' },
@@ -67,6 +69,8 @@ function ProjectDetail({ proyecto, onBack, role, onToast, onNav, managerSurface 
           </div>
         </div>
       </div>
+
+      <SeguimientoProyecto key={proyecto.id} proyecto={proyecto} role={role} onToast={onToast} />
 
       {/* Requerimientos list */}
       <button className="btn btn-primary" style={{ marginBottom: 18 }} onClick={() => setShowQuotes(true)}>Cotizaciones, presupuesto y costos de este proyecto →</button>
@@ -189,16 +193,18 @@ export default function ProyectosView({ role, onToast, onNav }: Props) {
   const { state } = useAppStore();
   const [search, setSearch] = useState('');
   const [sedeFilter, setSedeFilter] = useState('');
+  const [obraFilter, setObraFilter] = useState<EstadoObra | ''>('');
   const [selected, setSelected] = useState<Proyecto | null>(null);
 
   const filtered = state.proyectos.filter(p =>
     (!sedeFilter || p.sede === sedeFilter) &&
+    (!obraFilter || (p.estadoObra ?? 'PLANIFICADO') === obraFilter) &&
     (!search || p.nombre.toLowerCase().includes(search.toLowerCase()) ||
       p.cliente.toLowerCase().includes(search.toLowerCase()) ||
       p.responsable.toLowerCase().includes(search.toLowerCase()))
   );
 
-  if (selected) return <ProjectDetail proyecto={selected} onBack={() => setSelected(null)} managerSurface={role === 'gerente'} role={role} onToast={onToast} onNav={onNav} />;
+  if (selected) return <ProjectDetail proyecto={state.proyectos.find(p => p.id === selected.id) ?? selected} onBack={() => setSelected(null)} managerSurface={role === 'gerente'} role={role} onToast={onToast} onNav={onNav} />;
 
   return (
     <div className={role === 'gerente' ? 'manager-view-surface manager-projects-view' : undefined} style={{ padding: 24, overflowY: 'auto', flex: 1 }}>
@@ -226,6 +232,10 @@ export default function ProyectosView({ role, onToast, onNav }: Props) {
         <select className="select-field" value={sedeFilter} onChange={e => setSedeFilter(e.target.value)}>
           <option value="">Todas las sedes</option>
           {SEDES.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <select className="select-field" aria-label="Filtrar por estado del proyecto" value={obraFilter} onChange={event => setObraFilter(event.target.value as EstadoObra | '')}>
+          <option value="">Todos los estados del proyecto</option>
+          {Object.entries(ESTADOS_OBRA).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
         </select>
         <div style={{ marginLeft: 'auto', fontSize: 12, color: '#71717A' }}>{filtered.length} de {state.proyectos.length}</div>
         {role === 'analista' && (
@@ -257,6 +267,7 @@ export default function ProyectosView({ role, onToast, onNav }: Props) {
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 10 }}>
 
                     <span style={{ background: SEDE_BG[p.sede], color: SEDE_COLOR[p.sede], borderRadius: 4, padding: '2px 8px', fontSize: 11, fontWeight: 700 }}>{p.sede}</span>
+                    <span className={`project-status project-status-${p.estadoObra ?? 'PLANIFICADO'}`}>{ESTADOS_OBRA[p.estadoObra ?? 'PLANIFICADO']}</span>
                   </div>
                   <h3 style={{ margin: '0 0 4px', fontSize: 14.5, fontWeight: 700, color: '#18181B', lineHeight: 1.35 }}>{p.nombre}</h3>
                   <div style={{ fontSize: 12, color: '#71717A', marginBottom: 3 }}><svg width="11" height="11" viewBox="0 0 15 15" fill="none" style={{display:'inline',marginRight:3,verticalAlign:'middle'}}><circle cx="7.5" cy="6" r="2.5" stroke="currentColor" strokeWidth="1.3"/><path d="M7.5 1C5 1 3 3 3 6c0 3.5 4.5 8 4.5 8S12 9.5 12 6c0-3-2-5-4.5-5z" stroke="currentColor" strokeWidth="1.3"/></svg>{p.ubicacion}</div>

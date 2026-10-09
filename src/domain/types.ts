@@ -184,6 +184,11 @@ export interface Proyecto {
   observaciones?: string
 
   creadoEn: string
+
+  estadoObra?: 'PLANIFICADO' | 'EN_CONSTRUCCION' | 'PAUSADO' | 'FINALIZADO' | 'CANCELADO'
+  fechaFinalizacion?: string
+  garantiaHasta?: string
+  revisionObra?: number
 }
 
 // ======================================================

@@ -21,7 +21,7 @@ const material = {
 };
 const source = readFileSync(new URL('../src/features/inventario/pages/InventarioView.tsx', import.meta.url), 'utf8');
 function render(sede, filtro = '') {
-  const states = [[material], false, '', '', filtro, sede, null, false, false, null];
+  const states = [[material], false, false, '', '', filtro, sede, null, false, false, null];
   let index = 0;
   const { default: Inventory } = load(source, name => {
     if (name === 'react') return { ...React, useEffect: () => {}, useState: initial => [index < states.length ? states[index++] : initial, () => {}] };
