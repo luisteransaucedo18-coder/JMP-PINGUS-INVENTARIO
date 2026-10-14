@@ -11,11 +11,16 @@ function moduleUrl(path, replacements = []) {
 }
 const navigationUrl = moduleUrl('../src/app/navigation.ts');
 const { NAVIGATION_BY_ROLE, canAccessView } = await import(navigationUrl);
+test('Tesorería solo accede a su panel, valorizaciones y utilidades de cuenta', () => {
+  assert.deepEqual(NAVIGATION_BY_ROLE.tesoreria.map(item => item.id), ['dashboard', 'valorizaciones']);
+  for (const view of ['dashboard', 'valorizaciones', 'perfil', 'manual']) assert.ok(canAccessView('tesoreria', view));
+  for (const view of ['cotizaciones', 'nueva-cotizacion', 'proyectos', 'inventario', 'reportes', 'requerimientos', 'compras', 'entregas', 'devoluciones', 'transporte', 'usuarios', 'nueva-solicitud', 'mis-compras']) assert.equal(canAccessView('tesoreria', view), false);
+});
 const { buildTourSteps, readTourStatus, saveTourStatus, tourStorageKey } = await import(
   moduleUrl('../src/app/onboarding.ts', [["'./navigation'", JSON.stringify(navigationUrl)]]),
 );
 
-for (const role of ['gerente', 'analista', 'coordinador']) {
+for (const role of ['gerente', 'analista', 'coordinador', 'tesoreria']) {
   test(`el recorrido de ${role} cubre su menú y respeta los accesos`, () => {
     const steps = buildTourSteps(role);
     assert.equal(steps[0].id, 'welcome');

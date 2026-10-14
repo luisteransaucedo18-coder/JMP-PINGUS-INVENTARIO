@@ -1,4 +1,4 @@
-export type Role = "gerente" | "analista" | "coordinador"
+export type Role = "gerente" | "analista" | "coordinador" | "tesoreria"
 
 export type Sede = "Chiclayo" | "Chimbote" | "Trujillo"
 

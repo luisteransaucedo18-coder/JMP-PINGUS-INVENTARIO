@@ -13,8 +13,9 @@ import { PROFILE_PHOTO_BUCKET, validateProfilePhoto } from '../../utils/profileP
 import { useAppStore } from '../../store/AppContext';
 import { Role } from '../../domain/types';
 
-const ROLE_LABEL: Record<Role, string> = { gerente: 'Gerente General', analista: 'Analista de Campo', coordinador: 'Coordinador de Almacén' };
+const ROLE_LABEL: Record<Role, string> = { gerente: 'Gerente General', analista: 'Analista de Campo', coordinador: 'Coordinador de Almacén', tesoreria: 'Tesorería' };
 const ROLE_COLOR: Record<Role, { bg: string; text: string; grad: string }> = {
+  tesoreria: { bg: '#FEF3C7', text: '#92400E', grad: '#92400E' },
   gerente:     { bg: '#F3E8FF', text: '#7C3AED', grad: 'linear-gradient(135deg,#7C3AED,#4F46E5)' },
   analista:    { bg: '#DBEAFE', text: '#2563EB', grad: 'linear-gradient(135deg,#2563EB,#06B6D4)' },
   coordinador: { bg: '#CCFBF1', text: '#059669', grad: 'linear-gradient(135deg,#059669,#2563EB)' },
@@ -60,7 +61,7 @@ export default function ProfileView({ role, userEmail, onToast }: Props) {
   const [pwVisible, setPwVisible] = useState({ actual: false, nueva: false, confirmar: false });
   const [pwError, setPwError] = useState('');
   const [pwSuccess, setPwSuccess] = useState('');
-  const [activeTab, setActiveTab] = useState<'info' | 'seguridad' | 'actividad'>('actividad');
+  const [activeTab, setActiveTab] = useState<'info' | 'seguridad' | 'actividad'>(role === 'tesoreria' ? 'info' : 'actividad');
 
   const cancelEdit = () => {
     selectionVersion.current++;
@@ -196,14 +197,14 @@ export default function ProfileView({ role, userEmail, onToast }: Props) {
           {saveError && !photoSource && <p className="profile-feedback profile-feedback-error" role="alert">{saveError}</p>}
           {saveSuccess && <p className="profile-feedback profile-feedback-success" role="status">{saveSuccess}</p>}
           {avatarError && <p className="profile-feedback profile-feedback-error" role="alert">{avatarError} <button type="button" onClick={reloadAvatar}>Volver a cargar foto</button></p>}
-          <div className="profile-summary-grid">
+          {role !== 'tesoreria' && <div className="profile-summary-grid">
             <StatCard label="Requerimientos enviados" value={sent} color="#2563EB" />
             <StatCard label="Confirmados" value={conf} color="#059669" />
             <StatCard label="Borradores" value={drafts} color="#D97706" />
-          </div>
+          </div>}
           <section className="profile-content-card">
             <nav className="profile-section-nav" aria-label="Secciones del perfil">
-              <button type="button" aria-current={activeTab === 'actividad' ? 'page' : undefined} disabled={saving || savingPassword} onClick={() => setActiveTab('actividad')}>Mi actividad</button>
+              {role !== 'tesoreria' && <button type="button" aria-current={activeTab === 'actividad' ? 'page' : undefined} disabled={saving || savingPassword} onClick={() => setActiveTab('actividad')}>Mi actividad</button>}
               <button type="button" aria-current={activeTab !== 'actividad' ? 'page' : undefined} disabled={saving || savingPassword} onClick={() => { if (!editing) handleEditToggle(); else setActiveTab('info'); }}>Configuración</button>
             </nav>
             {activeTab !== 'actividad' && <nav className="profile-settings-nav" aria-label="Configuración del perfil">

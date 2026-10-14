@@ -9,7 +9,7 @@ export interface Perfil {
 
   email: string
 
-  rol: "gerente" | "analista" | "coordinador"
+  rol: "gerente" | "analista" | "coordinador" | "tesoreria"
 
   sede: "Chiclayo" | "Chimbote" | "Trujillo" | null
 
@@ -111,7 +111,7 @@ export async function obtenerMiPerfil(): Promise<Perfil> {
   if (authError || !user) throw new Error('Tu sesión terminó. Inicia sesión nuevamente.');
   const { data, error } = await supabase.from('perfiles').select('*').eq('id', user.id).single();
   if (error || !data || data.id !== user.id) throw new Error('No se pudo cargar tu perfil. Inténtalo nuevamente.');
-  if (data.estado !== 'ACTIVO' || !['gerente', 'analista', 'coordinador'].includes(data.rol)) throw new Error('Tu cuenta no tiene acceso activo al sistema.');
+  if (data.estado !== 'ACTIVO' || !['gerente', 'analista', 'coordinador', 'tesoreria'].includes(data.rol)) throw new Error('Tu cuenta no tiene acceso activo al sistema.');
   return data as Perfil;
 }
 

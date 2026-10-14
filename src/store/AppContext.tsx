@@ -8,6 +8,7 @@ import { supabase } from '../services/supabase';
 import { obtenerCotizaciones, obtenerGastosProyecto, obtenerPlantillasCotizacion, obtenerPeriodosCotizacion } from '../services/cotizacionService';
 import type { Quote, ProjectExpense, QuoteTemplate, QuotePeriod } from '../features/cotizaciones/domain';
 import { createCoalescedTask } from '../utils/coalescedTask';
+import { useUserProfile } from './UserProfileContext';
 
 interface AppState {
   materials: Material[];
@@ -69,6 +70,8 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  const { profile } = useUserProfile();
+  const treasury = profile.rol === 'tesoreria';
   const [initialLoad, setInitialLoad] = useState<'loading' | 'ready' | 'error'>('loading');
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [syncErrors, setSyncErrors] = useState<string[]>([]);
@@ -77,13 +80,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const lastSyncComplete = useRef(false);
   const refreshRemoteData = useMemo(() => createCoalescedTask(async () => {
     const results = await Promise.allSettled([
-      obtenerRequerimientos(),
+      treasury ? Promise.resolve([]) : obtenerRequerimientos(),
       obtenerProyectos(),
       obtenerMateriales(),
-      obtenerEntregas(),
-      obtenerCompras(),
-      Promise.all([obtenerCotizaciones(), obtenerGastosProyecto(), obtenerPlantillasCotizacion(), obtenerPeriodosCotizacion()]),
-      obtenerDevoluciones(),
+      treasury ? Promise.resolve([]) : obtenerEntregas(),
+      treasury ? Promise.resolve([]) : obtenerCompras(),
+      Promise.all([obtenerCotizaciones(), obtenerGastosProyecto(), treasury ? Promise.resolve([]) : obtenerPlantillasCotizacion(), treasury ? Promise.resolve([]) : obtenerPeriodosCotizacion()]),
+      treasury ? Promise.resolve([]) : obtenerDevoluciones(),
     ]);
     const [requirements, projects, materials, deliveries, purchases] = results;
     lastSyncComplete.current = results.every(result => result.status === 'fulfilled');
@@ -102,7 +105,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     results.forEach(result => {
       if (result.status === 'rejected') console.error('No se pudo sincronizar una fuente remota:', result.reason);
     });
-  }), []);
+  }), [treasury]);
 
   useEffect(() => {
     mounted.current = true;

@@ -6,10 +6,14 @@ export type ViewMeta = { title: string; subtitle?: string };
 export type NavigationItem = ViewMeta & { id: string; label: string; icon: NavigationIcon };
 
 export const ROLE_LABELS: Record<Role, string> = {
-  gerente: 'Gerente', analista: 'Analista', coordinador: 'Coordinador',
+  gerente: 'Gerente', analista: 'Analista', coordinador: 'Coordinador', tesoreria: 'Tesorería',
 };
 
 export const NAVIGATION_BY_ROLE: Record<Role, NavigationItem[]> = {
+  tesoreria: [
+    { id: 'dashboard', label: 'Inicio', icon: 'grid', title: 'Panel de Tesorería', subtitle: 'Revisión de expedientes y pagos a técnicos' },
+    { id: 'valorizaciones', label: 'Trabajos y valorizaciones', icon: 'document', title: 'Trabajos y valorizaciones', subtitle: 'Documentación, descuentos y pagos autorizados' },
+  ],
   gerente: [
     { id: 'dashboard', label: 'Inicio', icon: 'grid', title: 'Dashboard General', subtitle: 'Resumen ejecutivo del sistema' },
     { id: 'cotizaciones', label: 'Cotizaciones', icon: 'document', title: 'Cotizaciones de proyectos', subtitle: 'Presupuestos, acuerdos comerciales y resultados — consulta' },
@@ -47,6 +51,11 @@ export const NAVIGATION_BY_ROLE: Record<Role, NavigationItem[]> = {
     { id: 'usuarios', label: 'Usuarios', icon: 'users', title: 'Gestión de Usuarios', subtitle: 'Crear, activar y desactivar cuentas' },
   ],
 };
+
+for (const role of ['gerente','analista','coordinador'] as const) NAVIGATION_BY_ROLE[role].push({
+  id:'valorizaciones', label:'Trabajos y valorizaciones', icon:'document', title:'Trabajos y valorizaciones',
+  subtitle: role==='analista' ? 'Checklist, evidencias y valorizaciones por instalación' : role==='gerente' ? 'Revisión y autorización de pagos' : 'Consulta de trabajos y valorizaciones',
+});
 
 const SHARED_VIEWS: Record<string, ViewMeta> = {
   perfil: { title: 'Mi Perfil', subtitle: 'Información personal, seguridad y actividad reciente' },

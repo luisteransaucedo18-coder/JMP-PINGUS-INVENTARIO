@@ -5,6 +5,10 @@ export type TourStep = { id: string; title: string; description: string; view: s
 export type TourStatus = 'completed' | 'skipped';
 
 const descriptions: Record<Role, Record<string, string>> = {
+  tesoreria: {
+    dashboard: 'Tu panel propio resume expedientes por revisar, retenciones, solicitudes pendientes del gerente y pagos autorizados. El alcance adicional del rol se definirá en la reunión de Tesorería.',
+    valorizaciones: 'Revisa documentos y materiales sobrantes no devueltos. Define descuentos, adjunta valorización firmada y recibo por honorarios, y solicita autorización. Registra el pago con fecha, referencia y comprobante.',
+  },
   gerente: {
     cotizaciones: 'Consulta presupuestos, importes presentados y aceptados, versiones y resultados de proyectos. El resultado permanece provisional hasta conciliar los costos reales y cerrar la ejecución.',
     dashboard: 'Revisa solicitudes pendientes, confirmadas y rechazadas, actividad por sede y alertas de stock. Los indicadores resumen los datos visibles del sistema.',
@@ -45,7 +49,7 @@ const descriptions: Record<Role, Record<string, string>> = {
 
 export function buildTourSteps(role: Role): TourStep[] {
   const sections = NAVIGATION_BY_ROLE[role].map(item => ({
-    id: item.id, title: item.title, description: descriptions[role][item.id], view: item.id,
+    id: item.id, title: item.title, description: descriptions[role][item.id] ?? 'Consulta el checklist, las evidencias y el avance de las valorizaciones. El analista prepara, Tesorería revisa y el gerente autoriza.', view: item.id,
     target: item.id === 'dashboard' ? '[data-tour="dashboard-summary"]' : '[data-tour-view] > :first-child',
   }));
   if (role === 'gerente') sections.splice(1, 0, {

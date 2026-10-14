@@ -20,6 +20,8 @@ import RequerimientosView from '../features/requerimientos/pages/RequerimientosV
 import ComprasView from '../features/compras/pages/ComprasView';
 import UsuariosView from '../features/usuarios/pages/UsuariosView';
 import CotizacionesView from '../features/cotizaciones/CotizacionesView';
+import ValorizacionesView from '../features/valorizaciones/ValorizacionesView';
+import TesoreriaDashboard from '../views/tesoreria/TesoreriaDashboard';
 
 type Props = {
   role: Role;
@@ -37,6 +39,8 @@ const MANAGER_DATA_VIEWS: ConsultaGerente[] = [
 
 export default function ViewRouter({ role, view, onToast, onNav, userName, userEmail, onStartTour }: Props) {
   if (!canAccessView(role, view)) return <ViewMessage message="No tienes acceso a esta vista." />;
+  if (role === 'tesoreria' && view === 'dashboard') return <TesoreriaDashboard onNav={onNav} />;
+  if (view === 'valorizaciones') return <ValorizacionesView role={role} onToast={onToast} />;
   if (view === 'cotizaciones') return <CotizacionesView role={role} onToast={onToast} onNav={onNav} />;
   if (view === 'nueva-cotizacion') return <CotizacionesView key="nueva-cotizacion" role={role} onToast={onToast} onNav={onNav} nueva />;
   if (view === 'perfil') return <ProfileView role={role} userName={userName} userEmail={userEmail} onToast={onToast} />;

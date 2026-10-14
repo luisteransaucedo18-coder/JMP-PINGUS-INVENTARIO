@@ -12,6 +12,7 @@ const NAV_ICONS: Record<NavigationIcon, React.ReactNode> = {
 };
 
 const roleBadgeColors: Record<Role, { bg: string; text: string }> = {
+  tesoreria: { bg: '#FEF3C7', text: '#92400E' },
   gerente:     { bg: '#F3E8FF', text: '#7C3AED' },
   analista:    { bg: '#DBEAFE', text: '#1D4ED8' },
   coordinador: { bg: '#CCFBF1', text: '#0F766E' },
@@ -26,13 +27,15 @@ export default function Sidebar({ role, activeView, onNav, onLogout, userName, u
   const { state } = useAppStore();
   const [hovered, setHovered] = useState(false);
 
-  const groups = [
+  const groups = (role === 'tesoreria' ? [
+    { label: 'Tesorería', ids: ['dashboard', 'valorizaciones'] },
+  ] : [
     { label: 'Resumen', ids: ['dashboard', 'reportes'] },
     { label: 'Materiales y movimientos', ids: ['inventario', 'entregas', 'devoluciones', 'transporte'] },
     { label: 'Solicitudes y compras', ids: ['nueva-solicitud', 'mis-solicitudes', 'requerimientos', 'mis-compras', 'compras'] },
-    { label: 'Proyectos y presupuestos', ids: ['proyectos', 'cotizaciones'] },
+    { label: 'Proyectos y presupuestos', ids: ['proyectos', 'cotizaciones', 'valorizaciones'] },
     { label: 'Administración', ids: ['usuarios'] },
-  ].map(group => ({ ...group, items: group.ids.flatMap(id => NAVIGATION_BY_ROLE[role].filter(item => item.id === id)) })).filter(group => group.items.length);
+  ]).map(group => ({ ...group, items: group.ids.flatMap(id => NAVIGATION_BY_ROLE[role].filter(item => item.id === id)) })).filter(group => group.items.length);
   const nav = groups.flatMap(group => group.items);
   const badge = roleBadgeColors[role];
   const pendingReqs    = state.requerimientos.filter(r => r.estado === 'ENVIADO').length;

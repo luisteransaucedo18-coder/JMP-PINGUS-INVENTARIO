@@ -6,6 +6,7 @@ import { Proyecto, Requerimiento, Role, SEDES } from '../../../domain/types';
 import RequirementStatusTimeline from '../../../components/RequirementStatusTimeline';
 import CotizacionesView from '../../cotizaciones/CotizacionesView';
 import SeguimientoProyecto from '../components/SeguimientoProyecto';
+import ValorizacionesView from '../../valorizaciones/ValorizacionesView';
 import { ESTADOS_OBRA, type EstadoObra } from '../seguimiento';
 
 interface Props { role: Role; onToast: (msg: string) => void; onNav?: (view: string) => void; }
@@ -14,6 +15,7 @@ import { SEDE_COLOR, SEDE_BG, REQUERIMIENTO_COLOR as ESTADO_COLOR, REQUERIMIENTO
 
 function ProjectDetail({ proyecto, onBack, role, onToast, onNav, managerSurface = false }: { proyecto: Proyecto; onBack: () => void; role: Role; onToast: (msg: string) => void; onNav?: (view: string) => void; managerSurface?: boolean }) {
   const [showQuotes, setShowQuotes] = useState(false);
+  const [showValuations, setShowValuations] = useState(false);
   const { state } = useAppStore();
   const [search, setSearch] = useState('');
   const [estadoFilter, setEstadoFilter] = useState('');
@@ -31,6 +33,7 @@ function ProjectDetail({ proyecto, onBack, role, onToast, onNav, managerSurface 
   const pendientes = reqs.filter(r => r.estado === 'ENVIADO').length;
 
   if (showQuotes) return <div style={{ flex: 1, overflowY: 'auto' }}><div style={{ padding: '18px 24px 0' }}><button className="btn btn-ghost" onClick={() => setShowQuotes(false)}>← Volver a {proyecto.nombre}</button></div><CotizacionesView role={role} onToast={onToast} onNav={onNav} projectId={proyecto.id} /></div>;
+  if (showValuations) return <div><button className="btn btn-ghost" onClick={() => setShowValuations(false)}>← Volver a {proyecto.nombre}</button><ValorizacionesView role={role} onToast={onToast} projectId={proyecto.dbId ?? proyecto.id}/></div>;
 
   return (
     <div className={managerSurface ? 'manager-view-surface manager-projects-view' : undefined} style={{ padding: 24, overflowY: 'auto', flex: 1 }}>
@@ -74,6 +77,7 @@ function ProjectDetail({ proyecto, onBack, role, onToast, onNav, managerSurface 
 
       {/* Requerimientos list */}
       <button className="btn btn-primary" style={{ marginBottom: 18 }} onClick={() => setShowQuotes(true)}>Cotizaciones, presupuesto y costos de este proyecto →</button>
+      <button className="btn btn-ghost" style={{ marginBottom: 18 }} onClick={() => setShowValuations(true)}>Trabajos y valorizaciones de este proyecto →</button>
       <div className="panel">
         <div style={{ padding: '14px 16px', borderBottom: '1px solid #E4E4E7', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
           <input className="input-field" style={{ maxWidth: 260 }}

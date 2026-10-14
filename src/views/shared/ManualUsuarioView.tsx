@@ -15,6 +15,16 @@ type RoleManual = {
 };
 
 const MANUAL_BY_ROLE: Record<Role, RoleManual> = {
+  tesoreria: {
+    label: 'Tesorería', accent: '#92400E', bg: '#FEF3C7', description: 'Alcance inicial: revisión de expedientes y registro de pagos autorizados. Las funciones adicionales del rol se definirán en la reunión de Tesorería.',
+    sections: [{ title: 'Trabajos y valorizaciones', summary: 'Analista prepara, Tesorería revisa y gerente autoriza.', tasks: [
+      'Revisar documentos, checklist, contrato y materiales. Retener o devolver con motivo cuando haya pendientes.',
+      'Registrar descuentos por materiales sobrantes no devueltos, usando el precio de inventario como referencia y un monto final por ítem.',
+      'Descargar la valorización y subir su versión con firma digital junto al recibo por honorarios. Confirmar que el neto firmado coincide con el solicitado.',
+      'Solicitar autorización del gerente y registrar el pago con fecha, referencia y comprobante. Los adelantos excepcionales requieren motivo y autorización.',
+      'El cierre exige el cobro completo al cliente y las valorizaciones finales pagadas de ambas etapas presupuestadas.',
+    ] }],
+  },
   gerente: {
     label: 'Gerente',
     accent: '#7C3AED',
@@ -255,14 +265,14 @@ interface Props {
 
 export default function ManualUsuarioView({ role, onNav, onStartTour }: Props) {
   const original = MANUAL_BY_ROLE[role];
-  const manual = { ...original, sections: [...original.sections, {
+  const manual = { ...original, sections: [...original.sections, ...(role === 'tesoreria' ? [] : [{
     title: 'Cotizaciones y costos de proyectos',
     summary: 'Guía la cotización por pasos y crea el proyecto al aceptar el cliente. Conecta materiales, requerimientos por etapas y costos reales.',
     tasks: role === 'analista' ? [
       'Completa los cuatro pasos: datos del proyecto, materiales y costos, condiciones y márgenes, y resumen; conserva las etiquetas del Excel.',
       'Presenta la propuesta sin aprobación del coordinador. Solo el analista registra la aceptación del cliente; el proyecto se crea automáticamente.',
       'Genera requerimientos por etapas desde el saldo de materiales. Sigue faltantes, compras, entregas y devoluciones en sus módulos habituales.',
-      'Edita una cotización aceptada creando una nueva versión. Los cambios se activan tras una nueva aceptación del cliente. Puedes eliminar una cotización rechazada que nunca haya sido aceptada.',
+      'El analista edita una cotización aceptada creando una nueva versión, que requiere aceptación del cliente. El coordinador puede corregir directamente el presupuesto y el importe aceptado, indicando el motivo, o eliminar la cotización aceptada escribiendo el nombre exacto del proyecto. La eliminación conserva el proyecto, las solicitudes, los gastos y el historial. El analista puede eliminar cotizaciones rechazadas que nunca hayan sido aceptadas.',
     ] : role === 'coordinador' ? [
       'Consulta las cotizaciones y sus versiones; la presentación y aceptación corresponden al analista autor y no requieren aprobación de coordinación.',
       'Configura plantillas por modalidad, departamento, provincia, distrito, tipo y puntos desde Cotizaciones. El analista debe aplicarlas expresamente al borrador.',
@@ -273,7 +283,12 @@ export default function ManualUsuarioView({ role, onNav, onStartTour }: Props) {
       'Compara costos previstos con costos reales, separados por moneda; no se suman soles y dólares.',
       'El resultado es provisional hasta completar costos y conciliación. El cierre guarda la observación final de coordinación.',
     ],
-  }] };
+  }]), ...(role === 'tesoreria' ? [] : [{ title: 'Trabajos y valorizaciones', summary: 'Expediente por etapa de instalación, con evidencias y autorización de pago.', tasks: [
+    'El analista crea la valorización desde una cotización aceptada, confirma el checklist y la calidad de obra, carga fotos y formatos y genera el reporte fotográfico PDF.',
+    'Tesorería revisa, observa o retiene; define descuentos y carga la valorización con firma digital y el recibo por honorarios antes de solicitar autorización al gerente.',
+    'El gerente autoriza el neto. Tesorería registra el pago realizado con fecha, referencia y comprobante. Los adelantos excepcionales se descuentan de la etapa final.',
+    'El cierre exige cobro completo al cliente y pagos completos de las etapas presupuestadas, además de conciliar los demás costos.',
+  ] }])] };
 
   return (
     <div style={{ padding: 24, overflowY: 'auto', flex: 1, minWidth: 0 }}>

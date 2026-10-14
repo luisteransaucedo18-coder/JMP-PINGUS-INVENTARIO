@@ -12,7 +12,7 @@ interface Props {
   onToast: (msg: string) => void;
 }
 
-type RolUsuario = 'gerente' | 'analista' | 'coordinador';
+type RolUsuario = 'gerente' | 'analista' | 'coordinador' | 'tesoreria';
 type EstadoUsuario = 'ACTIVO' | 'INACTIVO';
 
 interface Usuario {
@@ -32,12 +32,14 @@ interface Usuario {
 }
 
 const ROL_BADGE: Record<RolUsuario, string> = {
+  tesoreria: 'orange',
   gerente: 'purple',
   analista: 'blue',
   coordinador: 'green',
 };
 
 const ROL_LABEL: Record<RolUsuario, string> = {
+  tesoreria: 'Tesorería',
   gerente: 'Gerente',
   analista: 'Analista',
   coordinador: 'Coordinador',
@@ -264,7 +266,7 @@ export default function UsuariosView({ onToast }: Props) {
           marginBottom: 22,
         }}
       >
-        {(['gerente', 'coordinador', 'analista'] as RolUsuario[]).map(
+        {(['gerente', 'coordinador', 'analista', 'tesoreria'] as RolUsuario[]).map(
           (rol) => {
             const cnt = usuarios.filter((u) => u.rol === rol).length;
 
@@ -273,12 +275,14 @@ export default function UsuariosView({ onToast }: Props) {
             ).length;
 
             const colors: Record<RolUsuario, string> = {
+              tesoreria: '#92400E',
               gerente: '#7C3AED',
               coordinador: '#059669',
               analista: '#2563EB',
             };
 
             const bgs: Record<RolUsuario, string> = {
+              tesoreria: '#FEF3C7',
               gerente: '#F3E8FF',
               coordinador: '#CCFBF1',
               analista: '#DBEAFE',
@@ -389,7 +393,7 @@ export default function UsuariosView({ onToast }: Props) {
             <option value="">Todos los roles</option>
 
             {(
-              ['gerente', 'coordinador', 'analista'] as RolUsuario[]
+              ['gerente', 'coordinador', 'analista', 'tesoreria'] as RolUsuario[]
             ).map((r) => (
               <option key={r} value={r}>
                 {ROL_LABEL[r]}
@@ -784,6 +788,7 @@ export default function UsuariosView({ onToast }: Props) {
                   <option value="gerente">
                     Gerente
                   </option>
+                  <option value="tesoreria">Tesorería</option>
                 </select>
               </div>
 
