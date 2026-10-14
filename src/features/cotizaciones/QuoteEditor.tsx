@@ -178,6 +178,7 @@ export default function QuoteEditor({
   onCancel,
 
   templateMode = false,
+  correctionMode = false,
 }: {
   template?: QuoteTemplate
 
@@ -204,13 +205,18 @@ export default function QuoteEditor({
       actualizadaEn?: string
 
       proyecto: Quote["proyecto_snapshot"]
+      importeAceptado?: number
+      motivoCorreccion?: string
     },
   ) => Promise<void>
 
   onCancel: () => void
 
   templateMode?: boolean
+  correctionMode?: boolean
 }) {
+  const [acceptedAmount, setAcceptedAmount] = useState(quote?.importe_aceptado ?? 0)
+  const [correctionReason, setCorrectionReason] = useState("")
   const [snapshot] = useState(() => ({
     revision: quote?.revision ?? 0,
 
@@ -434,12 +440,19 @@ export default function QuoteEditor({
         setErrors(validation)
 
         if (validation.length) return
+        if (correctionMode && (!correctionReason.trim() || !Number.isFinite(acceptedAmount) || acceptedAmount <= 0)) {
+          setErrors(["Indica el motivo de la corrección y un importe aceptado mayor que cero."])
+          setStep(4)
+          return
+        }
 
         try {
           await onSave(budget, quote ? selectedProject : "", templateName, {
             ...snapshot,
 
             proyecto: project,
+            importeAceptado: correctionMode ? acceptedAmount : undefined,
+            motivoCorreccion: correctionMode ? correctionReason : undefined,
           })
         } catch (error) {
           setErrors([
@@ -491,7 +504,7 @@ export default function QuoteEditor({
             [
               templateMode
                 ? "Identifica la tarifa, su ubicación en Perú y modalidad. Los analistas podrán aplicarla a sus cotizaciones."
-                : "Describe el trabajo y el cliente. El proyecto se creará cuando el cliente acepte la cotización.",
+                : correctionMode ? "Corrige el presupuesto de la cotización aceptada. Los cambios quedarán registrados en el historial." : "Describe el trabajo y el cliente. El proyecto se creará cuando el cliente acepte la cotización.",
 
               "Configura el presupuesto y selecciona los materiales del catálogo con sus cantidades y precios.",
 
@@ -501,7 +514,7 @@ export default function QuoteEditor({
 
               templateMode
                 ? "Revisa los costos y porcentajes antes de guardar la tarifa."
-                : "Revisa el presupuesto antes de guardarlo. Podrás presentarlo al cliente sin aprobación del coordinador.",
+                : correctionMode ? "Revisa la corrección y el importe aceptado. La cotización conservará su estado aceptado." : "Revisa el presupuesto antes de guardarlo. Podrás presentarlo al cliente sin aprobación del coordinador.",
             ][step]
           }
         </p>
@@ -1193,6 +1206,7 @@ export default function QuoteEditor({
                 <select
                   className="select-field"
                   value={budget.moneda}
+                  disabled={correctionMode}
                   onChange={(e) =>
                     set("moneda", e.target.value as QuoteBudget["moneda"])
                   }
@@ -1415,6 +1429,13 @@ export default function QuoteEditor({
             )}
             <h3>Resumen del cálculo</h3>
             <Totals budget={budget} />
+            {correctionMode && <>
+              <NumberField label={`Importe aceptado (${budget.moneda})`} min={0.01} value={acceptedAmount} onChange={setAcceptedAmount} />
+              <Field label="Motivo de la corrección">
+                <textarea className="input-field" required rows={4} value={correctionReason} onChange={e => setCorrectionReason(e.target.value)} />
+              </Field>
+              <p className="quote-note">La corrección se aplicará directamente. No se pueden eliminar ni reducir materiales por debajo de las cantidades ya solicitadas.</p>
+            </>}
             {calculateQuote(budget).utilidad < 0 && (
               <p role="status" className="quote-error">
                 El ingreso FISE no cubre los costos y márgenes previstos.
@@ -1456,7 +1477,7 @@ export default function QuoteEditor({
                 ? "Guardando…"
                 : templateMode
                   ? "Guardar plantilla"
-                  : "Guardar borrador"}
+                  : correctionMode ? "Guardar corrección" : "Guardar borrador"}
             </button>
           )}
         </div>

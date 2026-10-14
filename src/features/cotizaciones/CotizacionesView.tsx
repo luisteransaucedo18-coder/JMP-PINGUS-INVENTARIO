@@ -189,6 +189,7 @@ export default function CotizacionesView({
   const [operation, setOperation] = useState<Operation | null>(null)
 
   const [detail, setDetail] = useState("")
+  const [projectConfirmation, setProjectConfirmation] = useState("")
 
   const [amount, setAmount] = useState(0)
 
@@ -259,6 +260,7 @@ export default function CotizacionesView({
     setError("")
 
     setDetail("")
+    setProjectConfirmation("")
 
     setAmount(
       op.target === "ACEPTADA"
@@ -373,13 +375,14 @@ export default function CotizacionesView({
           proyectos={state.proyectos}
           materials={state.materials}
           saving={saving}
+          correctionMode={role === "coordinador" && quote?.estado === "ACEPTADA"}
           onCancel={() => setEditor(null)}
           onSave={async (budget, project, _name, snapshot) => {
             setSaving(true)
 
             try {
               const id = await operarCotizacion(
-                "guardar",
+                role === "coordinador" && quote?.estado === "ACEPTADA" ? "corregir_aceptada" : "guardar",
 
                 quote?.id ?? draftId,
 
@@ -391,6 +394,8 @@ export default function CotizacionesView({
                   proyectoId: project,
 
                   proyecto: snapshot.proyecto,
+                  importe: snapshot.importeAceptado,
+                  detalle: snapshot.motivoCorreccion,
                 },
               )
 
@@ -400,7 +405,7 @@ export default function CotizacionesView({
 
               setSelected(id)
 
-              onToast("Borrador guardado.")
+              onToast(quote?.estado === "ACEPTADA" ? "Cotización aceptada corregida." : "Borrador guardado.")
             } finally {
               setSaving(false)
             }
@@ -424,7 +429,7 @@ export default function CotizacionesView({
   const dialog = operation && quote && (
     <Dialog
       title={operation.title}
-      destructive={operation.action === "eliminar"}
+      destructive={["eliminar", "eliminar_aceptada"].includes(operation.action)}
       onClose={() => {
         if (!saving) setOperation(null)
       }}
@@ -432,6 +437,10 @@ export default function CotizacionesView({
       <ValidatedForm
         onSubmit={async (e) => {
           e.preventDefault()
+          if (operation.action === "eliminar_aceptada" && projectConfirmation !== quote.proyecto_snapshot.nombre) {
+            setError("Ingresa el nombre exacto del proyecto para confirmar la eliminación.")
+            return
+          }
 
           const payload: Record<string, unknown> = {
             revision: operationRevision,
@@ -443,6 +452,7 @@ export default function CotizacionesView({
             importe: amount,
 
             fechaHabilitacion: habilitationDate,
+            nombreProyecto: projectConfirmation,
           }
 
           if (operation.action === "requerimiento") {
@@ -461,7 +471,8 @@ export default function CotizacionesView({
           if (operation.action === "anular_gasto")
             payload.gastoId = operation.expense?.id
 
-          await run(operation.action, payload)
+          const result = await run(operation.action, payload)
+          if (result && ["eliminar", "eliminar_aceptada"].includes(operation.action)) setSelected(null)
         }}
       >
         {error && (
@@ -485,6 +496,13 @@ export default function CotizacionesView({
               aceptada anterior.
             </p>
           )}
+          {operation.action === "eliminar_aceptada" && <>
+            <p className="quote-note">¿Estás seguro de eliminar esta cotización aceptada? Se quitará de la lista y dejará de habilitar nuevas solicitudes. El proyecto, las solicitudes existentes, los gastos y el historial se conservarán.</p>
+            <p>Para confirmar, escribe exactamente: <strong>{quote.proyecto_snapshot.nombre}</strong></p>
+            <Field label="Nombre del proyecto para confirmar">
+              <input className="input-field" autoComplete="off" required value={projectConfirmation} onChange={e => { setProjectConfirmation(e.target.value); setError("") }} />
+            </Field>
+          </>}
           {operation.action === "requerimiento" && (
             <>
               <QuoteProjectInfo quote={quote} />
@@ -648,6 +666,7 @@ export default function CotizacionesView({
               />
             )}
           {operation.action !== "eliminar" &&
+            operation.action !== "eliminar_aceptada" &&
             operation.action !== "requerimiento" &&
             operation.action !== "gasto" && (
               <Field
@@ -678,7 +697,8 @@ export default function CotizacionesView({
             <Field label="Verificación del cierre">
               <span>
                 <input type="checkbox" required /> Confirmo que concilié
-                consumo, devoluciones y todos los costos reales; el resultado
+                consumo, devoluciones y todos los costos reales; confirmé el cobro
+                del 100% al cliente, las valorizaciones pagadas y los demás pagos completos; el resultado
                 dejará de ser provisional.
               </span>
             </Field>
@@ -702,8 +722,8 @@ export default function CotizacionesView({
             >
               Cancelar
             </button>
-            <button className="btn btn-primary" type="submit">
-              {saving ? "Guardando…" : "Confirmar"}
+            <button className={["eliminar", "eliminar_aceptada"].includes(operation.action) ? "btn btn-danger" : "btn btn-primary"} type="submit">
+              {saving ? "Guardando…" : operation.action === "eliminar_aceptada" ? "Eliminar cotización aceptada" : "Confirmar"}
             </button>
           </div>
         </fieldset>
@@ -983,6 +1003,9 @@ export default function CotizacionesView({
               </button>
             )}
           {role === "coordinador" && quote.estado === "ACEPTADA" && (
+            <>
+            <button className="btn btn-ghost" disabled={saving} onClick={() => setEditor("quote")}>Editar cotización aceptada</button>
+            <button className="btn btn-danger" disabled={saving} onClick={() => begin({ title: "Eliminar cotización aceptada", action: "eliminar_aceptada" })}>Eliminar cotización aceptada</button>
             <button
               className="btn btn-primary"
               onClick={() =>
@@ -991,6 +1014,7 @@ export default function CotizacionesView({
             >
               Cerrar proyecto cotizado
             </button>
+            </>
           )}
           {[
             "BORRADOR",

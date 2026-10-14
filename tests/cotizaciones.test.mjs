@@ -253,6 +253,7 @@ test("migración: permisos, estados, versiones, saldos idempotentes, gastos y ci
     await db.exec(readFileSync(new URL('../supabase/migrations/20261002222328_validar_cotizacion_ubicacion_y_duplicados.sql',import.meta.url),'utf8'));
     await db.exec(readFileSync(new URL('../supabase/migrations/20261005135953_cotizacion_provincia_distrito_peru.sql',import.meta.url),'utf8'));
     await db.exec(readFileSync(new URL('../supabase/migrations/20261005141612_requerimiento_direccion_cotizada.sql',import.meta.url),'utf8'));
+    await db.exec(readFileSync(new URL('../supabase/migrations/20261014133443_coordinador_corregir_cotizacion_aceptada.sql',import.meta.url),'utf8'));
     assert.equal((await db.query('select codigo from public.cotizaciones')).rows[0].codigo,'COT-ANTERIOR');
     assert.equal((await db.query("select public.operar_cotizacion(null,'consulta',1) result")).rows[0].result,'anterior');
     const as = async (user, sql, params = []) => {
@@ -634,6 +635,53 @@ test("migración: permisos, estados, versiones, saldos idempotentes, gastos y ci
         assert.equal((await get(3)).estado, "CERRADA")
       },
     )
+    await t.test('coordinación corrige y elimina aceptadas con nombre exacto y preserva ejecución', async () => {
+      const proyecto = {nombre:'Corrección coordinada',cliente:'Cliente',ubicacion:'Dirección',responsable:'Técnico'};
+      await op(100,'guardar',90,{revision:0,proyecto,presupuesto:budget});
+      await assert.rejects(op(102,'corregir_aceptada',90,{revision:1,presupuesto:budget,importe:354,detalle:'Corrección'}),/aceptada/);
+      await transition(100,90,'PRESENTADA',{importe:354});
+      await transition(100,90,'ACEPTADA',{importe:354,detalle:'Aceptado por cliente'});
+      await request(90,91,1);
+      const initial = await get(90);
+      const correction = {revision:initial.revision,presupuesto:{...budget,alcance:'Alcance corregido'},importe:360,detalle:'Corrección del alcance y precio'};
+      await assert.rejects(op(100,'corregir_aceptada',90,correction),/coordinador/);
+      await assert.rejects(op(103,'corregir_aceptada',90,correction),/coordinador/);
+      await assert.rejects(op(102,'corregir_aceptada',90,{...correction,detalle:''}),/motivo/);
+      await assert.rejects(op(102,'corregir_aceptada',90,{...correction,importe:0}),/número|numérico|importe|rango|valor/i);
+      await assert.rejects(op(102,'corregir_aceptada',90,{...correction,presupuesto:{...budget,moneda:'USD'}}),/moneda/);
+      await assert.rejects(op(102,'corregir_aceptada',90,{...correction,presupuesto:{...budget,materiales:budget.materiales.map(m=>({...m,cantidad:0.05}))}}),/reduce/);
+      await op(102,'corregir_aceptada',90,correction);
+      const corrected = await get(90);
+      assert.equal(corrected.estado,'ACEPTADA');
+      assert.equal(corrected.importe_aceptado,'360.00');
+      assert.equal(corrected.presupuesto.alcance,'Alcance corregido');
+      assert.equal(corrected.revision,initial.revision+1);
+      assert.equal(corrected.proyecto_id,initial.proyecto_id);
+      assert.equal(corrected.evidencia,initial.evidencia);
+      assert.deepEqual(corrected.totales,calculateQuote(correction.presupuesto));
+      await assert.rejects(op(102,'corregir_aceptada',90,correction),/cambió/);
+      await op(102,'gasto',90,{revision:corrected.revision,gastoId:id(92),rubro:'MANO_OBRA',naturaleza:'COSTO',descripcion:'Costo registrado',monto:20,fecha:'2026-01-01',comprobante:'REC-92'});
+      const deletion = {revision:(await get(90)).revision,nombreProyecto:proyecto.nombre};
+      await assert.rejects(op(100,'eliminar_aceptada',90,deletion),/coordinador/);
+      for (const nombreProyecto of [undefined,'',proyecto.nombre.toLowerCase(),proyecto.nombre+' ']) {
+        await assert.rejects(op(102,'eliminar_aceptada',90,{...deletion,nombreProyecto}),/nombre exacto/);
+      }
+      await assert.rejects(op(102,'eliminar_aceptada',90,{...deletion,revision:initial.revision}),/cambió/);
+      await op(102,'eliminar_aceptada',90,deletion);
+      const deleted = await get(90);
+      assert.ok(deleted.eliminada_en);
+      assert.equal(deleted.estado,'ANULADA');
+      assert.equal(deleted.importe_aceptado,'360.00');
+      assert.equal((await db.query('select count(*)::int n from public.proyectos where id=$1',[initial.proyecto_id])).rows[0].n,1);
+      assert.equal((await db.query('select count(*)::int n from public.cotizacion_asignaciones where cotizacion_id=$1',[id(90)])).rows[0].n,1);
+      assert.equal((await db.query('select count(*)::int n from public.proyecto_gastos where cotizacion_id=$1',[id(90)])).rows[0].n,1);
+      const events=(await db.query('select * from public.cotizacion_eventos where cotizacion_id=$1 order by id',[id(90)])).rows;
+      assert.ok(events.find(e=>e.accion==='corregir_aceptada' && e.detalle.includes(initial.presupuesto.alcance)));
+      assert.equal(events.at(-1).accion,'eliminar_aceptada');
+      await assert.rejects(request(90,93,1),/eliminada/);
+      await assert.rejects(op(102,'eliminar_aceptada',90,deletion),/eliminada/);
+      await assert.rejects(op(102,'corregir_aceptada',3,{revision:(await get(3)).revision,...correction}),/aceptada/);
+    });
   } finally {
     await db.close()
   }
