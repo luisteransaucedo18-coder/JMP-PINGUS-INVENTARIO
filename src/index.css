@@ -3167,3 +3167,5 @@ details > summary:focus-visible { outline: 2px solid #2563EB; outline-offset: 3p
 
 .quote-costs-section > .quote-form-grid { margin-bottom: 24px; }
 .quote-costs-section > details[open] > summary { margin-bottom: 16px; }
+
+.quote-material-actions { margin-top: 16px; padding-bottom: 8px; }

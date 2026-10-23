@@ -827,7 +827,7 @@ export default function QuoteEditor({
                         }
                       />
                     </div>
-                    <div className="quote-toolbar">
+                    <div className="quote-toolbar quote-material-actions">
                       <span>
                         Stock a solicitar: {m.cantidad * m.factorStock}{" "}
                         {m.unidadCatalogo} · Costo:{" "}
