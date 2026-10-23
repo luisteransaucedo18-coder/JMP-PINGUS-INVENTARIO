@@ -750,14 +750,14 @@ export default function QuoteEditor({
               </Field>
             </div>
             {!templateMode && (
-              <div className="quote-budget-subsection">
+              <div className="quote-budget-subsection quote-catalog-section">
                 <h4>Materiales del catálogo</h4>
                 <p className="quote-muted">
                   Revisa el costo referencial antes de cotizar. Todos los costos
                   se expresan sin IGV en {budget.moneda}; el tipo de cambio es una
                   referencia y no convierte precios automáticamente.
                 </p>
-                <div className="quote-field">
+                <div className="quote-field quote-material-picker">
                   <label className="quote-field-label" htmlFor="quote-material-search">Agregar material del catálogo</label>
                   <MaterialAutocomplete id="quote-material-search" materials={materials} value={materialQuery} onChange={setMaterialQuery}
                     disabled={saving} excludedIds={budget.materiales.map(item => item.sku)}
