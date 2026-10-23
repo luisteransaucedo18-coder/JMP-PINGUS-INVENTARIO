@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+import type { RequestIntent } from '../views/analista/dashboardModel';
 import type { Role } from '../domain/types';
 import { canAccessView } from './navigation';
 import ProfileView from '../views/shared/ProfileView';
@@ -38,6 +40,9 @@ const MANAGER_DATA_VIEWS: ConsultaGerente[] = [
 ];
 
 export default function ViewRouter({ role, view, onToast, onNav, userName, userEmail, onStartTour }: Props) {
+  const [requestIntent, setRequestIntent] = useState<RequestIntent>();
+  useEffect(() => { if (view !== 'mis-solicitudes') setRequestIntent(undefined); }, [view]);
+  const openRequests = (intent: RequestIntent) => { setRequestIntent(intent); onNav('mis-solicitudes'); };
   if (!canAccessView(role, view)) return <ViewMessage message="No tienes acceso a esta vista." />;
   if (role === 'tesoreria' && view === 'dashboard') return <TesoreriaDashboard onNav={onNav} />;
   if (view === 'valorizaciones') return <ValorizacionesView role={role} onToast={onToast} />;
@@ -55,9 +60,9 @@ export default function ViewRouter({ role, view, onToast, onNav, userName, userE
   }
 
   if (role === 'analista') {
-    if (view === 'dashboard') return <AnalistaDashboard usuario={userName} onNav={onNav} />;
+    if (view === 'dashboard') return <AnalistaDashboard usuario={userName} onNav={onNav} onOpenRequests={openRequests} />;
     if (view === 'nueva-solicitud') return <NuevaSolicitudView onToast={onToast} onNav={onNav} />;
-    if (view === 'mis-solicitudes') return <MisSolicitudesView usuario={userName} onToast={onToast} onNav={onNav} />;
+    if (view === 'mis-solicitudes') return <MisSolicitudesView usuario={userName} onToast={onToast} onNav={onNav} initialFilter={requestIntent?.filter} initialSelectedId={requestIntent?.id} />;
     if (view === 'proyectos') return <ProyectosView role={role} onToast={onToast} onNav={onNav} />;
     if (view === 'entregas') return <EntregasView onToast={onToast} usuario={userName} />;
     if (view === 'devoluciones') return <DevolucionesView onToast={onToast} />;

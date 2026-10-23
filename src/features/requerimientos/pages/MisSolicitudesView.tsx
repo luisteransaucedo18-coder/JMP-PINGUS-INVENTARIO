@@ -1,3 +1,4 @@
+import { REQUEST_LABELS, type RequestState } from '../../../views/analista/dashboardModel';
 import DataDetails from '../../../components/DataDetails';
 import { useUserProfile } from "../../../store/UserProfileContext";
 import { ownedBy } from "../../../utils/recordOwner";
@@ -18,13 +19,13 @@ const DOCUMENT_STATUS: Record<string, { label: string; color: string; descriptio
   RECHAZADO: { label: 'No disponible', color: 'red', description: 'Las solicitudes rechazadas no generan un PDF de confirmación.' },
 };
 
-interface Props { usuario: string; onToast: (msg: string) => void; onNav: (v: string) => void; }
+interface Props { usuario: string; onToast: (msg: string) => void; onNav: (v: string) => void; initialFilter?: RequestState; initialSelectedId?: string; }
 
-export default function MisSolicitudesView({ onToast, onNav }: Props) {
+export default function MisSolicitudesView({ onToast, onNav, initialFilter, initialSelectedId }: Props) {
   const { profile } = useUserProfile();
   const { state, refreshRemoteData } = useAppStore();
-  const [filter, setFilter] = useState('');
-  const [selected, setSelected] = useState<Requerimiento | null>(null);
+  const [filter, setFilter] = useState(initialFilter ?? '');
+  const [selected, setSelected] = useState<Requerimiento | null>(() => state.requerimientos.find(r => r.id === initialSelectedId && ownedBy(r, profile)) ?? null);
   const selectedQuote = selected ? quoteForRequirement(state.cotizaciones, selected.id) : undefined;
   const [pdfId, setPdfId] = useState<string | null>(null);
   const pdfRequirement = state.requerimientos.find(r => r.id === pdfId && r.estado === 'CONFIRMADO');
@@ -51,7 +52,7 @@ export default function MisSolicitudesView({ onToast, onNav }: Props) {
           const colors: Record<string, string> = { BORRADOR: '#71717A', ENVIADO: '#D97706', CONFIRMADO: '#059669', RECHAZADO: '#DC2626' };
           return (
             <div key={e} className="kpi-card" style={{ cursor: 'pointer', borderColor: filter === e ? colors[e] : '#E4E4E7' }} onClick={() => setFilter(filter === e ? '' : e)}>
-              <div style={{ fontSize: 12, color: '#71717A', fontWeight: 500, marginBottom: 10 }}>{e}</div>
+              <div style={{ fontSize: 12, color: '#71717A', fontWeight: 500, marginBottom: 10 }}>{REQUEST_LABELS[e as RequestState]}</div>
               <div style={{ fontSize: 28, fontWeight: 700, color: colors[e] }}>{cnt}</div>
             </div>
           );
@@ -60,7 +61,7 @@ export default function MisSolicitudesView({ onToast, onNav }: Props) {
 
       <div className="panel">
         <div className="section-header">
-          <span className="section-title">Mis Solicitudes {filter && `— ${filter}`}</span>
+          <span className="section-title">Mis Solicitudes {filter && `— ${REQUEST_LABELS[filter as RequestState]}`}</span>
           <div style={{ display: 'flex', gap: 8 }}>
             {filter && <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={() => setFilter('')}>Ver todas</button>}
             <button className="btn btn-primary" onClick={() => onNav('nueva-solicitud')}>+ Nueva solicitud</button>
@@ -82,7 +83,7 @@ export default function MisSolicitudesView({ onToast, onNav }: Props) {
                 <td style={{ fontSize: 12, color: '#71717A', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.tecnico}</td>
                 <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#71717A' }}>{r.fecha}</td>
                 <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{r.materiales.length} SKU</td>
-                <td><span className={`badge status-badge badge-${BADGE[r.estado]}`}>{r.estado}</span></td>
+                <td><span className={`badge status-badge badge-${BADGE[r.estado]}`}>{REQUEST_LABELS[r.estado]}</span></td>
                 <td className="document-pdf-cell" onClick={e => e.stopPropagation()}>
                   {r.estado === 'CONFIRMADO' ? (
                     <button className="btn btn-ghost" style={{ fontSize: 12, whiteSpace: 'nowrap' }}
@@ -121,7 +122,7 @@ export default function MisSolicitudesView({ onToast, onNav }: Props) {
                 <div style={{ fontSize: 11, color: '#71717A', fontFamily: 'monospace', marginBottom: 3 }}>{publicCode(selected)}</div>
                 <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#18181B' }}>{selected.proyecto}</h2>
               </div>
-              <span className={`badge status-badge badge-${BADGE[selected.estado]}`}>{selected.estado}</span>
+              <span className={`badge status-badge badge-${BADGE[selected.estado]}`}>{REQUEST_LABELS[selected.estado]}</span>
             </div>
             <RequirementStatusTimeline requirement={selected} />
             {selectedQuote && <div style={{ padding: '16px 22px 0' }}><QuoteProjectInfo quote={selectedQuote} /></div>}

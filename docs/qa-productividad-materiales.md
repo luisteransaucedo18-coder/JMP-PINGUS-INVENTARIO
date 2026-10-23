@@ -55,3 +55,13 @@ La mejora de búsqueda incluye controles de teclado propios del autocompletado. 
 - Se conservan las cantidades iniciales por días en hospedaje, alimentación y altura. Seleccionar NO en muretes no borra gastos; se muestra una indicación para revisar su correspondencia.
 
 Validación: pruebas de alta/edición sin duplicados, conservación de identidad y cantidades por días; suite y build del proyecto. Prueba visual aislada del componente real en navegador a escritorio y 390 px: búsqueda, escritura sin pérdida de foco, cantidad por costo, conservación al filtrar y quitar con subtotal en cero. Datos de prueba, sin guardar operaciones remotas. Falta revisar el flujo autenticado completo y medir tiempos con usuarios.
+
+## Panel del analista orientado al trabajo pendiente
+
+- Una acción principal: Nueva solicitud si existe una cotización propia aceptada; Ver cotizaciones si falta el requisito o hay error al consultarlas. Inventario permanece como acción secundaria.
+- Cuatro tarjetas con estados consistentes y navegación a Mis solicitudes con el filtro correspondiente.
+- Lista de hasta seis solicitudes: rechazadas primero, borradores después y el resto por fecha. Cada fila abre su detalle; los borradores permiten Revisar y enviar, sin prometer edición no disponible.
+- Estado vacío compacto que explica la necesidad de una cotización aceptada. Se elimina el resumen lateral duplicado y el segundo botón para crear solicitud. Ayuda queda en enlaces secundarios.
+- La selección inicial del detalle vuelve a comprobar propiedad del registro. Los contadores y el resumen de cotizaciones solo consideran datos del usuario.
+
+Verificación: pruebas de prioridad, propiedad, requisito de cotización, CTA único, estados de error e intención de navegación entre panel y lista. Revisión visual del componente real con datos locales de prueba: vacío y con pendientes, a escritorio y 390 px. Pendiente comprobar con sesión autenticada que el detalle y filtros recibidos se muestran con los datos reales.
