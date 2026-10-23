@@ -140,7 +140,8 @@
   --color-bg:       #EEF0FF;
   --color-surface:  #FFFFFF;
   --color-border:   #E4E4E7;
-  --color-divider:  #60A5FA;
+  --color-divider:  #DCE4EF;
+  --color-divider-soft: #EEF2F6;
   --color-border2:  #D4D4D8;
   --color-text:     #18181B;
   --color-text2:    #52525B;
@@ -3024,12 +3025,13 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 144px !important;
-  inline-size: 144px !important;
-  min-width: 144px !important;
+  width: auto !important;
+  inline-size: auto !important;
+  min-width: 0 !important;
+  max-width: 100%;
   min-height: 36px !important;
   min-block-size: 36px !important;
-  height: 36px !important;
+  height: auto !important;
   padding: 8px 12px !important;
   border: 1px solid #E4E4E7 !important;
   border-radius: 8px !important;
@@ -3037,7 +3039,9 @@ body {
   font-weight: 600 !important;
   line-height: 18px !important;
   letter-spacing: normal !important;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
   box-sizing: border-box;
   flex-shrink: 0;
   vertical-align: middle;
@@ -3197,7 +3201,7 @@ hr { border: 0; border-top: 1px solid var(--color-divider); }
 .cost-group-name { flex: 1; font-weight: 600; min-width: 160px; }
 .cost-group-count { color: #526174; font-size: 12px; }
 .cost-catalog-group > summary > strong { min-width: 100px; text-align: right; color: #105583; font-variant-numeric: tabular-nums; }
-.cost-catalog-row { display: grid; grid-template-columns: minmax(200px, 1fr) 88px 160px 112px 88px; gap: 16px; align-items: start; padding: 16px 4px; border-top: 1px solid #DBEAFE; }
+.cost-catalog-row { display: grid; grid-template-columns: minmax(200px, 1fr) 88px 160px 112px 88px; gap: 16px; align-items: start; padding: 16px 4px; border-top: 1px solid var(--color-divider-soft); }
 .cost-catalog-identity h5 { margin: 0; color: #18181B; font-size: 14px; line-height: 20px; font-weight: 600; }
 .cost-reference { margin-top: 8px; max-width: 70ch; }
 .cost-reference > summary { color: #105583; font-size: 12px; line-height: 20px; }
@@ -3255,7 +3259,7 @@ hr { border: 0; border-top: 1px solid var(--color-divider); }
 .analyst-request-list ul { list-style: none; margin: 0; padding: 0; }
 .analyst-request-columns, .analyst-request-row { display: grid; grid-template-columns: minmax(180px, 1fr) 112px 120px 184px; gap: 16px; padding: 16px 20px; align-items: center; }
 .analyst-request-columns { background: #F8FAFF; color: #526174; font-size: 12px; }
-.analyst-request-row { border-top: 1px solid #DBEAFE; }
+.analyst-request-row { border-top: 1px solid var(--color-divider-soft); }
 .analyst-request-project { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .analyst-request-project > span { color: #105583; font-size: 12px; }
 .analyst-request-project strong { font-size: 14px; line-height: 20px; color: #18181B; overflow-wrap: anywhere; }
@@ -3296,3 +3300,16 @@ hr { border: 0; border-top: 1px solid var(--color-divider); }
 .inventory-filter-note > summary { color: #105583; font-size: 12px; }
 .inventory-filter-note > p { margin: 8px 0 0; font-size: 12px; }
 .inventory-catalog { min-width: 0; overflow: hidden; }
+
+/* Soft row separators and intrinsic control widths avoid visual noise and clipped actions. */
+.data-table td, .quote-table td, .valuation-table td, .transporte-table td { border-bottom-color: var(--color-divider-soft); }
+.app-shell .inventory-table td .inventory-state-trigger {
+  width: 40px !important;
+  inline-size: 40px !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+  height: 40px !important;
+  padding: 0 !important;
+}
+.inventory-table .inventory-state-cell { grid-template-columns: minmax(104px, 1fr) 40px; min-width: 152px; }
+.inventory-table td:last-child { overflow: visible; }
