@@ -28,6 +28,8 @@ function render(sede, filtro = '', materials = [material]) {
   const { default: Inventory } = load(source, name => {
     if (name === 'react') return { ...React, useEffect: () => {}, useState: initial => [index < states.length ? states[index++] : initial, () => {}], useRef: value => ({ current: value }) };
     if (name === 'react/jsx-runtime') return jsxRuntime;
+    if (name.endsWith('/materialSearch')) return load(readFileSync(new URL('../src/utils/materialSearch.ts', import.meta.url), 'utf8'), () => {});
+    if (name.endsWith('/DiscardChangesDialog')) return { default: () => null };
     if (name.endsWith('/inventoryStatus')) return status;
     if (name.endsWith('/stockQuantity')) return quantities;
     if (name.endsWith('/rollStock')) return rollStock;

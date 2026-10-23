@@ -1,3 +1,5 @@
+import { searchMaterials } from '../../../utils/materialSearch';
+import DiscardChangesDialog from '../../../components/DiscardChangesDialog';
 import RollStockInput from '../../../components/RollStockInput';
 import { formatStock } from '../../../utils/rollStock';
 import FieldError from "../../../components/FieldError";
@@ -223,6 +225,10 @@ export default function InventarioView({
       ...BLANK_FORM,
     });
 
+  const [addBaseline, setAddBaseline] = useState({ ...BLANK_FORM });
+  const [discardTarget, setDiscardTarget] = useState<'add' | 'edit' | null>(null);
+  const addInputRef = useRef<HTMLInputElement>(null);
+
   const [errors, setErrors] =
     useState<Record<string, string>>({});
 
@@ -248,6 +254,29 @@ export default function InventarioView({
   useEffect(() => setEditRollErrors({}), [editUnidad, editMetrosPorRollo]);
   useEffect(() => setNewRollErrors({}), [form.unidad, form.metrosPorRollo]);
   useEffect(() => setMateriales(state.materials), [state.materials]);
+
+  const addDirty = showAdd && JSON.stringify(form) !== JSON.stringify(addBaseline);
+  const editDirty = editMode && selected !== null && (
+    SEDES.some(sede => editStock[sede] !== String(selected.stockSedes[sede] ?? 0)) ||
+    editMinimo !== String(selected.minimo ?? 0) || editUnidad !== (selected.unidad || 'UND') ||
+    editMetrosPorRollo !== (selected.metrosPorRollo ? String(selected.metrosPorRollo) : '')
+  );
+  const closeEditor = (target: 'add' | 'edit') => {
+    if (pendingSave.current) return;
+    if (target === 'add') setShowAdd(false);
+    else { setEditMode(false); setSelected(null); }
+  };
+  const requestClose = (target: 'add' | 'edit') => {
+    if (pendingSave.current) return;
+    if (target === 'add' ? addDirty : editDirty) setDiscardTarget(target);
+    else closeEditor(target);
+  };
+  useEffect(() => {
+    if (!addDirty && !editDirty) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [addDirty, editDirty]);
 
   // ====================================================
   // CARGAR MATERIALES
@@ -306,10 +335,8 @@ export default function InventarioView({
   const sedesVisibles = sedeView === 'todas' ? SEDES : [sedeView];
 
   const estadoVisible = (material: Material) => sedeView === 'todas' ? estadoGeneral(material) : estadoPorSede(material, sedeView);
-  const searchQuery = search.trim().toLocaleLowerCase('es');
-  const scopedMaterials = materiales.filter(material =>
-    (!searchQuery || [material.id,material.nombre,material.categoria].some(value => value.toLocaleLowerCase('es').includes(searchQuery))) &&
-    (!catFilter || material.categoria===catFilter)
+  const scopedMaterials = searchMaterials(materiales, search, materiales.length).filter(material =>
+    !catFilter || material.categoria === catFilter
   );
   const filtered = scopedMaterials.filter(material => !estadoFilter || estadoVisible(material)===estadoFilter);
 
@@ -405,7 +432,7 @@ export default function InventarioView({
   // ====================================================
 
   const handleAddMaterial =
-    async () => {
+    async (keepOpen = false) => {
       if (!canEdit || pendingSave.current) return;
 
       const e =
@@ -484,11 +511,11 @@ export default function InventarioView({
           `✓ Material agregado: ${form.nombre}`
         );
 
-        setShowAdd(false);
-
-        setForm({
-          ...BLANK_FORM,
-        });
+        const nextForm = { ...BLANK_FORM, ...(keepOpen ? { categoria: form.categoria, unidad: form.unidad, metrosPorRollo: form.metrosPorRollo, minimo: form.minimo } : {}) };
+        setShowAdd(keepOpen);
+        setForm(nextForm);
+        setAddBaseline(nextForm);
+        if (keepOpen) addInputRef.current?.focus();
 
         setErrors({});
 
@@ -1069,9 +1096,8 @@ export default function InventarioView({
                   true
                 );
 
-                setForm({
-                  ...BLANK_FORM,
-                });
+                setForm({ ...BLANK_FORM });
+                setAddBaseline({ ...BLANK_FORM });
 
                 setErrors({});
               }}
@@ -1888,16 +1914,7 @@ export default function InventarioView({
           className=
             "modal-overlay"
 
-          onClick={() => {
-
-            setEditMode(
-              false
-            );
-
-            setSelected(
-              null
-            );
-          }}
+          onClick={() => requestClose('edit')}
         >
 
           <div
@@ -2049,7 +2066,7 @@ export default function InventarioView({
             </div>
 
 
-            <ModalActions busy={saving} primaryLabel="Guardar cambios" onPrimary={handleSaveStock} onCancel={() => { setEditMode(false); setSelected(null); }} />
+            <ModalActions busy={saving} primaryLabel="Guardar cambios" onPrimary={handleSaveStock} onCancel={() => requestClose('edit')} />
 
           </div>
 
@@ -2068,11 +2085,7 @@ export default function InventarioView({
           className=
             "modal-overlay"
 
-          onClick={() =>
-            setShowAdd(
-              false
-            )
-          }
+          onClick={() => requestClose('add')}
         >
 
           <div
@@ -2134,7 +2147,7 @@ export default function InventarioView({
                   SKU *
                 </label>
 
-                <input
+                <input ref={addInputRef} autoFocus
                   className=
                     "input-field"
 
@@ -2475,7 +2488,10 @@ export default function InventarioView({
             </div>
 
 
-            <ModalActions busy={saving} primaryLabel="Agregar al catálogo" onPrimary={handleAddMaterial} onCancel={() => setShowAdd(false)} />
+            <div style={{ padding: '8px 24px', display: 'flex', justifyContent: 'flex-end' }}>
+              <button type="button" className="btn btn-ghost" disabled={saving} onClick={() => void handleAddMaterial(true)}>Guardar y agregar otro</button>
+            </div>
+            <ModalActions busy={saving} primaryLabel="Agregar al catálogo" onPrimary={() => void handleAddMaterial()} onCancel={() => requestClose('add')} />
 
           </div>
 
@@ -2490,7 +2506,8 @@ export default function InventarioView({
           PREVIEW
       ================================================ */}
 
-      {previewMat && (
+      {discardTarget && <DiscardChangesDialog onCancel={() => setDiscardTarget(null)} onDiscard={() => { closeEditor(discardTarget); setDiscardTarget(null); }} />}
+    {previewMat && (
 
         <MaterialPreviewModal
           material={
