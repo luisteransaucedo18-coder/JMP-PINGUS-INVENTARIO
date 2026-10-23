@@ -3175,7 +3175,7 @@ hr { border: 0; border-top: 1px solid var(--color-divider); }
 
 .quote-flow-actions { justify-content: flex-end; gap: 12px; padding: 16px 0; }
 .quote-flow-actions .btn { min-height: 44px; justify-content: center; }
-.quote-flow-actions .quote-flow-cancel { margin-right: auto; color: #fff; background: transparent; border: 1px solid transparent; box-shadow: none; }
+.quote-flow-actions .quote-flow-cancel { margin-right: auto; color: #465569; background: #fff; border: 1px solid transparent; box-shadow: none; }
 .quote-flow-actions .quote-flow-cancel:hover:not(:disabled) { color: #9C3442; background: #F9EAED; }
 .quote-flow-actions .quote-flow-back { color: #105583; background: #E8F0F7; border: 1px solid #105583; box-shadow: none; }
 .quote-flow-actions .quote-flow-back:hover:not(:disabled) { background: #DBEAFE; }
