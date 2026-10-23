@@ -75,3 +75,9 @@ Verificación: pruebas de prioridad, propiedad, requisito de cotización, CTA ú
 - Búsqueda, categoría, estado, sede y datos técnicos se conservan por identificador de usuario en sessionStorage. No se guardan existencias; el almacenamiento bloqueado no impide filtrar.
 
 Verificación: pruebas de reglas por sede, cantidades por unidad, búsqueda por nombre de categoría, paginación, filtros por usuario y almacenamiento inválido/bloqueado. Revisión de distribución con HTML generado desde el componente real y datos de prueba a escritorio y 390 px; esa vista no ejecuta operaciones remotas. Pendiente revisar interacciones con sesión autenticada.
+
+## Corrección de estabilidad al paginar
+
+Se elimina scrollIntoView del cambio de página: se reinician únicamente los contenedores conocidos del contenido, reparando el desplazamiento del documento si quedó movido por la implementación anterior. No se cambia el scroll horizontal de la tabla. Se fijan los anchos de columnas con colgroup y table-layout fixed, con variantes por sede, datos técnicos y permisos.
+
+Verificación en navegador con el componente interactivo y servicios sustituidos por datos locales: página 1 con nombres cortos, página 2 con nombres largos, rango 26–50 de 60. Cabecera y contenedor permanecieron en posición 0; las 11 columnas midieron exactamente lo mismo antes y después. Pruebas automatizadas de rango, columnas y contenedores de scroll; sin operaciones remotas ni modificaciones de existencias.

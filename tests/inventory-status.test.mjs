@@ -22,12 +22,13 @@ const material = {
   stockSedes: { Chiclayo: 0, Chimbote: 5, Trujillo: 100 },
 };
 const source = readFileSync(new URL('../src/features/inventario/pages/InventarioView.tsx', import.meta.url), 'utf8');
-function render(sede, filtro = '', materials = [material]) {
+function render(sede, filtro = '', materials = [material], page = 1) {
   const states = [materials, false, false, '', '', filtro, sede, null, false, false, null];
   let index = 0;
   const { default: Inventory } = load(source, name => {
-    if (name === 'react') return { ...React, useEffect: () => {}, useState: initial => [index < states.length ? states[index++] : initial, () => {}], useRef: value => ({ current: value }) };
+    if (name === 'react') return { ...React, useEffect: () => {}, useState: initial => [initial && typeof initial === 'object' && initial.page === 1 && initial.key === '' ? { page, key: JSON.stringify(['', '', filtro, sede]) } : index < states.length ? states[index++] : initial, () => {}], useRef: value => ({ current: value }) };
     if (name === 'react/jsx-runtime') return jsxRuntime;
+    if (name.endsWith('/inventoryPagination')) return { resetInventoryPageScroll: () => {} };
     if (name.endsWith('/inventoryPreferences')) return load(readFileSync(new URL('../src/utils/inventoryPreferences.ts', import.meta.url), 'utf8'), () => ({ SEDES: ['Chiclayo', 'Chimbote', 'Trujillo'] }));
     if (name.endsWith('/materialSearch')) return load(readFileSync(new URL('../src/utils/materialSearch.ts', import.meta.url), 'utf8'), () => {});
     if (name.endsWith('/DiscardChangesDialog')) return { default: () => null };
@@ -230,4 +231,16 @@ test('explica las sedes afectadas por la alerta general y marca la sede activa',
   assert.match(html, /inventory-alert-context">Chiclayo<\/small>/);
   assert.match(html, /aria-pressed="true"[^>]*class="btn btn-ghost"/);
   assert.match(html, /Un material puede tener stock en otras sedes/);
+});
+
+test('cambiar de página conserva columnas y muestra el rango correcto', () => {
+  const rows = Array.from({length: 40}, (_, index) => ({ ...material, id: `PAGE-${String(index + 1).padStart(2, '0')}`, nombre: index < 25 ? 'Cable' : 'Material con nombre mucho más largo para comprobar las columnas' }));
+  const first = render('todas', '', rows, 1);
+  const second = render('todas', '', rows, 2);
+  assert.match(second, /PAGE-26/);
+  assert.doesNotMatch(second, /PAGE-25/);
+  assert.match(second, /26–40 de 40 materiales/);
+  assert.match(second, /Página 2 de 2/);
+  assert.equal(first.match(/<colgroup>.*?<\/colgroup>/s)[0], second.match(/<colgroup>.*?<\/colgroup>/s)[0]);
+  assert.match(second, /table-layout:fixed/);
 });

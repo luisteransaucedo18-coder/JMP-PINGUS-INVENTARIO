@@ -3313,3 +3313,10 @@ hr { border: 0; border-top: 1px solid var(--color-divider); }
 }
 .inventory-table .inventory-state-cell { grid-template-columns: minmax(104px, 1fr) 40px; min-width: 152px; }
 .inventory-table td:last-child { overflow: visible; }
+
+/* Pagination changes records, not table geometry or the surrounding shell. */
+.inventory-table th, .inventory-table td { box-sizing: border-box; }
+.inventory-table td { height: 72px; }
+.inventory-table td:nth-child(4) { white-space: normal; overflow-wrap: anywhere; }
+.inventory-table .inventory-material-link { white-space: normal; overflow-wrap: anywhere; text-align: left; }
+.inventory-table-scroll { min-width: 0; overscroll-behavior-x: contain; }

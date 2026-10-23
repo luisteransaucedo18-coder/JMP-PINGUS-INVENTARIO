@@ -1,3 +1,4 @@
+import { resetInventoryPageScroll } from '../../../utils/inventoryPagination';
 import { readInventoryPreferences, saveInventoryPreferences } from '../../../utils/inventoryPreferences';
 import { searchMaterials } from '../../../utils/materialSearch';
 import DiscardChangesDialog from '../../../components/DiscardChangesDialog';
@@ -352,7 +353,7 @@ export default function InventarioView({
   const pageCount = Math.max(1, Math.ceil(filtered.length / 25));
   const currentPage = pagination.key === pageKey ? Math.min(pagination.page, pageCount) : 1;
   const pageMaterials = filtered.slice((currentPage - 1) * 25, currentPage * 25);
-  const changePage = (page: number) => { setPagination({ page, key: pageKey }); catalogTop.current?.scrollIntoView({ block: 'start' }); };
+  const changePage = (page: number) => { setPagination({ page, key: pageKey }); resetInventoryPageScroll(catalogTop.current); };
 
 
   // ====================================================
@@ -1134,8 +1135,20 @@ export default function InventarioView({
           }}
         >
 
-          <table className="data-table inventory-table">
+          <table className="data-table inventory-table" style={{ tableLayout: 'fixed', width: '100%', minWidth: (sedeView === 'todas' ? 1320 : 1080) + (canEdit ? 140 : 0) + (showTechnical ? 120 : 0) }}>
             <caption className="sr-only">Disponibilidad de materiales por sede</caption>
+            <colgroup>
+              <col style={{ width: 88 }} />
+              <col style={{ width: 72 }} />
+              <col />
+              <col style={{ width: 132 }} />
+              <col style={{ width: 72 }} />
+              {sedeView === 'todas' ? <><col style={{ width: 90 }} /><col style={{ width: 90 }} /><col style={{ width: 90 }} /><col style={{ width: 96 }} /></> : <col style={{ width: 112 }} />}
+              <col style={{ width: 120 }} />
+              {showTechnical && <col style={{ width: 120 }} />}
+              <col style={{ width: 220 }} />
+              {canEdit && <col style={{ width: 140 }} />}
+            </colgroup>
 
             <thead>
 
