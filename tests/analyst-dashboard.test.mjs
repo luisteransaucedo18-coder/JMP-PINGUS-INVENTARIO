@@ -182,7 +182,7 @@ test("tarjetas y filas abren el filtro y detalle correctos", () => {
   ])
 })
 
-test("error de cotizaciones evita ofrecer una nueva solicitud basada en datos incompletos", () => {
+test("la cabecera mantiene Nueva solicitud y el aviso de cotizaciones no disponibles", () => {
   const app = dashboard([], quotes, "sin conexión")
 
   nodes(
@@ -190,7 +190,7 @@ test("error de cotizaciones evita ofrecer una nueva solicitud basada en datos in
     (n) => n.type === "button" && n.props.className === "btn btn-primary",
   )[0].props.onClick()
 
-  assert.deepEqual(app.navigations, ["cotizaciones"])
+  assert.deepEqual(app.navigations, ["nueva-solicitud"])
 
   assert.match(renderToStaticMarkup(app.tree), /No pudimos consultar/)
 })
@@ -243,3 +243,14 @@ test("el router conserva filtro e identificador al pasar del panel a mis solicit
 
   assert.equal(list.props.initialSelectedId, "R-1")
 })
+
+test("Ver cotizaciones está en su sección y Nueva solicitud siempre abre el formulario", () => {
+  const app = dashboard([], []);
+  const primary = nodes(app.tree, n => n.type === "button" && n.props.className === "btn btn-primary")[0];
+  assert.equal(primary.props.children, "+ Nueva solicitud");
+  primary.props.onClick();
+  const section = nodes(app.tree, n => n.type === "section" && n.props["aria-labelledby"] === "analyst-quotes-title")[0];
+  const button = nodes(section, n => n.type === "button")[0];
+  button.props.onClick();
+  assert.deepEqual(app.navigations, ["nueva-solicitud", "cotizaciones"]);
+});

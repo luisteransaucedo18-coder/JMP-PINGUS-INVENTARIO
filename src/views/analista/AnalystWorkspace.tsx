@@ -73,9 +73,9 @@ export default function AnalystWorkspace({
           <button
             type="button"
             className="btn btn-primary"
-            onClick={() => onNav(ready ? "nueva-solicitud" : "cotizaciones")}
+            onClick={() => onNav("nueva-solicitud")}
           >
-            {ready ? "+ Nueva solicitud" : "Ver cotizaciones"}
+            + Nueva solicitud
           </button>
         </div>
       </header>
@@ -146,7 +146,7 @@ export default function AnalystWorkspace({
             <span>
               {ready
                 ? "La unidad y los materiales se completan desde el proyecto."
-                : "El siguiente paso está disponible en Ver cotizaciones."}
+                : "Revisa el siguiente paso en la sección Mis cotizaciones."}
             </span>
           </div>
         ) : (
@@ -205,7 +205,6 @@ export default function AnalystWorkspace({
                 : `${ownQuotes.filter((q) => q.estado === "PRESENTADA").length} esperando al cliente · ${ownQuotes.filter((q) => q.estado === "ACEPTADA").length} aceptadas · ${ownQuotes.filter((q) => q.estado === "CERRADA").length} cerradas`}
             </p>
           </div>
-          {ready && (
             <button
               type="button"
               className="btn btn-ghost"
@@ -213,7 +212,6 @@ export default function AnalystWorkspace({
             >
               Ver cotizaciones
             </button>
-          )}
         </section>
         <nav className="analyst-help" aria-label="Ayuda">
           <span>¿Necesitas ayuda?</span>

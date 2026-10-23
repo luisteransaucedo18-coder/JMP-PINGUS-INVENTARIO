@@ -58,7 +58,7 @@ Validación: pruebas de alta/edición sin duplicados, conservación de identidad
 
 ## Panel del analista orientado al trabajo pendiente
 
-- Una acción principal: Nueva solicitud si existe una cotización propia aceptada; Ver cotizaciones si falta el requisito o hay error al consultarlas. Inventario permanece como acción secundaria.
+- Una acción principal fija en cabecera: + Nueva solicitud abre el formulario. Ver cotizaciones está siempre en Mis cotizaciones. Inventario permanece como acción secundaria; el formulario conserva el requisito de cotización aceptada para seleccionar materiales.
 - Cuatro tarjetas con estados consistentes y navegación a Mis solicitudes con el filtro correspondiente.
 - Lista de hasta seis solicitudes: rechazadas primero, borradores después y el resto por fecha. Cada fila abre su detalle; los borradores permiten Revisar y enviar, sin prometer edición no disponible.
 - Estado vacío compacto que explica la necesidad de una cotización aceptada. Se elimina el resumen lateral duplicado y el segundo botón para crear solicitud. Ayuda queda en enlaces secundarios.
