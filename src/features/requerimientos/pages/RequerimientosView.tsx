@@ -1,3 +1,4 @@
+import { AlertIcon } from '../../../components/SystemAlert';
 import DataDetails from '../../../components/DataDetails';
 import FieldError from "../../../components/FieldError";
 import { publicCode } from "../../../utils/publicCode";
@@ -228,6 +229,7 @@ export default function RequerimientosView({ onToast, onNav }: Props) {
               <span className={`badge status-badge badge-${BADGE[selected.estado]}`}>{selected.estado}</span>
             </div>
 
+{action && <AlertIcon tone={action === 'reject' ? 'danger' : 'warning'} />}
             <RequirementStatusTimeline requirement={selected} />
             {selectedQuote && <div style={{ padding: '16px 22px 0' }}><QuoteProjectInfo quote={selectedQuote} /></div>}
 

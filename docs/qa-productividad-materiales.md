@@ -26,3 +26,11 @@ Con la misma persona y datos equivalentes, medir en la versión anterior y QA: b
 ## Alcance
 
 La protección implementada cubre cierre de los formularios de inventario y salida/recarga del navegador. No incluye un bloqueo general al cambiar de sección o cerrar sesión. No cambia la generación de SKU ni el buscador de secciones del encabezado.
+
+## Alertas compartidas del sistema
+
+Los avisos generales de todos los módulos ahora usan una tarjeta central con icono, cierre y botón Entendido. Se encolan sin caducidad automática para que los errores no desaparezcan antes de leerlos. Los avisos sin tipo explícito usan tono informativo, sin asumir que la operación fue exitosa.
+
+Descarte y entregas usan SystemAlert con acciones explícitas, foco en la opción de revisión, Escape y bloqueo durante operaciones pendientes. Compras, requerimientos y cotizaciones conservan sus formularios y resúmenes, con iconografía compartida para sus decisiones. Los errores contextuales conservan su ubicación y adoptan la paleta común.
+
+Pendiente en pantalla: comprobar avisos de éxito y error de inventario, usuarios, perfil, solicitudes, proyectos, compras, transporte, devoluciones, valorizaciones y cotizaciones; probar dos mensajes seguidos; teclado y móvil; registro de entrega en curso no debe poder confirmarse dos veces ni cerrarse desde el aviso. El aviso nativo de recarga/cierre de pestaña depende del navegador y no se puede personalizar.

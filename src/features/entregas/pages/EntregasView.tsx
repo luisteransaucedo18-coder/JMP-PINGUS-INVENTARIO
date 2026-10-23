@@ -1,3 +1,4 @@
+import SystemAlert from '../../../components/SystemAlert';
 import DataDetails from '../../../components/DataDetails';
 import { publicCode } from "../../../utils/publicCode";
 import { useRef, useState } from 'react';
@@ -291,32 +292,11 @@ function EntregaForm({ req, usuario, onDone, onCancel }: { req: Requerimiento; u
       </div>
 
       {/* Confirm modal */}
-      {showConfirm && (
-        <div className="modal-overlay" onClick={() => setShowConfirm(false)}>
-          <div className="modal" style={{ width: 420 }} onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Confirmar entrega</h2>
-              <button className="btn btn-ghost" style={{ padding: '5px 10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowConfirm(false)}><svg width="11" height="11" viewBox="0 0 15 15" fill="none"><path d="M2.5 2.5l10 10M12.5 2.5l-10 10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg></button>
-            </div>
-            <div style={{ padding: '18px 22px' }}>
-              <div style={{ fontSize: 13.5, color: '#52525B', lineHeight: 1.6 }}>
-                Vas a registrar una entrega <strong>{ESTADO_E[estadoPreview].label.toLowerCase()}</strong> con {items.filter(i => i.cantidadEntregada > 0).length} líneas de materiales al técnico <strong>{tecnico}</strong>.
-              </div>
-              {!allComplete && (
-                <div style={{ marginTop: 12, background: '#FEF3C7', borderRadius: 6, padding: '10px 12px', fontSize: 12, color: '#92400E' }}>
-                  Los materiales restantes quedarán como saldo pendiente y podrán recogerse en una nueva entrega.
-                </div>
-              )}
-            </div>
-            <div style={{ padding: '14px 22px', borderTop: '1px solid #E4E4E7', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-              <button className="btn btn-ghost" onClick={() => setShowConfirm(false)}>Revisar</button>
-              <button className="btn btn-primary" disabled={submitting} style={{ background: '#059669', border: 'none', padding: '9px 22px' }} onClick={() => void handleSubmit()}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><svg width="13" height="13" viewBox="0 0 15 15" fill="none"><path d="M2 7.5l3.5 3.5 7-7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg> {submitting ? 'Registrando…' : 'Registrar entrega'}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {showConfirm && <SystemAlert title="Confirmar entrega" tone="warning" onClose={() => setShowConfirm(false)}
+        onConfirm={() => void handleSubmit()} confirmLabel="Registrar entrega" cancelLabel="Revisar" busy={submitting}>
+        <p>Vas a registrar una entrega <strong>{ESTADO_E[estadoPreview].label.toLowerCase()}</strong> con {items.filter(i => i.cantidadEntregada > 0).length} líneas de materiales al técnico <strong>{tecnico}</strong>.</p>
+        {!allComplete && <p>Los materiales restantes quedarán pendientes para una nueva entrega.</p>}
+      </SystemAlert>}
 
       {/* Comprobante */}
       {showComprobante && (

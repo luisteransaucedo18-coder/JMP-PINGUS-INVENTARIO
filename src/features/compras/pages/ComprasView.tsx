@@ -1,3 +1,4 @@
+import { AlertIcon } from '../../../components/SystemAlert';
 import DataDetails from '../../../components/DataDetails';
 import FieldError from "../../../components/FieldError";
 import { COMPRA_COLOR as E_COLOR, COMPRA_BG as E_BG } from '../../../config/visualTokens';
@@ -285,6 +286,7 @@ export default function ComprasView({ onToast }: Props) {
               )}
             </div>
 
+{mode !== 'detail' && <AlertIcon tone={mode === 'reject' ? 'danger' : 'warning'} /> }
             {/* Action zone */}
             {(mode === 'approve' || mode === 'reject' || mode === 'confirm') && (
               <div style={{

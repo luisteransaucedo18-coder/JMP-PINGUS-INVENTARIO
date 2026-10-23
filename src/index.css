@@ -3133,3 +3133,15 @@ body {
 .discard-dialog-confirm:hover { background: #0C4268; }
 .discard-dialog button:focus-visible { outline: 2px solid #2563EB; outline-offset: 3px; }
 @media (max-width: 380px) { .discard-dialog-actions { grid-template-columns: 1fr; } }
+
+.system-alert-icon[data-tone='warning'] { color: #8A5A19; background: #FBF1DC; }
+.system-alert-icon[data-tone='danger'] { color: #9C3442; background: #F9EAED; }
+.system-alert-icon[data-tone='success'] { color: #276749; background: #E8F3EC; }
+.system-alert-body { margin-top: 8px; color: #71717A; font-size: 14px; line-height: 20px; overflow-wrap: anywhere; }
+.system-alert-body p { margin: 8px 0 0; }
+.system-alert-single { grid-template-columns: 1fr; }
+.system-alert button:disabled { opacity: .6; cursor: wait; }
+.system-alert-title { text-align: center; font-size: 20px; line-height: 28px; font-weight: 600; }
+.quote-dialog > .system-alert-icon { margin-top: 16px; }
+/* Keep actionable validation beside the field while matching the alert palette. */
+:where(.quote-error, .valuation-error, .transporte-error, .auth-error, .profile-feedback-error, .sidebar-session-error) { border-radius: 8px; border: 1px solid #E8CBD2; background: #F9EAED; color: #9C3442; padding: 12px 16px; font-size: 14px; line-height: 20px; }

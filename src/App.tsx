@@ -1,3 +1,4 @@
+import SystemAlert from './components/SystemAlert';
 import ValidatedForm from "./components/ValidatedForm";
 import { useState, useEffect, useRef } from 'react';
 import { obtenerMiPerfil, type Perfil } from './services/perfilService';
@@ -16,20 +17,6 @@ import OnboardingTour from './components/OnboardingTour';
 import { readTourStatus } from './app/onboarding';
 import { authErrorMessage } from './utils/authErrors';
 import { recordSessionActivity, sessionIsIdle, readSessionActivity, SESSION_IDLE_MS } from './utils/sessionActivity';
-
-/* ─── Toast ─── */
-function Toast({ msg, onDismiss }: { msg: string; onDismiss: () => void }) {
-  useEffect(() => { const t = setTimeout(onDismiss, 3000); return () => clearTimeout(t); }, [msg]);
-  return (
-    <div className="toast">
-      <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#CCFBF1', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        <svg width="10" height="10" viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="#059669" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
-      </div>
-      <span style={{ color: '#18181B' }}>{msg}</span>
-      <button onClick={onDismiss} style={{ background: 'none', border: 'none', color: '#A1A1AA', cursor: 'pointer', marginLeft: 8, padding: 0, display: 'flex', alignItems: 'center' }}><svg width="11" height="11" viewBox="0 0 15 15" fill="none"><path d="M2.5 2.5l10 10M12.5 2.5l-10 10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg></button>
-    </div>
-  );
-}
 
 /* ─── Login Screen ─── */
 function LoginScreen({ onLogin }: { onLogin: (profile: Perfil) => void }) {
@@ -201,7 +188,8 @@ function AppShell({ onLogout, loggingOut, logoutError }: { loggingOut: boolean; 
   const sidebarProps = { role: session.role, activeView: view, onNav: navigate, onLogout,
     userName: session.name, userEmail: session.email, avatarUrl, loggingOut, logoutError };
 
-  const [toast, setToast] = useState<string | null>(null);
+  const [alerts, setAlerts] = useState<string[]>([]);
+  const setToast = (message: string) => setAlerts(current => [...current, message]);
   const [notifOpen, setNotifOpen] = useState(false);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const notifications = useNotifications(session.role, session.name);
@@ -251,7 +239,9 @@ function AppShell({ onLogout, loggingOut, logoutError }: { loggingOut: boolean; 
           </div>
         </div>
       </div>
-      {toast && <Toast msg={toast} onDismiss={() => setToast(null)} />}
+      {alerts.length > 0 && <SystemAlert title="Aviso del sistema" onClose={() => setAlerts(current => current.slice(1))}>
+        <p>{alerts[0]}</p>
+      </SystemAlert>}
       {tourOpen && <OnboardingTour key={`${profile.id}:${session.role}`} role={session.role} userId={profile.id} navigate={setView}
         onClose={() => setTourOpen(false)} onStorageError={() => setToast('Tu navegador no permitió guardar el tutorial. Podría aparecer nuevamente al ingresar.')} />}
     </div>
