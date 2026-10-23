@@ -10,7 +10,7 @@ import { SEDE_COLOR } from '../../../config/visualTokens';
 import { useEffect, useRef, useState } from 'react';
 import { useAppStore } from '../../../store/AppContext';
 import { validRollLength, validStockQuantity } from '../../../utils/stockQuantity';
-import { calcularEstado, estadoPorSede, estadoGeneral, MINIMO_INICIAL_INVENTARIO } from '../../../utils/inventoryStatus';
+import { calcularEstado, estadoPorSede, estadoGeneral, matchesInventoryState, MINIMO_INICIAL_INVENTARIO } from '../../../utils/inventoryStatus';
 
 
 import {
@@ -348,12 +348,15 @@ export default function InventarioView({
   const scopedMaterials = searchMaterials(materiales, search, materiales.length, 0, material => categoryName(material.categoria)).filter(material =>
     !catFilter || material.categoria === catFilter
   );
-  const filtered = scopedMaterials.filter(material => !estadoFilter || estadoVisible(material)===estadoFilter);
+  const filtered = scopedMaterials.filter(material => matchesInventoryState(material, sedeView, estadoFilter));
+  const displayedState = (material: Material) => sedeView === 'todas' && estadoFilter ? estadoFilter : estadoVisible(material);
   const pageKey = JSON.stringify([search, catFilter, estadoFilter, sedeView]);
   const pageCount = Math.max(1, Math.ceil(filtered.length / 25));
   const currentPage = pagination.key === pageKey ? Math.min(pagination.page, pageCount) : 1;
   const pageMaterials = filtered.slice((currentPage - 1) * 25, currentPage * 25);
   const changePage = (page: number) => { setPagination({ page, key: pageKey }); resetInventoryPageScroll(catalogTop.current); };
+  const changeSede = (sede: Sede | 'todas') => { setSedeView(sede); setPagination({ page: 1, key: '' }); };
+
 
 
   // ====================================================
@@ -785,7 +788,7 @@ export default function InventarioView({
           }}
 
           onClick={() =>
-            setSedeView(
+            changeSede(
               'todas'
             )
           }
@@ -825,7 +828,7 @@ export default function InventarioView({
               }}
 
               onClick={() =>
-                setSedeView(s)
+                changeSede(s)
               }
             >
               {s}
@@ -982,10 +985,10 @@ export default function InventarioView({
             {search && <button type="button" onClick={() => setSearch('')} aria-label="Quitar búsqueda">Búsqueda: {search} ×</button>}
             {catFilter && <button type="button" onClick={() => setCatFilter('')} aria-label="Quitar categoría">{categoryName(catFilter)} ×</button>}
             {estadoFilter && <button type="button" onClick={() => setEstadoFilter('')} aria-label="Quitar estado">{estadoFilter} ×</button>}
-            {sedeView !== 'todas' && <button type="button" onClick={() => setSedeView('todas')} aria-label="Quitar sede">{sedeView} ×</button>}
-            <button type="button" className="filter-reset" onClick={() => { setSearch(''); setCatFilter(''); setEstadoFilter(''); setSedeView('todas'); }}>Restablecer filtros</button>
+            {sedeView !== 'todas' && <button type="button" onClick={() => changeSede('todas')} aria-label="Quitar sede">{sedeView} ×</button>}
+            <button type="button" className="filter-reset" onClick={() => { setSearch(''); setCatFilter(''); setEstadoFilter(''); changeSede('todas'); }}>Restablecer filtros</button>
           </div>}
-          {sedeView==='todas' && <details className="inventory-filter-note"><summary>Cómo se interpreta la alerta general</summary><p>La alerta general corresponde a la sede con mayor necesidad de atención. Un material puede tener stock en otras sedes; selecciona una sede para consultar su estado.</p></details>}
+          {sedeView==='todas' && <details className="inventory-filter-note"><summary>Cómo se filtran los estados por sede</summary><p>Al elegir un estado se muestran los materiales que lo cumplen en al menos una sede y se indican las sedes coincidentes. Un material puede contar en varios estados. Sin filtro, la alerta general corresponde a la sede con mayor necesidad de atención.</p></details>}
 
 
 
@@ -1079,7 +1082,7 @@ export default function InventarioView({
               <div
                 style={FILTER_LABEL_STYLE}
               >
-                {s} {sedeView === 'todas' ? '(alerta general)' : `(${sedeView})`}
+                {s} {sedeView === 'todas' ? '(en alguna sede)' : `(${sedeView})`}
               </div>
 
               <div
@@ -1090,7 +1093,7 @@ export default function InventarioView({
                 }}
               >
                 {
-                  scopedMaterials.filter(material => estadoVisible(material)===s).length
+                  scopedMaterials.filter(material => matchesInventoryState(material, sedeView, s)).length
                 }
               </div>
 
@@ -1198,7 +1201,7 @@ export default function InventarioView({
                 {showTechnical && <th>Precio unitario</th>}
 
                 <th>
-                  {sedeView === 'todas' ? 'Alerta general' : 'Estado'}
+                  {sedeView === 'todas' && !estadoFilter ? 'Alerta general' : 'Estado por sede'}
                 </th>
 
                 {canEdit && (
@@ -1474,8 +1477,8 @@ export default function InventarioView({
                         <td>
 
                           <div className="inventory-state-cell">
-                            {sedeView !== 'todas' ? <EstadosSedes material={m} sedes={sedesVisibles} /> : <span className={`badge status-badge badge-${ESTADO_BADGE[estadoVisible(m)]}`}>{estadoVisible(m)}</span>}
-                            {sedeView === 'todas' && estadoVisible(m) !== 'OK' && <small className="inventory-alert-context">{SEDES.filter(sede => estadoPorSede(m, sede) === estadoVisible(m)).join(', ')}</small>}
+                            {sedeView !== 'todas' ? <EstadosSedes material={m} sedes={sedesVisibles} /> : <span className={`badge status-badge badge-${ESTADO_BADGE[displayedState(m)]}`}>{displayedState(m)}</span>}
+                            {sedeView === 'todas' && (Boolean(estadoFilter) || estadoVisible(m) !== 'OK') && <small className="inventory-alert-context">{SEDES.filter(sede => estadoPorSede(m, sede) === displayedState(m)).join(', ')}</small>}
                             <button type="button" className="inventory-state-trigger" aria-label={`Ver estados por sede de ${m.id}`} title="Consultar alertas por sede" aria-haspopup="dialog"
                               onClick={event => { event.stopPropagation(); setStatusMaterial(m); }}>
                               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 20V10m7 10V4m7 16v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><circle cx="19" cy="7" r="2" stroke="currentColor" strokeWidth="1.6"/></svg>

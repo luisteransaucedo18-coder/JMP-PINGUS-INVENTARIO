@@ -138,10 +138,13 @@ test('todas las sedes abre el detalle sin apilar estados en la tabla', () => {
   assert.doesNotMatch(html, /Chimbote: CRÍTICO/);
 });
 
-test('todas las sedes usa una sola clasificación por material, igual en tabla y filtro', () => {
+test('todas las sedes filtra por cualquier sede y muestra el estado seleccionado', () => {
   assert.match(render('todas','AGOTADO'), /SKU-001/);
-  assert.doesNotMatch(render('todas','OK'), /SKU-001/);
-  assert.doesNotMatch(render('todas','CRÍTICO'), /SKU-001/);
+  assert.match(render('todas','OK'), /SKU-001/);
+  assert.match(render('todas','OK'), /badge-green">OK/);
+  assert.match(render('todas','OK'), /inventory-alert-context">Trujillo/);
+  assert.match(render('todas','CRÍTICO'), /SKU-001/);
+  assert.match(render('todas','CRÍTICO'), /inventory-alert-context">Chimbote/);
   assert.match(render('todas','AGOTADO'), /badge-red">AGOTADO/);
 });
 
@@ -149,7 +152,7 @@ test('contadores y stock corresponden a la sede seleccionada', () => {
   const html = render('Chiclayo');
   assert.match(html, /Stock en Chiclayo/);
   assert.match(html, /AGOTADO \(Chiclayo\)<\/div><div[^>]*>1<\/div>/);
-  assert.match(render('todas'), /AGOTADO \(alerta general\)<\/div><div[^>]*>1<\/div>/);
+  assert.match(render('todas'), /AGOTADO \(en alguna sede\)<\/div><div[^>]*>1<\/div>/);
 });
 
 test('inventario separa los totales por unidad y conserva rollos parciales', () => {
@@ -230,7 +233,7 @@ test('explica las sedes afectadas por la alerta general y marca la sede activa',
   const html = render('todas');
   assert.match(html, /inventory-alert-context">Chiclayo<\/small>/);
   assert.match(html, /aria-pressed="true"[^>]*class="btn btn-ghost"/);
-  assert.match(html, /Un material puede tener stock en otras sedes/);
+  assert.match(html, /al menos una sede/);
 });
 
 test('cambiar de página conserva columnas y muestra el rango correcto', () => {
@@ -243,4 +246,26 @@ test('cambiar de página conserva columnas y muestra el rango correcto', () => {
   assert.match(second, /Página 2 de 2/);
   assert.equal(first.match(/<colgroup>.*?<\/colgroup>/s)[0], second.match(/<colgroup>.*?<\/colgroup>/s)[0]);
   assert.match(second, /table-layout:fixed/);
+});
+
+test('Todos + OK incluye todos los OK de Trujillo y de otras sedes, también en páginas posteriores', () => {
+  const rows = Array.from({length: 60}, (_, index) => ({ ...material, id: `OK-${String(index + 1).padStart(2, '0')}`, stockSedes: index < 40 ? {Chiclayo:0, Chimbote:0, Trujillo:100} : {Chiclayo:100, Chimbote:0, Trujillo:0} }));
+  const trujillo = rows.filter(row => status.matchesInventoryState(row, 'Trujillo', 'OK'));
+  const all = rows.filter(row => status.matchesInventoryState(row, 'todas', 'OK'));
+  assert.equal(trujillo.length, 40);
+  assert.equal(all.length, 60);
+  assert.ok(trujillo.every(row => all.includes(row)));
+  assert.equal(new Set(all.map(row => row.id)).size, 60);
+  assert.match(render('todas', 'OK', rows, 2), /26–50 de 60 materiales/);
+  assert.match(render('todas', 'OK', rows, 3), /OK-60/);
+  assert.match(render('Trujillo', 'OK', rows, 2), /26–40 de 40 materiales/);
+});
+test('cada estado de una sede también coincide en Todas sin cambiar la alerta general', () => {
+  for (const sede of ['Chiclayo', 'Chimbote', 'Trujillo']) {
+    const state = status.estadoPorSede(material, sede);
+    assert.equal(status.matchesInventoryState(material, 'todas', state), true);
+  }
+  assert.equal(status.estadoGeneral(material), 'AGOTADO');
+  assert.equal(status.matchesInventoryState(material, 'todas', 'BAJO'), false);
+  assert.equal(status.matchesInventoryState(material, 'todas', ''), true);
 });

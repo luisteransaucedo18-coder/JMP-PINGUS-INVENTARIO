@@ -70,7 +70,7 @@ Verificación: pruebas de prioridad, propiedad, requisito de cotización, CTA ú
 
 - Sede y buscador antes de los indicadores; sede activa marcada visualmente y con aria-pressed. Cuatro indicadores compactos y existencias por unidad bajo un desplegable, sin sumar unidades incompatibles.
 - Categorías con su nombre del catálogo; búsqueda por ese nombre conservando el identificador interno. Si no existe una correspondencia, se muestra Categoría y su identificador.
-- Alerta general mantiene la clasificación por la peor sede; se muestran las sedes que originan ese estado y se conserva el detalle por sede. La explicación completa queda bajo Cómo se interpreta la alerta general.
+- Sin filtro de estado, la alerta general conserva la clasificación por la peor sede. Con un estado seleccionado en Todas, se incluyen materiales que lo cumplen en alguna sede y se muestran las sedes coincidentes. La explicación queda bajo Cómo se filtran los estados por sede.
 - Páginas de 25 resultados, reiniciadas al cambiar filtros. Resumen del rango visible y controles Anterior/Siguiente; no cambia el conteo total filtrado.
 - Búsqueda, categoría, estado, sede y datos técnicos se conservan por identificador de usuario en sessionStorage. No se guardan existencias; el almacenamiento bloqueado no impide filtrar.
 
@@ -81,3 +81,9 @@ Verificación: pruebas de reglas por sede, cantidades por unidad, búsqueda por 
 Se elimina scrollIntoView del cambio de página: se reinician únicamente los contenedores conocidos del contenido, reparando el desplazamiento del documento si quedó movido por la implementación anterior. No se cambia el scroll horizontal de la tabla. Se fijan los anchos de columnas con colgroup y table-layout fixed, con variantes por sede, datos técnicos y permisos.
 
 Verificación en navegador con el componente interactivo y servicios sustituidos por datos locales: página 1 con nombres cortos, página 2 con nombres largos, rango 26–50 de 60. Cabecera y contenedor permanecieron en posición 0; las 11 columnas midieron exactamente lo mismo antes y después. Pruebas automatizadas de rango, columnas y contenedores de scroll; sin operaciones remotas ni modificaciones de existencias.
+
+## Corrección de Todas las sedes + estado
+
+El filtro ya no compara exclusivamente la peor alerta del material. En Todas las sedes, seleccionar OK, Bajo, Crítico o Agotado busca coincidencias en al menos una sede; cada material aparece una sola vez. La columna muestra el estado seleccionado y las sedes que lo cumplen. Los contadores usan el mismo criterio, pueden solaparse entre estados y están rotulados en alguna sede. Sin filtro, se mantiene la alerta general por mayor prioridad. Cambiar de sede conserva búsqueda, categoría y estado, pero reinicia la página.
+
+Caso reproducido con pruebas y navegador: 40 materiales OK en Trujillo, otros 20 OK solo en Chiclayo. Todas + OK muestra 60 en tres páginas; Trujillo + OK muestra 40 en dos páginas. Al regresar a Todas, reaparecen los 60 desde página 1, y Siguiente muestra el rango 26–50. Sin duplicados ni cambios de stock. Se mantienen pruebas independientes de las alertas por sede y general.

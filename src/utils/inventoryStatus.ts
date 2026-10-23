@@ -18,3 +18,10 @@ export function estadoGeneral(material: Material): EstadoMaterial {
   const states = Object.values(material.stockSedes).map(stock => calcularEstado(Number(stock), material.minimo));
   return (['AGOTADO', 'CRÍTICO', 'BAJO', 'OK'] as const).find(state => states.includes(state)) ?? 'OK';
 }
+
+/** Across sites, a material matches when any site has the requested state. */
+export function matchesInventoryState(material: Material, sede: Sede | 'todas', state: string): boolean {
+  if (!state) return true;
+  if (sede !== 'todas') return estadoPorSede(material, sede) === state;
+  return Object.values(material.stockSedes).some(stock => calcularEstado(Number(stock), material.minimo) === state);
+}
