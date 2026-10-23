@@ -855,7 +855,7 @@ export default function QuoteEditor({
           </section>
         </div>
         <div hidden={step !== 2} data-form-step="2">
-          <section className="panel quote-section">
+          <section className="panel quote-section quote-costs-section">
             <h3>Costos y servicios</h3>
             <h4>Partidas por modalidad · {EXCEL_MODALIDADES[budget.modalidad]}</h4>
             <p className="quote-muted">

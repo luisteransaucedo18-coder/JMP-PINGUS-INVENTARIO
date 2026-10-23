@@ -3164,3 +3164,6 @@ details > summary::-webkit-details-marker { display: none; }
 details > summary::before { content: '+'; display: inline-block; width: 16px; margin-right: 8px; color: #105583; font-weight: 600; text-align: center; }
 details[open] > summary::before { content: '−'; }
 details > summary:focus-visible { outline: 2px solid #2563EB; outline-offset: 3px; border-radius: 4px; }
+
+.quote-costs-section > .quote-form-grid { margin-bottom: 24px; }
+.quote-costs-section > details[open] > summary { margin-bottom: 16px; }
