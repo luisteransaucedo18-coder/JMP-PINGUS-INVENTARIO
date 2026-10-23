@@ -1404,14 +1404,14 @@ export default function QuoteEditor({
             )}
           </section>
         </div>
-        <div className="quote-toolbar">
-          <button type="button" className="btn btn-ghost" onClick={onCancel}>
+        <div className="quote-toolbar quote-flow-actions">
+          <button type="button" className="btn quote-flow-cancel" onClick={onCancel}>
             Cancelar
           </button>
           {step > 0 && (
             <button
               type="button"
-              className="btn btn-ghost"
+              className="btn quote-flow-back"
               onClick={() => {
                 setStep((s) => s - 1)
 
