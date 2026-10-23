@@ -65,3 +65,13 @@ Validación: pruebas de alta/edición sin duplicados, conservación de identidad
 - La selección inicial del detalle vuelve a comprobar propiedad del registro. Los contadores y el resumen de cotizaciones solo consideran datos del usuario.
 
 Verificación: pruebas de prioridad, propiedad, requisito de cotización, CTA único, estados de error e intención de navegación entre panel y lista. Revisión visual del componente real con datos locales de prueba: vacío y con pendientes, a escritorio y 390 px. Pendiente comprobar con sesión autenticada que el detalle y filtros recibidos se muestran con los datos reales.
+
+## Consulta de inventario
+
+- Sede y buscador antes de los indicadores; sede activa marcada visualmente y con aria-pressed. Cuatro indicadores compactos y existencias por unidad bajo un desplegable, sin sumar unidades incompatibles.
+- Categorías con su nombre del catálogo; búsqueda por ese nombre conservando el identificador interno. Si no existe una correspondencia, se muestra Categoría y su identificador.
+- Alerta general mantiene la clasificación por la peor sede; se muestran las sedes que originan ese estado y se conserva el detalle por sede. La explicación completa queda bajo Cómo se interpreta la alerta general.
+- Páginas de 25 resultados, reiniciadas al cambiar filtros. Resumen del rango visible y controles Anterior/Siguiente; no cambia el conteo total filtrado.
+- Búsqueda, categoría, estado, sede y datos técnicos se conservan por identificador de usuario en sessionStorage. No se guardan existencias; el almacenamiento bloqueado no impide filtrar.
+
+Verificación: pruebas de reglas por sede, cantidades por unidad, búsqueda por nombre de categoría, paginación, filtros por usuario y almacenamiento inválido/bloqueado. Revisión de distribución con HTML generado desde el componente real y datos de prueba a escritorio y 390 px; esa vista no ejecuta operaciones remotas. Pendiente revisar interacciones con sesión autenticada.

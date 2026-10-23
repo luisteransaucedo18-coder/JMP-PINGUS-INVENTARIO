@@ -28,6 +28,7 @@ function render(sede, filtro = '', materials = [material]) {
   const { default: Inventory } = load(source, name => {
     if (name === 'react') return { ...React, useEffect: () => {}, useState: initial => [index < states.length ? states[index++] : initial, () => {}], useRef: value => ({ current: value }) };
     if (name === 'react/jsx-runtime') return jsxRuntime;
+    if (name.endsWith('/inventoryPreferences')) return load(readFileSync(new URL('../src/utils/inventoryPreferences.ts', import.meta.url), 'utf8'), () => ({ SEDES: ['Chiclayo', 'Chimbote', 'Trujillo'] }));
     if (name.endsWith('/materialSearch')) return load(readFileSync(new URL('../src/utils/materialSearch.ts', import.meta.url), 'utf8'), () => {});
     if (name.endsWith('/DiscardChangesDialog')) return { default: () => null };
     if (name.endsWith('/inventoryStatus')) return status;
@@ -147,7 +148,7 @@ test('contadores y stock corresponden a la sede seleccionada', () => {
   const html = render('Chiclayo');
   assert.match(html, /Stock en Chiclayo/);
   assert.match(html, /AGOTADO \(Chiclayo\)<\/div><div[^>]*>1<\/div>/);
-  assert.match(render('todas'), /AGOTADO \(todas las sedes\)<\/div><div[^>]*>1<\/div>/);
+  assert.match(render('todas'), /AGOTADO \(alerta general\)<\/div><div[^>]*>1<\/div>/);
 });
 
 test('inventario separa los totales por unidad y conserva rollos parciales', () => {
@@ -214,4 +215,19 @@ test('el panel separa las sedes y explica el rango de referencia 30', () => {
     if (originalDocument === undefined) delete globalThis.document;
     else globalThis.document = originalDocument;
   }
+});
+
+test('pagina el catálogo en 25 materiales sin alterar los resultados totales', () => {
+  const rows = Array.from({length: 40}, (_, index) => ({ ...material, id: `PAGE-${String(index + 1).padStart(2, '0')}` }));
+  const html = render('todas', '', rows);
+  assert.match(html, /PAGE-25/);
+  assert.doesNotMatch(html, /PAGE-26/);
+  assert.match(html, /1–25 de 40 materiales/);
+  assert.match(html, /Página 1 de 2/);
+});
+test('explica las sedes afectadas por la alerta general y marca la sede activa', () => {
+  const html = render('todas');
+  assert.match(html, /inventory-alert-context">Chiclayo<\/small>/);
+  assert.match(html, /aria-pressed="true"[^>]*class="btn btn-ghost"/);
+  assert.match(html, /Un material puede tener stock en otras sedes/);
 });

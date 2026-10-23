@@ -23,3 +23,10 @@ test('respeta mínimo de caracteres y no devuelve coincidencias parciales de la 
   assert.deepEqual(searchMaterials(materials, 'regulador inexistente', 10), []);
   assert.deepEqual(searchMaterials(materials, '  ', 2), materials.slice(0, 2));
 });
+
+test('busca por el nombre resuelto de la categoría sin cambiar su id de catálogo', () => {
+  const row = { id: '1', nombre: 'Regulador', categoria: '12' };
+  const found = searchMaterials([row], 'accesorios gas', 10, 0, () => 'Accesorios de gas');
+  assert.equal(found[0], row);
+  assert.equal(found[0].categoria, '12');
+});

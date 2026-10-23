@@ -234,7 +234,7 @@ function AppShell({ onLogout, loggingOut, logoutError }: { loggingOut: boolean; 
             <button type="button" className="btn btn-ghost" onClick={() => void refreshRemoteData()}>Reintentar actualización</button>
           </div>}
           <div className="app-view-content" data-tour-view={view}>
-            <ViewRouter role={session.role} view={view} onToast={msg => setToast(msg)} onNav={setView} userName={session.name} userEmail={session.email}
+            <ViewRouter userId={profile.id} role={session.role} view={view} onToast={msg => setToast(msg)} onNav={setView} userName={session.name} userEmail={session.email}
               onStartTour={() => { setMenuOpen(false); setNotifOpen(false); setTourOpen(true); }} />
           </div>
         </div>

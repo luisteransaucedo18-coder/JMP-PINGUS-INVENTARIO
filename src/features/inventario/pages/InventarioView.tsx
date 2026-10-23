@@ -1,3 +1,4 @@
+import { readInventoryPreferences, saveInventoryPreferences } from '../../../utils/inventoryPreferences';
 import { searchMaterials } from '../../../utils/materialSearch';
 import DiscardChangesDialog from '../../../components/DiscardChangesDialog';
 import RollStockInput from '../../../components/RollStockInput';
@@ -34,6 +35,7 @@ import MaterialPreviewModal from '../../../components/MaterialPreviewModal';
 // ======================================================
 
 interface Props {
+  preferenceKey?: string;
   role: Role;
   onToast: (msg: string) => void;
 }
@@ -163,6 +165,7 @@ function MaterialThumbnail({ material, onPreview }: { material: Material; onPrev
 export default function InventarioView({
   role,
   onToast,
+  preferenceKey,
 }: Props) {
 
   // ====================================================
@@ -186,19 +189,20 @@ export default function InventarioView({
   // FILTROS
   // ====================================================
 
-  const [showTechnical, setShowTechnical] = useState(false);
+  const savedFilters = useRef(readInventoryPreferences(preferenceKey)).current;
+  const [showTechnical, setShowTechnical] = useState(savedFilters.technical);
 
   const [search, setSearch] =
-    useState('');
+    useState(savedFilters.search);
 
   const [catFilter, setCatFilter] =
-    useState('');
+    useState(savedFilters.category);
 
   const [estadoFilter, setEstadoFilter] =
-    useState('');
+    useState(savedFilters.status);
 
   const [sedeView, setSedeView] =
-    useState<Sede | 'todas'>('todas');
+    useState<Sede | 'todas'>(savedFilters.sede);
 
   // ====================================================
   // MODALES
@@ -254,6 +258,11 @@ export default function InventarioView({
   useEffect(() => setEditRollErrors({}), [editUnidad, editMetrosPorRollo]);
   useEffect(() => setNewRollErrors({}), [form.unidad, form.metrosPorRollo]);
   useEffect(() => setMateriales(state.materials), [state.materials]);
+
+  const [pagination, setPagination] = useState({ page: 1, key: '' });
+  const catalogTop = useRef<HTMLDivElement>(null);
+  useEffect(() => saveInventoryPreferences(preferenceKey, { search, category: catFilter, status: estadoFilter, sede: sedeView, technical: showTechnical }), [preferenceKey, search, catFilter, estadoFilter, sedeView, showTechnical]);
+  const categoryName = (id: string) => categorias.find(category => category.id === id)?.nombre || (/^\d+$/.test(id) ? `Categoría ${id}` : id);
 
   const addDirty = showAdd && JSON.stringify(form) !== JSON.stringify(addBaseline);
   const editDirty = editMode && selected !== null && (
@@ -335,10 +344,16 @@ export default function InventarioView({
   const sedesVisibles = sedeView === 'todas' ? SEDES : [sedeView];
 
   const estadoVisible = (material: Material) => sedeView === 'todas' ? estadoGeneral(material) : estadoPorSede(material, sedeView);
-  const scopedMaterials = searchMaterials(materiales, search, materiales.length).filter(material =>
+  const scopedMaterials = searchMaterials(materiales, search, materiales.length, 0, material => categoryName(material.categoria)).filter(material =>
     !catFilter || material.categoria === catFilter
   );
   const filtered = scopedMaterials.filter(material => !estadoFilter || estadoVisible(material)===estadoFilter);
+  const pageKey = JSON.stringify([search, catFilter, estadoFilter, sedeView]);
+  const pageCount = Math.max(1, Math.ceil(filtered.length / 25));
+  const currentPage = pagination.key === pageKey ? Math.min(pagination.page, pageCount) : 1;
+  const pageMaterials = filtered.slice((currentPage - 1) * 25, currentPage * 25);
+  const changePage = (page: number) => { setPagination({ page, key: pageKey }); catalogTop.current?.scrollIntoView({ block: 'start' }); };
+
 
   // ====================================================
   // STOCK DE UNA SEDE
@@ -732,127 +747,15 @@ export default function InventarioView({
           KPIs
       ================================================ */}
 
-      <div
-        className="inventory-summary-grid"
-        style={{
-          display: 'grid',
-          gridTemplateColumns:
-            'repeat(5, 1fr)',
-          gap: 14,
-          marginBottom: 20,
-        }}
-      >
-
-        <div className="kpi-card">
-
-          <div
-            style={FILTER_LABEL_STYLE}
-          >
-            Total SKU
-          </div>
-
-          <div
-            style={{
-              fontSize: 26,
-              fontWeight: 700,
-              color: '#2563EB',
-            }}
-          >
-            {materiales.length}
-          </div>
-
-        </div>
-
-
-        <div className="kpi-card">
-
-          <div
-            style={FILTER_LABEL_STYLE}
-          >
-            {sedeView === 'todas' ? 'Stock total' : `Stock en ${sedeView}`}
-          </div>
-
-          <div
-            style={{
-              fontSize: 22,
-              fontWeight: 700,
-              color: '#18181B',
-            }}
-          >
-            {Object.entries(stockPorUnidad).sort(([a], [b]) => a.localeCompare(b)).map(([unidad, cantidad]) =>
-              <div key={unidad} style={{ fontSize: 18, lineHeight: 1.5 }}>{cantidad.toLocaleString('es-PE', { maximumFractionDigits: 3 })} <span style={{ fontSize: 12 }}>{unidad}</span></div>
-            )}
-            {!materiales.length && 'Sin existencias'}
-          </div>
-
-        </div>
-
-
-        {[
-          {
-            s: 'CRÍTICO',
-            c: '#DC2626',
-          },
-          {
-            s: 'AGOTADO',
-            c: '#DC2626',
-          },
-          {
-            s: 'BAJO',
-            c: '#D97706',
-          },
-        ].map(
-          ({ s, c }) => (
-
-            <button
-              type="button"
-              aria-pressed={estadoFilter===s}
-              onClick={() => setEstadoFilter(previous => previous===s ? "" : s)}
-              style={{ textAlign:"left", cursor:"pointer", borderColor:estadoFilter===s ? c : undefined }}
-              key={s}
-              className="kpi-card"
-            >
-
-              <div
-                style={FILTER_LABEL_STYLE}
-              >
-                {s} {sedeView === 'todas' ? '(todas las sedes)' : `(${sedeView})`}
-              </div>
-
-              <div
-                style={{
-                  fontSize: 26,
-                  fontWeight: 700,
-                  color: c,
-                }}
-              >
-                {
-                  scopedMaterials.filter(material => estadoVisible(material)===s).length
-                }
-              </div>
-
-            </button>
-
-          )
-        )}
-
-      </div>
-
-
       {/* ===============================================
           SEDES
       ================================================ */}
 
-      <div
-        style={{
-          display: 'flex',
-          gap: 8,
-          marginBottom: 16,
-          flexWrap: 'wrap',
-        }}
+      <div className="inventory-site-switch" role="group" aria-label="Consultar existencias por sede"
+        style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}
       >
 
-        <button
+        <button type="button" aria-pressed={sedeView === 'todas'}
           className="btn btn-ghost"
 
           style={{
@@ -894,7 +797,7 @@ export default function InventarioView({
           (s) => (
 
             <button
-              key={s}
+              key={s} type="button" aria-pressed={sedeView === s}
 
               className="btn btn-ghost"
 
@@ -965,7 +868,8 @@ export default function InventarioView({
           }}
         >
 
-          <input
+          <label className="inventory-search-label" htmlFor="inventory-material-search">Buscar material</label>
+          <input id="inventory-material-search" type="search"
             className="input-field"
 
             style={{
@@ -1009,7 +913,7 @@ export default function InventarioView({
                   key={c}
                   value={c}
                 >
-                  {c}
+                  {categoryName(c)}
                 </option>
               )
             )}
@@ -1075,12 +979,12 @@ export default function InventarioView({
           {(search || catFilter || estadoFilter || sedeView !== 'todas') && <div className="active-filters" aria-label="Filtros activos">
             <span>Filtros activos:</span>
             {search && <button type="button" onClick={() => setSearch('')} aria-label="Quitar búsqueda">Búsqueda: {search} ×</button>}
-            {catFilter && <button type="button" onClick={() => setCatFilter('')} aria-label="Quitar categoría">{catFilter} ×</button>}
+            {catFilter && <button type="button" onClick={() => setCatFilter('')} aria-label="Quitar categoría">{categoryName(catFilter)} ×</button>}
             {estadoFilter && <button type="button" onClick={() => setEstadoFilter('')} aria-label="Quitar estado">{estadoFilter} ×</button>}
             {sedeView !== 'todas' && <button type="button" onClick={() => setSedeView('todas')} aria-label="Quitar sede">{sedeView} ×</button>}
             <button type="button" className="filter-reset" onClick={() => { setSearch(''); setCatFilter(''); setEstadoFilter(''); setSedeView('todas'); }}>Restablecer filtros</button>
           </div>}
-          {sedeView==='todas'  && <p className="inventory-filter-note">El estado general muestra la mayor alerta entre las sedes: Agotado, Crítico, Bajo u OK.</p>}
+          {sedeView==='todas' && <details className="inventory-filter-note"><summary>Cómo se interpreta la alerta general</summary><p>La alerta general corresponde a la sede con mayor necesidad de atención. Un material puede tener stock en otras sedes; selecciona una sede para consultar su estado.</p></details>}
 
 
 
@@ -1114,6 +1018,112 @@ export default function InventarioView({
             TABLA
         ================================================ */}
 
+      <div
+        className="inventory-summary-grid"
+        style={{
+          display: 'grid',
+          gridTemplateColumns:
+            'repeat(4, minmax(0, 1fr))',
+          gap: 14,
+          marginBottom: 20,
+        }}
+      >
+
+        <div className="kpi-card inventory-compact-kpi">
+
+          <div
+            style={FILTER_LABEL_STYLE}
+          >
+            Total SKU
+          </div>
+
+          <div
+            style={{
+              fontSize: 26,
+              fontWeight: 700,
+              color: '#2563EB',
+            }}
+          >
+            {materiales.length}
+          </div>
+
+        </div>
+
+
+        {[
+          {
+            s: 'CRÍTICO',
+            c: '#DC2626',
+          },
+          {
+            s: 'AGOTADO',
+            c: '#DC2626',
+          },
+          {
+            s: 'BAJO',
+            c: '#D97706',
+          },
+        ].map(
+          ({ s, c }) => (
+
+            <button
+              type="button"
+              aria-pressed={estadoFilter===s}
+              onClick={() => setEstadoFilter(previous => previous===s ? "" : s)}
+              style={{ textAlign:"left", cursor:"pointer", borderColor:estadoFilter===s ? c : undefined }}
+              key={s}
+              className="kpi-card inventory-compact-kpi"
+            >
+
+              <div
+                style={FILTER_LABEL_STYLE}
+              >
+                {s} {sedeView === 'todas' ? '(alerta general)' : `(${sedeView})`}
+              </div>
+
+              <div
+                style={{
+                  fontSize: 26,
+                  fontWeight: 700,
+                  color: c,
+                }}
+              >
+                {
+                  scopedMaterials.filter(material => estadoVisible(material)===s).length
+                }
+              </div>
+
+            </button>
+
+          )
+        )}
+
+      </div>
+
+
+      <details className="inventory-stock-totals"><summary>Ver existencias por unidad {sedeView !== 'todas' && `en ${sedeView}`}</summary><div className="inventory-unit-totals">
+
+          <div
+            style={FILTER_LABEL_STYLE}
+          >
+            {sedeView === 'todas' ? 'Stock total' : `Stock en ${sedeView}`}
+          </div>
+
+          <div
+            style={{
+              fontSize: 22,
+              fontWeight: 700,
+              color: '#18181B',
+            }}
+          >
+            {Object.entries(stockPorUnidad).sort(([a], [b]) => a.localeCompare(b)).map(([unidad, cantidad]) =>
+              <div key={unidad} style={{ fontSize: 18, lineHeight: 1.5 }}>{cantidad.toLocaleString('es-PE', { maximumFractionDigits: 3 })} <span style={{ fontSize: 12 }}>{unidad}</span></div>
+            )}
+            {!materiales.length && 'Sin existencias'}
+          </div>
+
+        </div></details>
+        <div ref={catalogTop} />
         <p className="inventory-scroll-hint" id="inventory-scroll-help">Desliza la tabla horizontalmente para consultar todas las columnas.</p>
         <div
           className="inventory-table-scroll"
@@ -1175,7 +1185,7 @@ export default function InventarioView({
                 {showTechnical && <th>Precio unitario</th>}
 
                 <th>
-                  Estado
+                  {sedeView === 'todas' ? 'Alerta general' : 'Estado'}
                 </th>
 
                 {canEdit && (
@@ -1220,7 +1230,7 @@ export default function InventarioView({
 
               ) : (
 
-                filtered.map(
+                pageMaterials.map(
                   (m) => {
 
                     const total =
@@ -1306,7 +1316,7 @@ export default function InventarioView({
                               '#71717A',
                           }}
                         >
-                          {m.categoria}
+                          {categoryName(m.categoria)}
                         </td>
 
 
@@ -1452,10 +1462,11 @@ export default function InventarioView({
 
                           <div className="inventory-state-cell">
                             {sedeView !== 'todas' ? <EstadosSedes material={m} sedes={sedesVisibles} /> : <span className={`badge status-badge badge-${ESTADO_BADGE[estadoVisible(m)]}`}>{estadoVisible(m)}</span>}
-                            <button type="button" className="inventory-state-trigger" aria-label={`Ver estados por sede de ${m.id}`} aria-haspopup="dialog"
+                            {sedeView === 'todas' && estadoVisible(m) !== 'OK' && <small className="inventory-alert-context">{SEDES.filter(sede => estadoPorSede(m, sede) === estadoVisible(m)).join(', ')}</small>}
+                            <button type="button" className="inventory-state-trigger" aria-label={`Ver estados por sede de ${m.id}`} title="Consultar alertas por sede" aria-haspopup="dialog"
                               onClick={event => { event.stopPropagation(); setStatusMaterial(m); }}>
                               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 20V10m7 10V4m7 16v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><circle cx="19" cy="7" r="2" stroke="currentColor" strokeWidth="1.6"/></svg>
-                              {sedeView === 'todas' && <span>Ver estados</span>}
+                              <span className="sr-only">Ver estados</span>
                             </button>
                           </div>
 
@@ -1508,6 +1519,13 @@ export default function InventarioView({
           </table>
 
         </div>
+        <nav className="inventory-pagination" aria-label="Páginas del inventario">
+          <span role="status">{filtered.length ? `${(currentPage - 1) * 25 + 1}–${Math.min(currentPage * 25, filtered.length)} de ${filtered.length} materiales` : 'Sin resultados'}</span>
+          <div><button type="button" className="btn btn-ghost" disabled={currentPage === 1} onClick={() => changePage(currentPage - 1)}>Anterior</button>
+          <span>Página {currentPage} de {pageCount}</span>
+          <button type="button" className="btn btn-ghost" disabled={currentPage === pageCount} onClick={() => changePage(currentPage + 1)}>Siguiente</button></div>
+        </nav>
+
 
       </section>
 
@@ -1593,7 +1611,7 @@ export default function InventarioView({
                   <div
                     style={DETAIL_VALUE_STYLE}
                   >
-                    {selected.categoria}
+                    {categoryName(selected.categoria)}
                   </div>
 
                 </div>

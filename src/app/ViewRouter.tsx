@@ -30,6 +30,7 @@ type Props = {
   view: string;
   onToast: (message: string) => void;
   onNav: (view: string) => void;
+  userId?: string;
   userName: string;
   userEmail: string;
   onStartTour: () => void;
@@ -39,7 +40,7 @@ const MANAGER_DATA_VIEWS: ConsultaGerente[] = [
   'requerimientos', 'compras', 'entregas', 'devoluciones', 'transporte', 'usuarios',
 ];
 
-export default function ViewRouter({ role, view, onToast, onNav, userName, userEmail, onStartTour }: Props) {
+export default function ViewRouter({ role, view, onToast, onNav, userId, userName, userEmail, onStartTour }: Props) {
   const [requestIntent, setRequestIntent] = useState<RequestIntent>();
   useEffect(() => { if (view !== 'mis-solicitudes') setRequestIntent(undefined); }, [view]);
   const openRequests = (intent: RequestIntent) => { setRequestIntent(intent); onNav('mis-solicitudes'); };
@@ -53,7 +54,7 @@ export default function ViewRouter({ role, view, onToast, onNav, userName, userE
 
   if (role === 'gerente') {
     if (view === 'dashboard') return <GerenteDashboard onNav={onNav} />;
-    if (view === 'inventario') return <InventarioView role={role} onToast={onToast} />;
+    if (view === 'inventario') return <InventarioView role={role} onToast={onToast} preferenceKey={userId} />;
     if (view === 'reportes') return <ReportesView />;
     if (view === 'proyectos') return <ProyectosView role={role} onToast={onToast} onNav={onNav} />;
     if (MANAGER_DATA_VIEWS.includes(view as ConsultaGerente)) return <ConsultaGerenteView type={view as ConsultaGerente} />;
@@ -66,7 +67,7 @@ export default function ViewRouter({ role, view, onToast, onNav, userName, userE
     if (view === 'proyectos') return <ProyectosView role={role} onToast={onToast} onNav={onNav} />;
     if (view === 'entregas') return <EntregasView onToast={onToast} usuario={userName} />;
     if (view === 'devoluciones') return <DevolucionesView onToast={onToast} />;
-    if (view === 'inventario') return <InventarioView role={role} onToast={onToast} />;
+    if (view === 'inventario') return <InventarioView role={role} onToast={onToast} preferenceKey={userId} />;
     if (view === 'nueva-compra') return <NuevaCompraView onToast={onToast} onNav={onNav} />;
     if (view === 'mis-compras') return <MisComprasView usuario={userName} onNav={onNav} onToast={onToast} />;
   }
@@ -78,7 +79,7 @@ export default function ViewRouter({ role, view, onToast, onNav, userName, userE
     if (view === 'proyectos') return <ProyectosView role={role} onToast={onToast} onNav={onNav} />;
     if (view === 'entregas') return <EntregasView onToast={onToast} usuario={userName} />;
     if (view === 'devoluciones') return <DevolucionesView onToast={onToast} />;
-    if (view === 'inventario') return <InventarioView role={role} onToast={onToast} />;
+    if (view === 'inventario') return <InventarioView role={role} onToast={onToast} preferenceKey={userId} />;
     if (view === 'usuarios') return <UsuariosView onToast={onToast} />;
     if (view === 'compras') return <ComprasView onToast={onToast} />;
   }
