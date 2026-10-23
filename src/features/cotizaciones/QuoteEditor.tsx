@@ -21,7 +21,7 @@ import {
   validPeruLocation,
 } from "./locations"
 
-import { searchMaterials } from "../../utils/materialSearch"
+import MaterialAutocomplete from "../../components/MaterialAutocomplete"
 
 import {
   calculateQuote,
@@ -757,51 +757,12 @@ export default function QuoteEditor({
                   se expresan sin IGV en {budget.moneda}; el tipo de cambio es una
                   referencia y no convierte precios automáticamente.
                 </p>
-                <Field label="Buscar material por nombre o SKU">
-                  <ExpandingTextField
-                    className="input-field"
-                    value={materialQuery}
-                    placeholder="Escribe el nombre del material…"
-                    aria-controls="quote-material-results"
-                    onChange={(e) => setMaterialQuery(e.target.value)}
-                  />
-                </Field>
-                <ul
-                  id="quote-material-results"
-                  className="quote-material-results"
-                  aria-label="Materiales del catálogo"
-                >
-                  {searchMaterials(
-                    materials,
-                    materialQuery,
-                    materials.length,
-                  ).map((m) => {
-                    const added = budget.materiales.some(
-                      (item) => item.sku === m.id,
-                    )
-                    return (
-                      <li key={m.id} className="quote-material-catalog-row">
-                        <QuoteMaterialLabel material={m} sku={m.id} nombre={m.nombre} />
-                        <button
-                          type="button"
-                          className="quote-material-option"
-                          aria-label={`${added ? 'Agregado' : 'Agregar'} ${m.nombre} · SKU ${m.id}`}
-                          disabled={added}
-                          onClick={() => addMaterial(m.id)}
-                        >
-                          <span>{added ? "Agregado" : "Agregar +"}</span>
-                          <small>{m.unidad}</small>
-                        </button>
-                      </li>
-                    )
-                  })}
-                </ul>
-                {!searchMaterials(materials, materialQuery, materials.length)
-                  .length && (
-                  <p role="status">
-                    No se encontraron materiales con ese nombre.
-                  </p>
-                )}
+                <div className="quote-field">
+                  <label className="quote-field-label" htmlFor="quote-material-search">Agregar material del catálogo</label>
+                  <MaterialAutocomplete id="quote-material-search" materials={materials} value={materialQuery} onChange={setMaterialQuery}
+                    disabled={saving} excludedIds={budget.materiales.map(item => item.sku)}
+                    onSelect={material => addMaterial(material.id)} />
+                </div>
                 {budget.materiales.map((m, index) => (
                   <div key={m.id} className="quote-line">
                     <QuoteMaterialLabel material={materials.find(material => material.id === m.sku)} sku={m.sku} nombre={m.nombre} />

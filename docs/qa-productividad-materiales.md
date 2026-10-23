@@ -34,3 +34,13 @@ Los avisos generales de todos los módulos ahora usan una tarjeta central con ic
 Descarte y entregas usan SystemAlert con acciones explícitas, foco en la opción de revisión, Escape y bloqueo durante operaciones pendientes. Compras, requerimientos y cotizaciones conservan sus formularios y resúmenes, con iconografía compartida para sus decisiones. Los errores contextuales conservan su ubicación y adoptan la paleta común.
 
 Pendiente en pantalla: comprobar avisos de éxito y error de inventario, usuarios, perfil, solicitudes, proyectos, compras, transporte, devoluciones, valorizaciones y cotizaciones; probar dos mensajes seguidos; teclado y móvil; registro de entrega en curso no debe poder confirmarse dos veces ni cerrarse desde el aviso. El aviso nativo de recarga/cierre de pestaña depende del navegador y no se puede personalizar.
+
+## Primera tarea pendiente: menos escritura
+
+Compras y cotizaciones comparten MaterialAutocomplete. Muestra hasta ocho sugerencias desde el primer carácter o al enfocar el buscador; busca sin tildes, por palabras en cualquier orden, código o categoría. Cada resultado muestra nombre, código, categoría y unidad; en compras incluye stock de la sede elegida. Los materiales agregados se excluyen del listado. La selección conserva la identidad y datos del catálogo; no se permite inventar unidades o materiales desde el buscador.
+
+Cotizaciones sigue cargando automáticamente unidad de inventario, unidad cotizada y costo referencial. Compras sigue obteniendo unidad y categoría desde el material seleccionado, sin pedir que se escriban; conserva la propuesta de cantidad por déficit. Los requerimientos continúan vinculados a las partidas aceptadas del proyecto, sin ampliar el catálogo permitido.
+
+Revisión manual pendiente: seleccionar por clic y por flechas/Enter, descartar sugerencias con Escape, recorrer con Tab, probar una búsqueda sin resultados y agregar varios materiales. Confirmar que no aparecen duplicados ni se envía el formulario al elegir. Revisar en móvil el desplazamiento de sugerencias y el menú cerca del final de la página.
+
+La mejora de búsqueda incluye controles de teclado propios del autocompletado. Las tareas posteriores siguen pendientes: persistencia de filtros y acciones cercanas, reducción de detalle visible y revisión general del teclado. Guardar y agregar otro ya estaba implementado.

@@ -5,7 +5,7 @@ import { SEDES, Sede } from '../../../domain/types';
 import MaterialPreviewModal, { PreviewBtn } from '../../../components/MaterialPreviewModal';
 import { Material, CompraItem } from '../../../domain/types';
 import { crearCompra } from '../../../services/compraService';
-import { searchMaterials } from '../../../utils/materialSearch';
+import MaterialAutocomplete from '../../../components/MaterialAutocomplete';
 import { estadoPorSede } from '../../../utils/inventoryStatus';
 
 
@@ -20,8 +20,8 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
   const [sede, setSede] = useState<Sede>('Chiclayo');
   const materiales = state.materials.map(material => ({ ...material, estado: estadoPorSede(material, sede) }));
   const [motivo, setMotivo] = useState('');
-  const [items, setItems] = useState<(CompraItem & { query: string; showDrop: boolean })[]>([
-    { skuId: '', nombre: '', cantidadSolicitada: 0, precioUnitario: undefined, query: '', showDrop: false },
+  const [items, setItems] = useState<(CompraItem & { query: string })[]>([
+    { skuId: '', nombre: '', cantidadSolicitada: 0, precioUnitario: undefined, query: '' },
   ]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [previewMat, setPreviewMat] = useState<Material | null>(null);
@@ -34,7 +34,7 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
     const criticos = materiales.filter(m => m.estado === 'CRÍTICO' || m.estado === 'AGOTADO');
     const bajos = materiales.filter(m => m.estado === 'BAJO');
 
-    const getMatches = (query: string) => searchMaterials(materiales, query, 8, 2);
+
 
     const selectMat = (idx: number, mat: Material) => {
       if (items.some((item, index) => index !== idx && item.skuId === mat.id)) {
@@ -54,7 +54,6 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
                 nombre: mat.nombre,
                 cantidadSolicitada: deficit > 0 ? deficit : 1,
                 query: `${mat.id} — ${mat.nombre}`,
-                showDrop: false,
               }
         )
       );
@@ -87,18 +86,16 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
             cantidadSolicitada: deficit,
             precioUnitario: undefined,
             query: `${mat.id} — ${mat.nombre}`,
-            showDrop: false,
           },
         ]);
       };
 
-  const addItem = () => setItems(p => [...p, { skuId: '', nombre: '', cantidadSolicitada: 0, precioUnitario: undefined, query: '', showDrop: false }]);
+  const addItem = () => setItems(p => [...p, { skuId: '', nombre: '', cantidadSolicitada: 0, precioUnitario: undefined, query: '' }]);
   const removeItem = (i: number) => setItems(p => p.filter((_, j) => j !== i));
 
   const updateQuery = (i: number, q: string) =>
-    setItems(p => p.map((it, j) => j !== i ? it : { ...it, query: q, skuId: '', nombre: '', showDrop: true }));
-  const closeDrop = (i: number) =>
-    setItems(p => p.map((it, j) => j !== i ? it : { ...it, showDrop: false }));
+    setItems(p => p.map((it, j) => j !== i ? it : { ...it, query: q, skuId: '', nombre: '' }));
+
 
   const validate = (draft: boolean) => {
     const e: Record<string, string> = {};
@@ -350,9 +347,7 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
       ? mat.stockSedes[sede]
       : null;
 
-    const matches = getMatches(
-      item.query
-    );
+
 
     return (
       <div
@@ -469,188 +464,13 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
                       </button>
                     </div>
                   ) : (
-                    <input
-                      className="input-field"
-                      aria-invalid={errors[`material-${i}`] ? true : undefined}
-                      aria-describedby={errors[`material-${i}`] ? `purchase-material-${i}-error` : undefined}
-                      id={`purchase-material-${i}`}
-                      placeholder="Buscar por nombre o SKU…"
-                      value={item.query}
-
-                      style={{
-                        width: '100%',
-                        height: 42,
-                        boxSizing: 'border-box',
-                      }}
-
-                      onChange={(e) =>
-                        updateQuery(
-                          i,
-                          e.target.value
-                        )
-                      }
-
-                      onFocus={() =>
-                        setItems((p) =>
-                          p.map((it, j) =>
-                            j !== i
-                              ? it
-                              : {
-                                  ...it,
-                                  showDrop: true,
-                                }
-                          )
-                        )
-                      }
-
-                      onBlur={() =>
-                        setTimeout(
-                          () => closeDrop(i),
-                          150
-                        )
-                      }
-                    />
+                    <MaterialAutocomplete materials={materiales} value={item.query} sede={sede}
+                      excludedIds={items.filter((_, index) => index !== i).map(other => other.skuId)}
+                      id={`purchase-material-${i}`} invalid={Boolean(errors[`material-${i}`])}
+                      describedBy={errors[`material-${i}`] ? `purchase-material-${i}-error` : undefined}
+                      disabled={saving} onChange={query => updateQuery(i, query)} onSelect={material => selectMat(i, material)} />
                   )}
-
-                  {/* AUTOCOMPLETE */}
-                  {!item.skuId &&
-                    item.showDrop &&
-                    item.query.length >= 2 && (
-                      <div
-                        style={{
-                          position: 'absolute',
-
-                          zIndex: 50,
-
-                          top: 'calc(100% + 4px)',
-                          left: 0,
-                          right: 0,
-
-                          background: '#fff',
-
-                          border:
-                            '1px solid #E8EAFF',
-
-                          borderRadius: 12,
-
-                          boxShadow:
-                            '0 8px 24px rgba(99,102,241,0.15)',
-
-                          overflow: 'hidden',
-                        }}
-                      >
-                        {matches.map((m) => (
-                          <div
-                            key={m.id}
-
-                            onMouseDown={() =>
-                              selectMat(i, m)
-                            }
-
-                            style={{
-                              padding:
-                                '9px 14px',
-
-                              cursor:
-                                'pointer',
-
-                              borderBottom:
-                                '1px solid #F0F2FF',
-
-                              display:
-                                'flex',
-
-                              alignItems:
-                                'center',
-
-                              gap: 10,
-                            }}
-
-                            onMouseEnter={(e) =>
-                              (
-                                e.currentTarget as HTMLElement
-                              ).style.background =
-                                '#F8F9FF'
-                            }
-
-                            onMouseLeave={(e) =>
-                              (
-                                e.currentTarget as HTMLElement
-                              ).style.background =
-                                ''
-                            }
-                          >
-                            <div
-                              style={{
-                                flex: 1,
-                                minWidth: 0,
-                              }}
-                            >
-                              <div
-                                style={{
-                                  fontSize: 12.5,
-                                  fontWeight: 600,
-                                  color: '#1A1D23',
-                                }}
-                              >
-                                {m.nombre}
-                              </div>
-
-                              <div
-                                style={{
-                                  fontSize: 10.5,
-                                  color: '#8B8FA8',
-                                  fontFamily:
-                                    'monospace',
-                                }}
-                              >
-                                {m.id} ·{' '}
-                                {m.categoria}
-                              </div>
-                            </div>
-
-                            <span
-                              className="status-badge"
-
-                              style={{
-                                color:
-                                  ESTADO_COLOR[
-                                    m.estado
-                                  ],
-
-                                background:
-                                  ESTADO_BG[
-                                    m.estado
-                                  ],
-
-                                flexShrink: 0,
-                              }}
-                            >
-                              {m.estado}
-                            </span>
-                          </div>
-                        ))}
-
-                        {matches.length ===
-                          0 && (
-                          <div
-                            style={{
-                              padding:
-                                '10px 14px',
-
-                              fontSize:
-                                12.5,
-
-                              color:
-                                '#8B8FA8',
-                            }}
-                          >
-                            No se encontraron
-                            materiales registrados.
-                          </div>
-                        )}
-                      </div>
-                    )}
+                  {mat && <div className="material-catalog-metadata">{mat.categoria} · {mat.unidad}</div>}
                   <FieldError id={`purchase-material-${i}-error`} message={errors[`material-${i}`]} />
                 </div>
 

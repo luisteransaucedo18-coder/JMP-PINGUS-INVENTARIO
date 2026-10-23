@@ -86,6 +86,7 @@ test('compras muestra agotados con mínimo cero y bajos de la sede, aunque el ca
       if (name.endsWith('/domain/types')) return { SEDES: ['Chiclayo', 'Chimbote', 'Trujillo'] };
       if (name.endsWith('/MaterialPreviewModal')) return { default: () => null, PreviewBtn: () => null };
       if (name.endsWith('/FieldError')) return { default: () => null };
+      if (name.endsWith('/MaterialAutocomplete')) return { default: () => null };
       if (name.endsWith('/materialSearch')) return { searchMaterials: () => [] };
       if (name.endsWith('/compraService')) return {};
       throw new Error(`Unexpected import ${name}`);

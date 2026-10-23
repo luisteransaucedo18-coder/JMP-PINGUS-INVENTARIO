@@ -3145,3 +3145,14 @@ body {
 .quote-dialog > .system-alert-icon { margin-top: 16px; }
 /* Keep actionable validation beside the field while matching the alert palette. */
 :where(.quote-error, .valuation-error, .transporte-error, .auth-error, .profile-feedback-error, .sidebar-session-error) { border-radius: 8px; border: 1px solid #E8CBD2; background: #F9EAED; color: #9C3442; padding: 12px 16px; font-size: 14px; line-height: 20px; }
+
+.material-autocomplete { position: relative; min-width: 0; width: 100%; }
+.material-autocomplete > input { width: 100%; box-sizing: border-box; min-height: 44px; }
+.material-autocomplete-panel { position: absolute; z-index: 60; top: calc(100% + 4px); left: 0; right: 0; max-height: 320px; overflow-y: auto; overscroll-behavior: contain; border: 1px solid #DCE2EA; border-radius: 8px; background: #fff; box-shadow: 0 8px 24px #18181B1A; }
+.material-autocomplete-panel ul { list-style: none; padding: 4px; margin: 0; }
+.material-autocomplete-option { display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: 8px; cursor: pointer; text-align: left; overflow-wrap: anywhere; }
+.material-autocomplete-option strong { color: #18181B; font-size: 14px; line-height: 20px; font-weight: 600; }
+.material-autocomplete-option span, .material-autocomplete-option small, .material-catalog-metadata { color: #526174; font-size: 12px; line-height: 16px; }
+.material-autocomplete-option[aria-selected='true'] { background: #E8F0F7; outline: 1px solid #105583; outline-offset: -1px; }
+.material-autocomplete-panel p { margin: 0; padding: 12px 16px; color: #526174; font-size: 12px; line-height: 16px; }
+.material-catalog-metadata { margin-top: 4px; }
