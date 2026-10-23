@@ -3173,13 +3173,13 @@ details > summary:focus-visible { outline: 2px solid #2563EB; outline-offset: 3p
 
 hr { border: 0; border-top: 1px solid var(--color-divider); }
 
-.quote-flow-actions { justify-content: flex-end; gap: 12px; padding: 16px; border: 1px solid var(--color-divider); border-radius: 16px; background: #fff; }
+.quote-flow-actions { justify-content: flex-end; gap: 12px; padding: 16px 0; }
 .quote-flow-actions .btn { min-height: 44px; justify-content: center; }
-.quote-flow-actions .quote-flow-cancel { margin-right: auto; color: #64748B; background: transparent; border: 1px solid transparent; box-shadow: none; }
+.quote-flow-actions .quote-flow-cancel { margin-right: auto; color: #fff; background: transparent; border: 1px solid transparent; box-shadow: none; }
 .quote-flow-actions .quote-flow-cancel:hover:not(:disabled) { color: #9C3442; background: #F9EAED; }
 .quote-flow-actions .quote-flow-back { color: #105583; background: #E8F0F7; border: 1px solid #105583; box-shadow: none; }
 .quote-flow-actions .quote-flow-back:hover:not(:disabled) { background: #DBEAFE; }
-@media (max-width: 380px) { .quote-flow-actions { gap: 8px; padding: 12px; } .quote-flow-actions .btn { padding: 8px 12px; } }
+@media (max-width: 380px) { .quote-flow-actions { gap: 8px; padding: 12px 0; } .quote-flow-actions .btn { padding: 8px 12px; } }
 
 .quote-catalog-section { margin-top: 32px; padding-top: 32px; }
 .quote-catalog-section > .quote-material-picker { margin-top: 16px; margin-bottom: 24px; }
