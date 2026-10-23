@@ -155,7 +155,7 @@ export default function RequerimientosView({ onToast, onNav }: Props) {
       )}
 
       <div className="panel">
-        <div style={{ padding: '14px 16px', borderBottom: '1px solid #E4E4E7', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--color-divider)', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
           <input className="input-field" style={{ maxWidth: 220 }} placeholder="Buscar folio, proyecto, analista…" value={search} onChange={e => setSearch(e.target.value)} />
           <select className="select-field" value={estadoFilter} onChange={e => setEstadoFilter(e.target.value)}>
             <option value="">Todos los estados</option>
@@ -352,7 +352,7 @@ export default function RequerimientosView({ onToast, onNav }: Props) {
 
             {/* Action zone */}
             {selected.estado === 'ENVIADO' && (
-              <div style={{ padding: '14px 22px', borderTop: '1px solid #E4E4E7', background: action ? (action === 'confirm' ? '#F0FDF4' : '#FFF5F5') : '#FAFAFA' }}>
+              <div style={{ padding: '14px 22px', borderTop: '1px solid var(--color-divider)', background: action ? (action === 'confirm' ? '#F0FDF4' : '#FFF5F5') : '#FAFAFA' }}>
                 {!action ? (
                   <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                     <button className="btn btn-ghost" onClick={() => { setSelected(null); }}>Cerrar</button>
@@ -383,7 +383,7 @@ export default function RequerimientosView({ onToast, onNav }: Props) {
             )}
 
             {selected.estado !== 'ENVIADO' && (
-              <div style={{ padding: '14px 22px', borderTop: '1px solid #E4E4E7', display: 'flex', justifyContent: 'flex-end' }}>
+              <div style={{ padding: '14px 22px', borderTop: '1px solid var(--color-divider)', display: 'flex', justifyContent: 'flex-end' }}>
                 {selected.observaciones && (
                   <div style={{ flex: 1, fontSize: 12.5, color: selected.estado === 'RECHAZADO' ? '#DC2626' : '#15803D' }}>
                     <strong>Observación:</strong> {selected.observaciones}

@@ -363,7 +363,7 @@ export default function NotificationsPanel({ open, onClose, notifications, readI
         aria-label="Notificaciones"
       >
         {/* Header */}
-        <div style={{ padding: '22px 22px 14px', borderBottom: '1px solid #F0F2FF', flexShrink: 0 }}>
+        <div style={{ padding: '22px 22px 14px', borderBottom: '1px solid var(--color-divider)', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{ width: 36, height: 36, borderRadius: 12, background: '#EEF0FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -424,7 +424,7 @@ export default function NotificationsPanel({ open, onClose, notifications, readI
                   onClick={() => markRead(n.id)}
                   style={{
                     display: 'flex', gap: 13, padding: '14px 20px', cursor: 'pointer',
-                    borderBottom: '1px solid #F8F9FF',
+                    borderBottom: '1px solid var(--color-divider)',
                     background: isRead ? '#fff' : '#FAFBFF',
                     transition: 'background 0.1s',
                     position: 'relative',
@@ -462,7 +462,7 @@ export default function NotificationsPanel({ open, onClose, notifications, readI
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '14px 20px', borderTop: '1px solid #F0F2FF', flexShrink: 0, background: '#FAFBFF' }}>
+        <div style={{ padding: '14px 20px', borderTop: '1px solid var(--color-divider)', flexShrink: 0, background: '#FAFBFF' }}>
           <div style={{ fontSize: 11.5, color: '#71717A', textAlign: 'center' }}>
             Las notificaciones se generan automáticamente desde el estado del sistema.
           </div>

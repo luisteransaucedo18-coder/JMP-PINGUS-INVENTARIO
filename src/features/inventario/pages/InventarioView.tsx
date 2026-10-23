@@ -114,7 +114,7 @@ const UNIDADES_MATERIAL: Record<string, string> = {
 };
 
 function ModalActions({ primaryLabel, onPrimary, onCancel, busy = false }: { primaryLabel: string; onPrimary: () => void; onCancel: () => void; busy?: boolean }) {
-  return <div style={{ padding: '14px 22px', borderTop: '1px solid #E4E4E7', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+  return <div style={{ padding: '14px 22px', borderTop: '1px solid var(--color-divider)', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
     <button className="btn btn-primary" disabled={busy} onClick={onPrimary}>{primaryLabel}</button>
     <button className="btn btn-ghost" disabled={busy} onClick={onCancel}>Cancelar</button>
   </div>;
@@ -951,7 +951,7 @@ export default function InventarioView({
               '14px 16px',
 
             borderBottom:
-              '1px solid #E4E4E7',
+              '1px solid var(--color-divider)',
 
             display: 'flex',
 
@@ -1851,7 +1851,7 @@ export default function InventarioView({
                   '14px 22px',
 
                 borderTop:
-                  '1px solid #E4E4E7',
+                  '1px solid var(--color-divider)',
 
                 display:
                   'flex',

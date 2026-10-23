@@ -345,7 +345,7 @@ export default function AnalistaDashboard({
                       : '14px 16px',
 
                   borderBottom:
-                    '1px solid #F4F4F5',
+                    '1px solid var(--color-divider)',
 
                   minWidth: 0,
                 }}

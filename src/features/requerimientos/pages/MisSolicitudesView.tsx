@@ -152,7 +152,7 @@ export default function MisSolicitudesView({ onToast, onNav }: Props) {
                 <strong>Observación del coordinador:</strong> {selected.observaciones}
               </div>
             )}
-            <div style={{ padding: '14px 22px', borderTop: '1px solid #E4E4E7', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+            <div style={{ padding: '14px 22px', borderTop: '1px solid var(--color-divider)', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               {selected.estado === 'BORRADOR' && (
                 <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => void handleSubmit(selected.id)}><svg width="13" height="13" viewBox="0 0 15 15" fill="none"><path d="M1 1l13 6.5L1 14V9l8-1.5L1 6V1z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg> Enviar al coordinador</button>
               )}

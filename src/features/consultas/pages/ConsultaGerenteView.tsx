@@ -175,7 +175,7 @@ export default function ConsultaGerenteView({ type }: { type: ConsultaGerente })
   return (
     <section className="manager-view-surface manager-consultation-view" style={{ padding: 24, overflowY: 'auto', flex: 1 }}>
       <div className="panel manager-consultation-panel" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ padding: '20px 22px 16px', borderBottom: '1px solid #E4E6F0' }}>
+        <div style={{ padding: '20px 22px 16px', borderBottom: '1px solid var(--color-divider)' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
             <div>
               <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#18181B' }}>{config.heading}</h2>

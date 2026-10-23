@@ -180,7 +180,7 @@ export default function NuevaCompraView({ onToast, onNav }: Props) {
 
         {/* Tabs */}
         <div style={{ background: 'var(--color-surface)', border: '1px solid var(--surface-border)', borderRadius: 'var(--surface-radius)', boxShadow: 'var(--surface-shadow)', overflow: 'hidden' }}>
-          <div style={{ display: 'flex', borderBottom: '1px solid #F0F2FF', padding: '0 24px' }}>
+          <div style={{ display: 'flex', borderBottom: '1px solid var(--color-divider)', padding: '0 24px' }}>
             {([['form', 'Nueva solicitud'], ['criticos', `Materiales críticos${criticos.length + bajos.length > 0 ? ` (${criticos.length + bajos.length})` : ''}`]] as const).map(([id, label]) => (
               <button key={id} onClick={() => setActiveTab(id)} style={{
                 padding: '15px 16px', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, background: 'none',

@@ -245,7 +245,7 @@ export default function DevolucionesView({
           <div
             style={{
               padding: 16,
-              borderBottom: "1px solid #E4E4E7",
+              borderBottom: "1px solid var(--color-divider)",
               display: "flex",
               gap: 12,
             }}

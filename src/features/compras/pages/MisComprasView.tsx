@@ -72,7 +72,7 @@ export default function MisComprasView({ onNav, onToast }: Props) {
         </div>
 
         <div className="panel">
-          <div style={{ padding: '14px 18px', borderBottom: '1px solid #F0F2FF', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--color-divider)', display: 'flex', alignItems: 'center', gap: 10 }}>
             <select className="select-field" value={filter} onChange={e => setFilter(e.target.value as EstadoCompra | '')}>
               <option value="">Todos los estados</option>
               {(['ENVIADO','APROBADO','COMPRADO','RECHAZADO','BORRADOR'] as EstadoCompra[]).map(e =>
@@ -108,7 +108,7 @@ export default function MisComprasView({ onNav, onToast }: Props) {
         {/* Expanded detail */}
         {det && (
           <div style={{ background: 'var(--color-surface)', border: '1px solid var(--surface-border)', borderRadius: 'var(--surface-radius)', boxShadow: 'var(--surface-shadow)', overflow: 'hidden' }}>
-            <div style={{ padding: '18px 24px', borderBottom: '1px solid #F0F2FF', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--color-divider)', display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 800, color: '#1A1D23' }}>{det.id} · Detalle de la orden</div>
                 <div style={{ fontSize: 12, color: '#8B8FA8', marginTop: 3 }}>{det.motivo}</div>
@@ -150,18 +150,18 @@ export default function MisComprasView({ onNav, onToast }: Props) {
               </tbody>
             </table>
             {det.observaciones && (
-              <div style={{ padding: '12px 20px', background: '#FFFBEB', borderTop: '1px solid #F0F2FF', fontSize: 12.5, color: '#92400E' }}>
+              <div style={{ padding: '12px 20px', background: '#FFFBEB', borderTop: '1px solid var(--color-divider)', fontSize: 12.5, color: '#92400E' }}>
                 <strong>Observación del coordinador:</strong> {det.observaciones}
               </div>
             )}
             {det.notaCompra && (
-              <div style={{ padding: '12px 20px', background: '#F0FDF4', borderTop: '1px solid #F0F2FF', fontSize: 12.5, color: '#15803D' }}>
+              <div style={{ padding: '12px 20px', background: '#F0FDF4', borderTop: '1px solid var(--color-divider)', fontSize: 12.5, color: '#15803D' }}>
                 <strong>Nota de compra:</strong> {det.notaCompra}
               </div>
             )}
             {showCancelReason && <div style={{padding:'12px 20px'}}><label htmlFor="purchase-cancel-reason">Motivo de la cancelación</label><textarea id="purchase-cancel-reason" className="input-field" aria-invalid={cancelWarning ? true : undefined} value={cancelReason} onChange={event => {setCancelReason(event.target.value);setCancelWarning('');}} /><FieldError message={cancelWarning} /></div>}
             {(det.estado === 'BORRADOR' || det.estado === 'ENVIADO') && (
-              <div style={{ padding: '14px 20px', borderTop: '1px solid #F0F2FF', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <div style={{ padding: '14px 20px', borderTop: '1px solid var(--color-divider)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                 <span style={{ fontSize: 12, color: '#8B8FA8' }}>Si la creaste por error, puedes cancelarla mientras no haya sido aprobada.</span>
                 <button className="btn btn-danger" disabled={cancelando} onClick={cancelar}>
                   {cancelando ? 'Cancelando…' : 'Cancelar orden'}

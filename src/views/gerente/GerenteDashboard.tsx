@@ -123,7 +123,7 @@ export default function GerenteDashboard({ onNav }: Props) {
               const initial = r.proyecto.charAt(0).toUpperCase();
               const color = SEDE_COLOR[r.sede];
               return (
-                <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 0', borderBottom: '1px solid #F0F2FF' }}>
+                <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 0', borderBottom: '1px solid var(--color-divider)' }}>
                   <div style={{ width: 36, height: 36, borderRadius: 12, background: SEDE_BG[r.sede], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color, flexShrink: 0 }}>
                     {initial}
                   </div>
@@ -199,7 +199,7 @@ export default function GerenteDashboard({ onNav }: Props) {
             </div>
           </div>
 
-          <div style={{ flex: 1, borderTop: '1px solid #F0F2FF', paddingTop: 16 }}>
+          <div style={{ flex: 1, borderTop: '1px solid var(--color-divider)', paddingTop: 16 }}>
             <SectionHead title="Alertas de stock" />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 160, overflowY: 'auto' }}>
               {alerts.length === 0 ? (
@@ -249,12 +249,12 @@ export default function GerenteDashboard({ onNav }: Props) {
         </div>
 
         {/* Recent reqs table */}
-        <div style={{ marginTop: 22, borderTop: '1px solid #F0F2FF', paddingTop: 18 }}>
+        <div style={{ marginTop: 22, borderTop: '1px solid var(--color-divider)', paddingTop: 18 }}>
           <SectionHead title="Últimas solicitudes" />
           <div className="dashboard-table-scroll">
           <table style={{ width: '100%', minWidth: 760, borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #F0F2FF' }}>
+              <tr style={{ borderBottom: '1px solid var(--color-divider)' }}>
                 {['ID', 'Proyecto', 'Sede', 'Analista', 'Fecha', 'Estado'].map(h => (
                   <th key={h} style={{ padding: '0 8px 10px', fontSize: 11, fontWeight: 600, color: '#8B8FA8', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left' }}>{h}</th>
                 ))}
@@ -262,7 +262,7 @@ export default function GerenteDashboard({ onNav }: Props) {
             </thead>
             <tbody>
               {recentReqs.slice(0, 5).map(r => (
-                <tr key={r.id} style={{ borderBottom: '1px solid #F8F9FF' }}>
+                <tr key={r.id} style={{ borderBottom: '1px solid var(--color-divider)' }}>
                   <td style={{ padding: '11px 8px', fontFamily: 'monospace', fontSize: 11, color: '#2563EB', fontWeight: 700 }}>{publicCode(r)}</td>
                   <td style={{ padding: '11px 8px', fontSize: 12.5, fontWeight: 600, color: '#1A1D23', maxWidth: 200, overflowWrap: 'anywhere' }}>{r.proyecto}</td>
                   <td style={{ padding: '11px 8px' }}>

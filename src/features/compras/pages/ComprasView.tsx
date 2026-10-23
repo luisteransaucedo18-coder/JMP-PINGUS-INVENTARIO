@@ -126,7 +126,7 @@ export default function ComprasView({ onToast }: Props) {
       {/* ── Table ── */}
       <div className="panel">
         {/* Filters */}
-        <div style={{ padding: '14px 18px', borderBottom: '1px solid #F0F2FF', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--color-divider)', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
           <input className="input-field" style={{ maxWidth: 240 }} placeholder="Buscar orden, analista, motivo…" value={search} onChange={e => setSearch(e.target.value)} />
           <select className="select-field" value={estadoFilter} onChange={e => setEstadoFilter(e.target.value as EstadoCompra | '')}>
             <option value="">Todos los estados</option>
@@ -290,7 +290,7 @@ export default function ComprasView({ onToast }: Props) {
             {/* Action zone */}
             {(mode === 'approve' || mode === 'reject' || mode === 'confirm') && (
               <div style={{
-                padding: '18px 24px', borderTop: '1px solid #F0F2FF',
+                padding: '18px 24px', borderTop: '1px solid var(--color-divider)',
                 background: mode === 'approve' ? '#F0FDF4' : mode === 'confirm' ? '#EFF6FF' : '#FFF5F5',
               }}>
                 {mode === 'approve' && (
@@ -341,7 +341,7 @@ export default function ComprasView({ onToast }: Props) {
                         const stockActual = mat ? mat.stockSedes[selected.sede] : 0;
                         const stockNuevo = stockActual + it.cantidadSolicitada;
                         return (
-                          <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 14px', borderBottom: i < selected.items.length - 1 ? '1px solid #F0F2FF' : 'none' }}>
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 14px', borderBottom: i < selected.items.length - 1 ? '1px solid var(--color-divider)' : 'none' }}>
                             <div style={{ fontSize: 12.5, color: '#1A1D23', fontWeight: 500, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.nombre}</div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, fontFamily: 'monospace', fontSize: 12 }}>
                               <span style={{ color: '#8B8FA8' }}>{stockActual} {mat?.unidad ?? 'UND'}</span>
@@ -370,7 +370,7 @@ export default function ComprasView({ onToast }: Props) {
 
             {/* Default footer */}
             {mode === 'detail' && (
-              <div style={{ padding: '14px 24px', borderTop: '1px solid #F0F2FF', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <div style={{ padding: '14px 24px', borderTop: '1px solid var(--color-divider)', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
                 <button className="btn btn-ghost" onClick={closeModal}>Cerrar</button>
                 {selected.estado === 'ENVIADO' && <>
                   <button className="btn btn-danger" style={{ padding: '8px 18px' }} onClick={() => setMode('reject')}>Cancelar</button>

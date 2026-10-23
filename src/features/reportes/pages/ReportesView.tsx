@@ -225,7 +225,7 @@ export default function ReportesView() {
           </div>
 
           {/* Estado por estado resumen */}
-          <div style={{ borderLeft: '1px solid #F0F2FF', paddingLeft: 24 }}>
+          <div style={{ borderLeft: '1px solid var(--color-divider)', paddingLeft: 24 }}>
             <SectionHead title="Resumen de estados" />
             {(['CONFIRMADO', 'ENVIADO', 'RECHAZADO', 'BORRADOR'] as const).map(e => {
               const cnt = filteredReqs.filter(r => r.estado === e).length;
@@ -246,7 +246,7 @@ export default function ReportesView() {
       {/* ── Row 4: Tabla con tabs (BankFlash transaction style) ── */}
       <Card>
         {/* Tabs */}
-        <div style={{ padding: '18px 24px 0', borderBottom: '1px solid #F0F2FF' }}>
+        <div style={{ padding: '18px 24px 0', borderBottom: '1px solid var(--color-divider)' }}>
           <div style={{ display: 'flex', gap: 4, marginBottom: 0 }}>
             {([['todos', 'Todas las solicitudes'], ['confirmados', 'Confirmadas'], ['pendientes', 'Pendientes']] as const).map(([v, label]) => (
               <button key={v} onClick={() => setActiveTab(v)} style={{
@@ -265,7 +265,7 @@ export default function ReportesView() {
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #F0F2FF', background: '#F8F9FF' }}>
+              <tr style={{ borderBottom: '1px solid var(--color-divider)', background: '#F8F9FF' }}>
                 {['ID', 'Proyecto', 'Sede', 'Analista', 'Técnico', 'Fecha', 'Items', 'Estado'].map(h => (
                   <th key={h} style={{ padding: '11px 16px', fontSize: 12, fontWeight: 600, color: '#64748B', letterSpacing: 'normal', textAlign: 'left' }}>{h}</th>
                 ))}
@@ -275,7 +275,7 @@ export default function ReportesView() {
               {tabReqs.length === 0 ? (
                 <tr className="empty-state-row"><td colSpan={8} style={{ padding: 32, textAlign: 'center', color: '#A1A1AA', fontSize: 13 }}>Sin registros en este período</td></tr>
               ) : [...tabReqs].sort((a, b) => b.fecha.localeCompare(a.fecha)).map(r => (
-                <tr key={r.id} style={{ borderBottom: '1px solid #F8F9FF', transition: 'background 0.1s' }}
+                <tr key={r.id} style={{ borderBottom: '1px solid var(--color-divider)', transition: 'background 0.1s' }}
                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F8F9FF'}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
                   <td style={{ padding: '13px 16px', fontFamily: 'monospace', fontSize: 12, color: '#2563EB', fontWeight: 700 }}>{r.id}</td>

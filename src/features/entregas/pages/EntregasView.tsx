@@ -46,7 +46,7 @@ function Comprobante({ entregaId, req, tecnico, dni, responsable, items, fecha, 
 
         <div id="comprobante-print" style={{ padding: '18px 22px' }}>
           {/* Company header */}
-          <div style={{ textAlign: 'center', marginBottom: 18, paddingBottom: 14, borderBottom: '2px solid #E4E4E7' }}>
+          <div style={{ textAlign: 'center', marginBottom: 18, paddingBottom: 14, borderBottom: '2px solid var(--color-divider)' }}>
             <div style={{ fontSize: 16, fontWeight: 800, color: '#18181B' }}>JIP — Gestión de Materiales</div>
             <div style={{ fontSize: 12, color: '#71717A', marginTop: 2 }}>Comprobante de entrega de materiales al técnico</div>
           </div>
@@ -99,7 +99,7 @@ function Comprobante({ entregaId, req, tecnico, dni, responsable, items, fecha, 
           </div>
 
           {obs && (
-            <div style={{ background: '#F9FAFB', borderRadius: 6, padding: '10px 12px', fontSize: 12, color: '#52525B', marginBottom: 14, borderLeft: '3px solid #E4E4E7' }}>
+            <div style={{ background: '#F9FAFB', borderRadius: 6, padding: '10px 12px', fontSize: 12, color: '#52525B', marginBottom: 14, borderLeft: '3px solid var(--color-divider)' }}>
               <strong>Observaciones:</strong> {obs}
             </div>
           )}
@@ -370,7 +370,7 @@ export default function EntregasView({ onToast, usuario }: Props) {
       </div>
 
       <div className="panel">
-        <div style={{ padding: '14px 16px', borderBottom: '1px solid #E4E4E7', display: 'flex', gap: 10, alignItems: 'center' }}>
+        <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--color-divider)', display: 'flex', gap: 10, alignItems: 'center' }}>
           <input className="input-field" style={{ maxWidth: 280 }}
             placeholder="Buscar por ID, proyecto o técnico…"
             value={search} onChange={e => setSearch(e.target.value)} />
@@ -427,7 +427,7 @@ export default function EntregasView({ onToast, usuario }: Props) {
       {/* Historial de entregas */}
       {state.entregas.length > 0 && (
         <div className="panel" style={{ marginTop: 18 }}>
-          <div style={{ padding: '14px 16px', borderBottom: '1px solid #E4E4E7', fontSize: 13, fontWeight: 700, color: '#18181B' }}>
+          <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--color-divider)', fontSize: 13, fontWeight: 700, color: '#18181B' }}>
             Historial de entregas
           </div>
           <div style={{ overflowX: 'auto' }}>
