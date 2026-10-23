@@ -1,3 +1,4 @@
+import QuoteCostCatalog from './QuoteCostCatalog'
 import QuoteMaterialLabel from './QuoteMaterialLabel'
 import { Children, cloneElement, isValidElement, useContext, useEffect, useId, useRef, useState, type ReactNode, type ReactElement } from "react"
 import { collectFieldIssues, type FieldIssue } from '../../utils/formValidation'
@@ -859,9 +860,7 @@ export default function QuoteEditor({
             <h3>Costos y servicios</h3>
             <h4>Partidas por modalidad · {EXCEL_MODALIDADES[budget.modalidad]}</h4>
             <p className="quote-muted">
-              Los nombres conservan las etiquetas del Excel. Agrega únicamente
-              las partidas que correspondan al proyecto; cada una se suma una
-              vez al costo directo.
+              Completa solo los costos que correspondan al proyecto. Puedes consultar las referencias del Excel en cada partida.
             </p>
             <div className="quote-form-grid">
               {(["muretesCachimbo", "muretesValvula"] as const).map((key) => (
@@ -898,67 +897,7 @@ export default function QuoteEditor({
                 }
               />
             </div>
-            {Array.from(
-              new Set(
-                EXCEL_PARTIDAS.filter((p) =>
-                  p.modalidades.includes(budget.modalidad),
-                ).map((p) => p.group),
-              ),
-            ).map((group) => (
-              <details key={group} className="quote-line">
-                <summary>{group}</summary>
-                {EXCEL_PARTIDAS.filter(
-                  (p) =>
-                    p.group === group &&
-                    p.modalidades.includes(budget.modalidad),
-                ).map((p) => (
-                  <div key={p.key} className="quote-toolbar quote-variable">
-                    <div>
-                      <strong>{p.label}</strong>
-                      <small>{p.hojas}</small>
-                    </div>
-                    <button
-                      className="btn btn-ghost"
-                      type="button"
-                      disabled={budget.gastos.some(
-                        (g) => g.variableExcel === p.key,
-                      )}
-                      onClick={() =>
-                        set("gastos", [
-                          ...budget.gastos,
-
-                          {
-                            id: crypto.randomUUID(),
-
-                            rubro: p.rubro,
-
-                            descripcion: p.label,
-
-                            variableExcel: p.key,
-
-                            cantidad: [
-                              "hospedaje",
-
-                              "alimentacion",
-
-                              "altura",
-                            ].includes(p.key)
-                              ? budget.excel.diasProyectados || 1
-                              : 1,
-
-                            costoUnitario: 0,
-                          },
-                        ])
-                      }
-                    >
-                      {budget.gastos.some((g) => g.variableExcel === p.key)
-                        ? "Agregada"
-                        : "Agregar costo"}
-                    </button>
-                  </div>
-                ))}
-              </details>
-            ))}
+            <QuoteCostCatalog budget={budget} onChange={expenses => set("gastos", expenses)} />
             <details className="quote-line">
               <summary>PROPUETA PROVEEDOR · Programación del trabajo</summary>
               <div className="quote-form-grid">
@@ -1045,7 +984,7 @@ export default function QuoteEditor({
                   Agregar partida
                 </button>
               </div>
-              {budget.gastos.map((g, index) => (
+              {budget.gastos.map((g, index) => ({ g, index })).filter(({ g }) => !EXCEL_PARTIDAS.some(p => p.key === g.variableExcel && p.modalidades.includes(budget.modalidad))).map(({ g, index }) => (
                 <div className="quote-line" key={g.id}>
                   <div className="quote-form-grid">
                     <Field label="Rubro">
@@ -1404,7 +1343,13 @@ export default function QuoteEditor({
             )}
           </section>
         </div>
-        <div className="quote-toolbar quote-flow-actions">
+        <div className={step === 2 ? 'cost-flow-footer' : undefined}>
+        {step === 2 && <aside className="cost-flow-summary" aria-label="Resumen de costos">
+          <span><strong>{budget.gastos.length}</strong> partidas incluidas</span>
+          <span>Costos y servicios <strong>{money(calculateQuote(budget).gastos, budget.moneda)}</strong></span>
+          <span>Costo directo, con materiales <strong>{money(calculateQuote(budget).costoDirecto, budget.moneda)}</strong></span>
+        </aside>}
+        <div className={`quote-toolbar quote-flow-actions${step === 2 ? ' cost-flow-actions' : ''}`}>
           <button type="button" className="btn quote-flow-cancel" onClick={onCancel}>
             Cancelar
           </button>
@@ -1441,6 +1386,7 @@ export default function QuoteEditor({
                   : correctionMode ? "Guardar corrección" : "Guardar borrador"}
             </button>
           )}
+        </div>
         </div>
       </fieldset>
     </form></ValidationContext.Provider>

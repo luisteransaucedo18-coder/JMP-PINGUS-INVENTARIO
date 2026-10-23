@@ -3184,3 +3184,45 @@ hr { border: 0; border-top: 1px solid var(--color-divider); }
 .quote-catalog-section { margin-top: 32px; padding-top: 32px; }
 .quote-catalog-section > .quote-material-picker { margin-top: 16px; margin-bottom: 24px; }
 @media (max-width: 640px) { .quote-catalog-section { margin-top: 24px; padding-top: 24px; } }
+
+/* Cost entry: one editable row per catalog item, with disclosure for workbook context. */
+.cost-catalog { margin: 24px 0; }
+.cost-catalog-search { max-width: 640px; }
+.cost-catalog-search > label { display: block; margin-bottom: 8px; color: #465569; font-size: 14px; font-weight: 600; }
+.cost-catalog-search > div { display: flex; gap: 8px; }
+.cost-catalog-search input { flex: 1; min-width: 0; min-height: 44px; }
+.cost-catalog-group { border-top: 1px solid var(--color-divider); }
+.cost-catalog-group > summary { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 16px 4px; color: #18181B; font-size: 14px; }
+.cost-catalog-group > summary::before { margin: 0; }
+.cost-group-name { flex: 1; font-weight: 600; min-width: 160px; }
+.cost-group-count { color: #526174; font-size: 12px; }
+.cost-catalog-group > summary > strong { min-width: 100px; text-align: right; color: #105583; font-variant-numeric: tabular-nums; }
+.cost-catalog-row { display: grid; grid-template-columns: minmax(200px, 1fr) 88px 160px 112px 88px; gap: 16px; align-items: start; padding: 16px 4px; border-top: 1px solid #DBEAFE; }
+.cost-catalog-identity h5 { margin: 0; color: #18181B; font-size: 14px; line-height: 20px; font-weight: 600; }
+.cost-reference { margin-top: 8px; max-width: 70ch; }
+.cost-reference > summary { color: #105583; font-size: 12px; line-height: 20px; }
+.cost-reference p { color: #64748B; font-size: 12px; overflow-wrap: anywhere; }
+.cost-catalog-row > label { display: flex; flex-direction: column; gap: 8px; min-width: 0; font-size: 12px; line-height: 16px; color: #526174; }
+.cost-catalog-row .input-field { width: 100%; min-height: 44px; box-sizing: border-box; font-variant-numeric: tabular-nums; }
+.cost-row-total { display: flex; flex-direction: column; gap: 16px; color: #526174; font-size: 12px; }
+.cost-row-total strong { color: #18181B; font-size: 14px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.cost-row-action { padding-top: 24px; color: #64748B; font-size: 12px; }
+.cost-context-note { padding: 8px 12px; background: #E8F0F7; border-radius: 8px; color: #465569; font-size: 12px; }
+.cost-flow-footer { position: sticky; bottom: 0; z-index: 20; }
+.cost-flow-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap; padding: 12px 16px; border: 1px solid var(--color-divider); border-radius: 8px; background: #fff; color: #465569; font-size: 14px; box-shadow: 0 4px 16px #18181B14; }
+.cost-flow-summary span { display: flex; gap: 8px; flex-wrap: wrap; }
+.cost-flow-summary strong { color: #105583; font-variant-numeric: tabular-nums; }
+@media (max-width: 900px) {
+  .cost-catalog-row { grid-template-columns: minmax(80px, 1fr) minmax(120px, 1fr) minmax(80px, 1fr); gap: 12px; }
+  .cost-catalog-identity { grid-column: 1 / -1; }
+  .cost-row-action { grid-column: 1 / -1; padding-top: 0; text-align: right; }
+}
+@media (max-width: 480px) {
+  .cost-catalog-group > summary { gap: 8px; }
+  .cost-group-name { min-width: 120px; }
+  .cost-group-count { width: calc(100% - 24px); margin-left: 24px; order: 1; }
+  .cost-catalog-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .cost-row-total { gap: 8px; }
+  .cost-row-action { grid-column: auto; padding-top: 0; }
+  .cost-flow-summary { gap: 8px; padding: 12px; font-size: 12px; }
+}

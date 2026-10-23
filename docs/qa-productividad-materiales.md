@@ -44,3 +44,14 @@ Cotizaciones sigue cargando automáticamente unidad de inventario, unidad cotiza
 Revisión manual pendiente: seleccionar por clic y por flechas/Enter, descartar sugerencias con Escape, recorrer con Tab, probar una búsqueda sin resultados y agregar varios materiales. Confirmar que no aparecen duplicados ni se envía el formulario al elegir. Revisar en móvil el desplazamiento de sugerencias y el menú cerca del final de la página.
 
 La mejora de búsqueda incluye controles de teclado propios del autocompletado. Las tareas posteriores siguen pendientes: persistencia de filtros y acciones cercanas, reducción de detalle visible y revisión general del teclado. Guardar y agregar otro ya estaba implementado.
+
+## Rediseño de Costos y servicios
+
+- Búsqueda por nombre, grupo y referencia, limitada a la modalidad activa; las coincidencias se expanden automáticamente. Enter en la búsqueda no cambia de paso.
+- Partidas del catálogo con cantidad y costo unitario en la misma fila. Se crea el gasto al ingresar un valor; las siguientes ediciones conservan el identificador, las cantidades y la descripción canónica del Excel.
+- Subtotal y número de partidas incluidas por grupo; referencias y descripción completa bajo Ver referencia. Los grupos mantienen su estado al buscar y limpiar.
+- Resumen de cantidad de partidas, gastos y costo directo junto al pie de navegación. Separadores principales azules y separadores de fila azul suave.
+- Las partidas del catálogo ya no se repiten en Servicios y otros costos. Los gastos libres y las partidas heredadas de otras modalidades siguen disponibles para edición allí.
+- Se conservan las cantidades iniciales por días en hospedaje, alimentación y altura. Seleccionar NO en muretes no borra gastos; se muestra una indicación para revisar su correspondencia.
+
+Validación: pruebas de alta/edición sin duplicados, conservación de identidad y cantidades por días; suite y build del proyecto. Prueba visual aislada del componente real en navegador a escritorio y 390 px: búsqueda, escritura sin pérdida de foco, cantidad por costo, conservación al filtrar y quitar con subtotal en cero. Datos de prueba, sin guardar operaciones remotas. Falta revisar el flujo autenticado completo y medir tiempos con usuarios.
