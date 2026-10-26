@@ -1,10 +1,11 @@
 // Use the existing server. Supabase is mocked; no accounts or data are changed.
 import { createRequire } from 'node:module';
 import assert from 'node:assert/strict';
+import { launchBrowser } from './e2e-support.mjs';
 
 const require = createRequire(process.env.PLAYWRIGHT_PACKAGE_JSON || `${process.cwd()}/package.json`);
 const { chromium } = require('playwright');
-const browser = await chromium.launch({ channel: 'msedge', headless: true });
+const browser = await launchBrowser(chromium);
 try {
   for (const role of ['analista']) {
     const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });

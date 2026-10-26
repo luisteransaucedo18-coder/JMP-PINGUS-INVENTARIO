@@ -1,4 +1,3 @@
-import SystemAlert from './components/SystemAlert';
 import ValidatedForm from "./components/ValidatedForm";
 import { useState, useEffect, useRef } from 'react';
 import { obtenerMiPerfil, type Perfil } from './services/perfilService';
@@ -188,8 +187,14 @@ function AppShell({ onLogout, loggingOut, logoutError }: { loggingOut: boolean; 
   const sidebarProps = { role: session.role, activeView: view, onNav: navigate, onLogout,
     userName: session.name, userEmail: session.email, avatarUrl, loggingOut, logoutError };
 
-  const [alerts, setAlerts] = useState<string[]>([]);
-  const setToast = (message: string) => setAlerts(current => [...current, message]);
+  const [toastMessage, setToastMessage] = useState<{ id: number; message: string } | null>(null);
+  const toastSequence = useRef(0);
+  const setToast = (message: string) => setToastMessage({ id: ++toastSequence.current, message });
+  useEffect(() => {
+    if (!toastMessage) return;
+    const timeout = window.setTimeout(() => setToastMessage(null), 4000);
+    return () => window.clearTimeout(timeout);
+  }, [toastMessage]);
   const [notifOpen, setNotifOpen] = useState(false);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const notifications = useNotifications(session.role, session.name);
@@ -239,9 +244,10 @@ function AppShell({ onLogout, loggingOut, logoutError }: { loggingOut: boolean; 
           </div>
         </div>
       </div>
-      {alerts.length > 0 && <SystemAlert title="Aviso del sistema" onClose={() => setAlerts(current => current.slice(1))}>
-        <p>{alerts[0]}</p>
-      </SystemAlert>}
+      {toastMessage && <div className="toast" role="status" aria-live="polite" key={toastMessage.id}>
+        <span>{toastMessage.message}</span>
+        <button type="button" className="btn btn-ghost" onClick={() => setToastMessage(null)} aria-label="Cerrar aviso" style={{ minHeight: 32, padding: '4px 8px' }}>Cerrar</button>
+      </div>}
       {tourOpen && <OnboardingTour key={`${profile.id}:${session.role}`} role={session.role} userId={profile.id} navigate={setView}
         onClose={() => setTourOpen(false)} onStorageError={() => setToast('Tu navegador no permitió guardar el tutorial. Podría aparecer nuevamente al ingresar.')} />}
     </div>

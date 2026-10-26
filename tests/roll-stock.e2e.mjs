@@ -1,14 +1,15 @@
 import { createRequire } from 'node:module';
 import { mkdirSync } from 'node:fs';
 import assert from 'node:assert/strict';
+import { launchBrowser } from './e2e-support.mjs';
 const require = createRequire(process.env.PLAYWRIGHT_PACKAGE_JSON || `${process.cwd()}/package.json`);
 const { chromium } = require('playwright');
 mkdirSync('test-results/rollos', {recursive:true});
-const browser = await chromium.launch({channel:'msedge',headless:true});
+const browser = await launchBrowser(chromium);
 try {
  for(const width of [1440,390]) {
   const page = await browser.newPage({viewport:{width,height:1000}});
-  await page.routeWebSocket('**',socket=>socket.close());
+  await page.routeWebSocket('**/realtime/v1/**',()=>{});
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
   const user={id:'70000000-0000-4000-8000-000000000001',email:'qa@test.invalid',aud:'authenticated',role:'authenticated',app_metadata:{},user_metadata:{}};
   const profile={id:user.id,nombre:'QA',rol:'coordinador',sede:'Chiclayo',estado:'ACTIVO',email:user.email};
@@ -24,8 +25,8 @@ try {
    if(table==='actualizar_material_con_inventario') {Object.assign(material,payload.p_campos);for(const row of stocks)row.stock=payload.p_stock_sedes[row.sede];return route.fulfill({json:material});}
    throw new Error(`Unexpected mutation ${table}`);
   });
-  await page.goto('http://127.0.0.1:8443');
-  await page.getByPlaceholder('correo@jmppingus.pe').fill(user.email);
+  await page.goto(process.env.QA_BASE_URL || 'http://127.0.0.1:8443');
+  await page.getByRole('textbox', { name: 'Correo electrónico', exact: true }).fill(user.email);
   await page.locator('input[autocomplete="current-password"]').fill('test-password');
   await page.getByRole('button',{name:'Ingresar al sistema',exact:true}).click();
   await page.locator('.app-header').waitFor();

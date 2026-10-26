@@ -1,7 +1,8 @@
 import {createRequire} from 'node:module';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {mkdir} from 'node:fs/promises';
+import {mkdir,readFile} from 'node:fs/promises';
+import {launchBrowser} from './e2e-support.mjs';
 if(process.env.QA_SCREENSHOT_DIR) await mkdir(process.env.QA_SCREENSHOT_DIR,{recursive:true});
 import ts from 'typescript';
 const dateSource = ts.transpileModule(readFileSync(new URL('../src/utils/limaDate.ts', import.meta.url), 'utf8'), {compilerOptions:{module:ts.ModuleKind.ESNext}}).outputText;
@@ -11,7 +12,7 @@ const compiled = ts.transpileModule(domainSource, {compilerOptions:{module:ts.Mo
 const {newBudget,calculateQuote} = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
 const require = createRequire(process.env.PLAYWRIGHT_PACKAGE_JSON || `${process.cwd()}/package.json`);
 const {chromium} = require('playwright');
-const browser = await chromium.launch({channel:'msedge',headless:true});
+const browser = await launchBrowser(chromium);
 try {
   for (const width of [1440,390]) {
     const page = await browser.newPage({viewport:{width,height:1000}});
@@ -30,13 +31,21 @@ try {
         :table==='requerimientos'?[{id:'requirement-qa',codigo:'REQ-QA',sede:'Chiclayo',ubicacion:'Av. José Balta 123, interior 2 — Lambayeque / Chiclayo / Chiclayo',descripcion:budget.alcance,tecnico:budget.tecnico,fecha:'2026-10-05',estado:'ENVIADO',proyecto:{id:'project-qa',nombre:'Proyecto QA'},analista:{nombre:'QA'},items:[]}]:[];
       return route.fulfill({json:data});
     });
-    await page.goto('http://127.0.0.1:8443');
+    await page.goto(process.env.QA_BASE_URL || 'http://127.0.0.1:8443');
     await page.getByRole('textbox', { name: 'Correo electrónico', exact: true }).fill(user.email);
     await page.locator('input[autocomplete="current-password"]').fill('qa-password');
     await page.getByRole('button',{name:'Ingresar al sistema'}).click();
     await page.locator('.app-header').waitFor();
     if(width<=768) await page.getByRole('button',{name:'Abrir menú'}).click();
     await page.locator(width<=768?'.mobile-sidebar':'.desktop-sidebar').getByRole('button',{name:'Cotizaciones',exact:true}).press('Enter');
+    await page.getByRole('button',{name:/COT-QA · v1/}).click();
+    const downloadPromise=page.waitForEvent('download');
+    await page.getByRole('button',{name:'Descargar propuesta PDF',exact:true}).click();
+    const download=await downloadPromise;
+    assert.equal(await download.failure(),null,'PDF download completes in the browser');
+    assert.match(download.suggestedFilename(),/^COT-QA-v1\.pdf$/);
+    assert((await readFile(await download.path())).subarray(0,5).equals(Buffer.from('%PDF-')),'Downloaded artifact contains a real PDF header');
+    await page.getByRole('button',{name:'← Todas las cotizaciones',exact:true}).click();
     await page.getByRole('button',{name:'Nueva cotización',exact:true}).click({timeout:5000});
     await page.locator('.quote-editor').waitFor({timeout:5000});
     const department=page.getByLabel('Departamento',{exact:true}), province=page.getByLabel('Provincia',{exact:true}), district=page.getByLabel('Distrito',{exact:true});
@@ -60,7 +69,8 @@ try {
       await page.locator(width<=768?'.mobile-sidebar':'.desktop-sidebar').getByRole('button',{name,exact:true}).press('Enter');
     };
     await nav('Nueva Solicitud');
-    await page.locator('.quote-field select').selectOption('quote-qa');
+    await page.locator('[data-tour-view="nueva-solicitud"]').waitFor();
+    await page.locator('.quote-section').filter({hasText:'1. Selecciona el proyecto'}).locator('select').selectOption('quote-qa');
     for(const value of ['Cliente QA','Responsable QA','Lambayeque','Chiclayo','Av. José Balta 123, interior 2',budget.alcance]) {
       assert((await page.locator('.data-details').innerText()).includes(value));
     }

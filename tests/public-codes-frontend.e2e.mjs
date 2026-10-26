@@ -1,10 +1,11 @@
 // Real browser, simulated API: no writes to the production database.
 import { createRequire } from 'node:module';
 import assert from 'node:assert/strict';
+import { launchBrowser } from './e2e-support.mjs';
 const require = createRequire(process.env.PLAYWRIGHT_PACKAGE_JSON || `${process.cwd()}/package.json`);
 const { chromium } = require('playwright');
 const id = n => `70000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
-const browser = await chromium.launch({ channel: 'msedge', headless: true });
+const browser = await launchBrowser(chromium);
 try {
   for (const role of (process.env.QA_ROLES?.split(',') ?? ['gerente','analista','coordinador'])) {
     for (const width of [1440,390]) {
@@ -17,7 +18,7 @@ try {
       const requirement = { id:id(3),codigo:'REQ-QA-001',analista_id:user.id,sede:'Chiclayo',fecha:'2026-10-05',estado:'CONFIRMADO',ubicacion:'Dirección A',descripcion:'Instalación',tecnico:'Técnico QA',proyecto:{id:project.id,nombre:project.nombre},analista:{nombre:profile.nombre},coordinador:{nombre:'Coordinador QA'},items:[{material_sku:'104',material_nombre:'Cable',cantidad:12,unidad:'MTS'}] };
       const tables = {
         materiales:[{sku:'104',nombre:'Cable',descripcion:'',categoria_id:1,unidad:'MTS',stock_minimo:10,precio_unitario:25,estado:'OK'}],
-        inventario_sedes:['Chiclayo','Chimbote','Trujillo'].map((sede,index)=>({material_sku:'104',sede,stock:[0,5,100][index]})),
+        inventario_sedes:['Chiclayo','Chimbote','Trujillo'].map((sede,index)=>({material_sku:'104',sede,stock:[100,5,0][index]})),
         proyectos:[project,{...project,id:id(5),ubicacion:'Dirección B'}],
         requerimientos:[requirement,{...requirement,id:id(6),codigo:'REQ-QA-002',proyecto:{id:id(5),nombre:project.nombre}}],
         entregas:[{id:id(4),codigo:'ENT-QA-001',requerimiento_id:requirement.id,requerimiento:{codigo:requirement.codigo},proyecto_nombre:project.nombre,tecnico:'Técnico QA',dni_tecnico:'',fecha_hora:'2026-10-06T02:30:00Z',estado:'PARCIAL',responsable:{nombre:'Responsable QA'},items:[{material_sku:'104',material_nombre:'Cable',cantidad_solicitada:12,cantidad_entregada:5}]}],
@@ -36,7 +37,7 @@ try {
       await page.getByRole('button',{name:'Ingresar al sistema',exact:true}).click();
       await page.locator('.auth-form .field-validation-message').first().waitFor();
       assert.equal(await page.locator('.auth-form .field-validation-message').count(),2,'Login must show required-field messages without a summary');
-      await page.getByPlaceholder('correo@jip.pe').fill(user.email);
+      await page.getByRole('textbox', { name: 'Correo electrónico', exact: true }).fill(user.email);
       await page.locator('input[autocomplete="current-password"]').fill('test-password');
       await page.getByRole('button',{name:'Ingresar al sistema',exact:true}).click();
       await page.locator('.app-header').waitFor();
@@ -56,7 +57,8 @@ try {
       await page.getByText('ENT-QA-001',{exact:true}).waitFor();
       await page.getByText('Responsable QA',{exact:true}).waitFor(); await noIds();
       await nav('Ver perfil de Usuario QA');
-      await page.getByRole('button',{name:'Seguridad',exact:true}).press('Enter');
+      await page.getByRole('button',{name:'⚙ Configuración',exact:true}).press('Enter');
+      await page.getByRole('button',{name:'Contraseña',exact:true}).press('Enter');
       await page.getByRole('button',{name:'Actualizar contraseña',exact:true}).press('Enter');
       await page.getByText('Completa la contraseña actual.',{exact:true}).waitFor();
       await page.getByText('Ingresa al menos 8 caracteres.',{exact:true}).waitFor();
@@ -92,20 +94,21 @@ try {
         await sku.waitFor();
         const stateFilter=page.getByLabel('Filtrar por estado',{exact:true});
         await stateFilter.selectOption('OK');
-        assert.equal(await sku.count(),0,'A site with healthy stock must not mask an exhausted site in the general filter');
+        assert.equal(await sku.count(),1,'Aggregate filters include a material when any site has the selected state');
         await stateFilter.selectOption('AGOTADO');
         await sku.waitFor();
         await page.getByRole('button',{name:'Trujillo',exact:true}).press('Enter');
-        assert.equal(await sku.count(),0);
+        assert.equal(await sku.count(),1,'Trujillo is the exhausted site in this fixture');
         await stateFilter.selectOption('OK');
-        await sku.waitFor();
+        assert.equal(await sku.count(),0,'A healthy-state filter excludes the exhausted selected site');
         const exhaustedCard=page.getByRole('button',{name:/^AGOTADO \(Trujillo\)/});
         await exhaustedCard.press('Enter');
         assert.equal(await stateFilter.inputValue(),'AGOTADO');
-        assert.equal(await sku.count(),0);
+        assert.equal(await sku.count(),1);
         assert.equal(await exhaustedCard.getAttribute('aria-pressed'),'true');
         await exhaustedCard.press('Enter');
         assert.equal(await stateFilter.inputValue(),'','Clicking the active state card must clear the filter');
+        assert.equal(await sku.count(),1);
         await nav('Órdenes de Compra');
         await page.getByRole('button',{name:'+ Nueva solicitud de compra',exact:true}).click();
         await page.getByRole('button',{name:'Enviar al coordinador',exact:true}).click();
@@ -134,7 +137,7 @@ try {
         await page.getByLabel('Dirección del proyecto',{exact:true}).fill('Av. de prueba 123');
         await page.getByLabel('Alcance de los trabajos',{exact:true}).fill('Instalación de prueba');
         await page.getByRole('button',{name:'Siguiente →',exact:true}).click();
-        await page.getByRole('heading',{name:'Materiales y costos',exact:true}).waitFor();
+        await page.getByRole('heading',{name:'Configuración del presupuesto',exact:true}).waitFor();
         assert.equal(await summary.count(),0,'Complete fields must allow advancing without stale warnings');
       }
       await nav('Proyectos');

@@ -203,6 +203,8 @@ test("el router conserva filtro e identificador al pasar del panel a mis solicit
   const { default: Router } = load("../src/app/ViewRouter.tsx", (name) => {
     if (name === "react")
       return {
+        lazy: () => function LazyView() {},
+        Suspense: ({ children }) => children,
         useState: () => [
           intent,
           (value) => {
@@ -231,11 +233,17 @@ test("el router conserva filtro e identificador al pasar del panel a mis solicit
     onStartTour: () => {},
   }
 
-  const panel = Router(props)
+  const resolve = (viewProps) => {
+    const suspense = Router(viewProps)
+    const resolved = suspense.props.children
+    return resolved.type(resolved.props)
+  }
+
+  const panel = resolve(props)
 
   panel.props.onOpenRequests({ filter: "RECHAZADO", id: "R-1" })
 
-  const list = Router({ ...props, view })
+  const list = resolve({ ...props, view })
 
   assert.equal(view, "mis-solicitudes")
 

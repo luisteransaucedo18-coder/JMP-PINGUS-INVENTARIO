@@ -7,6 +7,7 @@
   "scripts": {
     "check": "npm run audit:consistencia && npm test && npm run build",
     "test": "node --test --test-concurrency=1 tests/*.test.mjs",
+    "test:e2e": "node scripts/run-e2e.mjs",
     "audit:consistencia": "node scripts/auditar-consistencia.mjs",
     "test:cotizaciones": "node --test tests/cotizaciones.test.mjs",
     "test:transporte": "node --test tests/transporte.test.mjs",
@@ -35,6 +36,7 @@
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^6.0.0",
     "oxfmt": "^0.2.0",
+    "playwright": "1.62.1",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.0",
     "vite": "^8.0.5"

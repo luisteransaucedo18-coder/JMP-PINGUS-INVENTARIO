@@ -1,29 +1,30 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import type { RequestIntent } from '../views/analista/dashboardModel';
 import type { Role } from '../domain/types';
 import { canAccessView } from './navigation';
-import ProfileView from '../views/shared/ProfileView';
-import ManualUsuarioView from '../views/shared/ManualUsuarioView';
-import InventarioView from '../features/inventario/pages/InventarioView';
-import ProyectosView from '../features/proyectos/pages/ProyectosView';
-import EntregasView from '../features/entregas/pages/EntregasView';
-import DevolucionesView from '../features/devoluciones/pages/DevolucionesView';
-import GerenteDashboard from '../views/gerente/GerenteDashboard';
-import ReportesView from '../features/reportes/pages/ReportesView';
-import ConsultaGerenteView, { type ConsultaGerente } from '../features/consultas/pages/ConsultaGerenteView';
-import AnalistaDashboard from '../views/analista/AnalistaDashboard';
-import NuevaSolicitudView from '../features/requerimientos/pages/NuevaSolicitudView';
-import MisSolicitudesView from '../features/requerimientos/pages/MisSolicitudesView';
-import NuevaCompraView from '../features/compras/pages/NuevaCompraView';
-import MisComprasView from '../features/compras/pages/MisComprasView';
-import CoordinadorDashboard from '../views/coordinador/CoordinadorDashboard';
-import TransporteInternoView from '../features/transporte/pages/TransporteInternoView';
-import RequerimientosView from '../features/requerimientos/pages/RequerimientosView';
-import ComprasView from '../features/compras/pages/ComprasView';
-import UsuariosView from '../features/usuarios/pages/UsuariosView';
-import CotizacionesView from '../features/cotizaciones/CotizacionesView';
-import ValorizacionesView from '../features/valorizaciones/ValorizacionesView';
-import TesoreriaDashboard from '../views/tesoreria/TesoreriaDashboard';
+import type { ConsultaGerente } from '../features/consultas/pages/ConsultaGerenteView';
+const ProfileView = lazy(() => import('../views/shared/ProfileView'));
+const ManualUsuarioView = lazy(() => import('../views/shared/ManualUsuarioView'));
+const InventarioView = lazy(() => import('../features/inventario/pages/InventarioView'));
+const ProyectosView = lazy(() => import('../features/proyectos/pages/ProyectosView'));
+const EntregasView = lazy(() => import('../features/entregas/pages/EntregasView'));
+const DevolucionesView = lazy(() => import('../features/devoluciones/pages/DevolucionesView'));
+const GerenteDashboard = lazy(() => import('../views/gerente/GerenteDashboard'));
+const ReportesView = lazy(() => import('../features/reportes/pages/ReportesView'));
+const ConsultaGerenteView = lazy(() => import('../features/consultas/pages/ConsultaGerenteView'));
+const AnalistaDashboard = lazy(() => import('../views/analista/AnalistaDashboard'));
+const NuevaSolicitudView = lazy(() => import('../features/requerimientos/pages/NuevaSolicitudView'));
+const MisSolicitudesView = lazy(() => import('../features/requerimientos/pages/MisSolicitudesView'));
+const NuevaCompraView = lazy(() => import('../features/compras/pages/NuevaCompraView'));
+const MisComprasView = lazy(() => import('../features/compras/pages/MisComprasView'));
+const CoordinadorDashboard = lazy(() => import('../views/coordinador/CoordinadorDashboard'));
+const TransporteInternoView = lazy(() => import('../features/transporte/pages/TransporteInternoView'));
+const RequerimientosView = lazy(() => import('../features/requerimientos/pages/RequerimientosView'));
+const ComprasView = lazy(() => import('../features/compras/pages/ComprasView'));
+const UsuariosView = lazy(() => import('../features/usuarios/pages/UsuariosView'));
+const CotizacionesView = lazy(() => import('../features/cotizaciones/CotizacionesView'));
+const ValorizacionesView = lazy(() => import('../features/valorizaciones/ValorizacionesView'));
+const TesoreriaDashboard = lazy(() => import('../views/tesoreria/TesoreriaDashboard'));
 
 type Props = {
   role: Role;
@@ -40,7 +41,13 @@ const MANAGER_DATA_VIEWS: ConsultaGerente[] = [
   'requerimientos', 'compras', 'entregas', 'devoluciones', 'transporte', 'usuarios',
 ];
 
-export default function ViewRouter({ role, view, onToast, onNav, userId, userName, userEmail, onStartTour }: Props) {
+export default function ViewRouter(props: Props) {
+  return <Suspense fallback={<div className="view-loading" role="status" aria-live="polite">Cargando sección…</div>}>
+    <ResolvedView {...props} />
+  </Suspense>;
+}
+
+function ResolvedView({ role, view, onToast, onNav, userId, userName, userEmail, onStartTour }: Props) {
   const [requestIntent, setRequestIntent] = useState<RequestIntent>();
   useEffect(() => { if (view !== 'mis-solicitudes') setRequestIntent(undefined); }, [view]);
   const openRequests = (intent: RequestIntent) => { setRequestIntent(intent); onNav('mis-solicitudes'); };
