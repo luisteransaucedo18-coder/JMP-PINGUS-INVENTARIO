@@ -1848,11 +1848,13 @@ body {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.coordinator-alert-heading-actions { display: flex; align-items: center; gap: 8px; }
+
 .coordinator-alert-item {
   display: flex;
   min-width: 0;
-  gap: 12px;
-  padding: 16px;
+  gap: 9px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--color-divider);
 }
 
@@ -1879,62 +1881,30 @@ body {
 
 .coordinator-alert-heading {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
 }
 
 .coordinator-alert-name {
+  overflow: hidden;
   color: #18181b;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 650;
   line-height: 1.35;
-}
-
-.coordinator-alert-sku {
-  margin-top: 4px;
-  color: #71717a;
-  font-family: monospace;
-  font-size: 10.5px;
-}
-
-.coordinator-alert-stock-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.coordinator-alert-total,
-.coordinator-alert-site {
-  min-width: 0;
-  padding: 8px;
-  border-radius: 6px;
-  background: #fafafa;
-}
-
-.coordinator-alert-total {
-  background: #fff7ed;
-}
-
-.coordinator-alert-total span,
-.coordinator-alert-site span {
-  display: block;
-  overflow: hidden;
-  color: #71717a;
-  font-size: 9.5px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.coordinator-alert-total strong,
-.coordinator-alert-site strong {
-  display: block;
-  margin-top: 3px;
-  color: #27272a;
-  font-size: 11px;
-  white-space: nowrap;
+.coordinator-alert-sku {
+  margin-top: 2px;
+  color: #71717a;
+  font-family: monospace;
+  font-size: 10px;
 }
+
+.coordinator-alert-stock-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; margin-top: 5px; color: #64748B; font-size: 10px; line-height: 14px; }
+.coordinator-alert-stock-summary strong { color: #8A5A19; font-size: 10.5px; font-weight: 650; }
 
 .coordinator-alert-empty {
   grid-column: 1 / -1;
@@ -1974,12 +1944,10 @@ body {
 
 @media (max-width: 640px) {
   .coordinator-side-panels { grid-template-columns: 1fr; }
+  .coordinator-alert-heading-actions .btn { padding-inline: 10px; font-size: 11px; }
   .coordinator-alert-heading {
     flex-direction: column;
-  }
-
-  .coordinator-alert-stock-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: flex-start;
   }
 }
 

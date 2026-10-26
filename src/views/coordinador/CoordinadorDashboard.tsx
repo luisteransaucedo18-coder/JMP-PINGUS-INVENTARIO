@@ -11,6 +11,7 @@ export default function CoordinadorDashboard({ onNav }: Props) {
   const { state } = useAppStore();
   const pendientes = state.requerimientos.filter(r => r.estado === "ENVIADO");
   const alertas = state.materials.filter(m => m.estado !== "OK");
+  const alertasVisibles = alertas.slice(0, 4);
   const requerimientosSinStock = pendientes.filter(
     requirement => obtenerFaltantesRequerimiento(requirement, state.materials).length > 0,
   );
@@ -129,12 +130,17 @@ export default function CoordinadorDashboard({ onNav }: Props) {
             <div className="section-header">
               <div>
                 <h3 id="coordinator-alerts-title">Alertas de inventario</h3>
-                <p>{alertas.length ? `${alertas.length} materiales requieren atención.` : "No hay materiales bajo el mínimo."}</p>
+                <p>{alertas.length ? `Mostrando ${alertasVisibles.length} de ${alertas.length} materiales con alerta.` : "No hay materiales bajo el mínimo."}</p>
               </div>
-              <span className="badge badge-red">{alertas.length}</span>
+              <div className="coordinator-alert-heading-actions">
+                <span className="badge badge-red">{alertas.length}</span>
+                <button type="button" className="btn btn-ghost" onClick={() => onNav("inventario")}>
+                  Ver inventario completo
+                </button>
+              </div>
             </div>
             <div className="coordinator-alerts-list">
-              {alertas.map(m => {
+              {alertasVisibles.map(m => {
                 const total = Object.values(m.stockSedes).reduce((sum, stock) => sum + stock, 0);
                 return (
                   <div key={m.id} className="coordinator-alert-item">
@@ -149,10 +155,10 @@ export default function CoordinadorDashboard({ onNav }: Props) {
                           {m.estado}
                         </span>
                       </div>
-                      <div className="coordinator-alert-stock-grid">
-                        <div className="coordinator-alert-total"><span>Total</span><strong>{total} {m.unidad}</strong></div>
+                      <div className="coordinator-alert-stock-summary">
+                        <strong>Total {total} {m.unidad}</strong>
                         {SEDES.map(sede => (
-                          <div key={sede} className="coordinator-alert-site"><span>{sede}</span><strong>{m.stockSedes[sede] ?? 0} {m.unidad}</strong></div>
+                          <span key={sede}>{sede}: {m.stockSedes[sede] ?? 0}</span>
                         ))}
                       </div>
                     </div>
@@ -160,11 +166,6 @@ export default function CoordinadorDashboard({ onNav }: Props) {
                 );
               })}
               {alertas.length === 0 && <div className="coordinator-alert-empty">Sin alertas activas</div>}
-            </div>
-            <div className="coordinator-alert-footer">
-              <button type="button" className="btn btn-ghost" onClick={() => onNav("inventario")}>
-                Ver inventario completo
-              </button>
             </div>
           </section>
         </div>
