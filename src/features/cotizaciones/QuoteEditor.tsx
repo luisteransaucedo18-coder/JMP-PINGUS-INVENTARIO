@@ -790,7 +790,6 @@ export default function QuoteEditor({
                       <Field label="Presentación cotizada">
                         <ExpandingTextField
                           className="input-field"
-                          required
                           value={m.unidadCotizada}
                           onChange={(e) =>
                             set(

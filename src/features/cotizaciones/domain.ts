@@ -421,7 +421,6 @@ export function quoteValidation(b: QuoteBudget): string[] {
     if (!number(m.cantidad, 0.000001)) errors.push(`${label} · Cantidad: ingresa un valor positivo.`)
     if (!number(m.costoUnitario)) errors.push(`${label} · Costo unitario: ingresa un valor válido mayor o igual a cero.`)
     if (!number(m.factorStock, 0.000001)) errors.push(`${label} · Factor de conversión: ingresa un valor positivo.`)
-    if (!m.unidadCotizada.trim()) errors.push(`${label} · Unidad cotizada: completa este campo.`)
   })
   b.gastos.forEach((g, index) => {
     const label = `Partida ${index + 1}${g.descripcion.trim() ? ` (${g.descripcion})` : ''}`
