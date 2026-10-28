@@ -442,33 +442,44 @@ export function quoteValidation(b: QuoteBudget): string[] {
   }
   if (!number(b.excel.diasProyectados, 0, 10001))
     errors.push("Revisa DIAS PROYECTADOS.")
+  const scheduleLabels = {
+    plazo: "Plazo de ejecución",
+    dia: "Días de trabajo",
+    horario: "Horario de trabajo",
+    tiempo: "Tiempo por intervención",
+  } as const
+  for (const key of Object.keys(scheduleLabels) as (keyof typeof scheduleLabels)[]) {
+    const value = b.excel[key].trim()
+    if (!value) errors.push(`${scheduleLabels[key]}: completa este campo.`)
+    else if (value.length > 120)
+      errors.push(`${scheduleLabels[key]}: usa como máximo 120 caracteres.`)
+  }
   const active = b.gastos.filter((g) => g.cantidad * g.costoUnitario > 0)
   if(active.some(g=>['FINANCIAMIENTO','GENERALES','COMISION'].includes(g.rubro))) errors.push('Configura financiamiento, gastos generales y comisión en Porcentajes y financiamiento.');
   for(const [key,flag] of [['mureteCachimbo','muretesCachimbo'],['mureteValvula','muretesValvula']] as const) {
     if(active.some(g=>g.variableExcel===key)&&b.excel[flag]==='NO') errors.push(`Indica SI en ${flag==='muretesCachimbo'?'Muretes Interiores Cachimbo:':'Muretes Interiores Valvula:'} para incluir su costo.`);
   }
+  const variableDetailRubros = [
+    "FLETE",
+    "MOVILIDAD",
+    "SUPERVISION",
+    ...(b.modalidad === "COBRE"
+      ? [
+          "VIATICOS",
+          "HOSPEDAJE",
+          "ALIMENTACION",
+          "PASAJES",
+          "COMBUSTIBLE",
+          "PEAJES",
+        ]
+      : []),
+  ]
   if (
     active.some((g) => g.rubro === "VARIABLES") &&
-    active.some((g) =>
-      [
-        "FLETE",
-        "MOVILIDAD",
-        "SUPERVISION",
-        ...(b.modalidad === "COBRE"
-          ? [
-              "VIATICOS",
-              "HOSPEDAJE",
-              "ALIMENTACION",
-              "PASAJES",
-              "COMBUSTIBLE",
-              "PEAJES",
-            ]
-          : []),
-      ].includes(g.rubro),
-    )
+    active.some((g) => variableDetailRubros.includes(g.rubro))
   )
     errors.push(
-      "Usa Gastos Variables como importe global o su detalle; no sumes ambos.",
+      "El gasto variable global ya no se combina con su detalle. Elimina el importe global y conserva las partidas detalladas.",
     )
   if (
     active.some((g) => g.variableExcel === "redInterna") &&

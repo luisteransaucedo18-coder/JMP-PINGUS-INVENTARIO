@@ -106,6 +106,7 @@
 .quote-muted { color: var(--color-muted); font-size: 13px; }
 .quote-note { padding: 12px; background: var(--color-hover); border-radius: 6px; white-space: pre-wrap; }
 .quote-error { border: 1px solid var(--color-red); padding: 12px; border-radius: 6px; color: var(--color-red); margin: 12px 0; }
+.quote-inline-alert { margin: 12px 0 16px; padding: 10px 12px; border-left: 3px solid var(--color-red); border-radius: 4px; background: #fff7f7; color: #9C3442; font-size: 13px; line-height: 1.5; }
 .quote-totals { max-width: 620px; margin: 14px 0; }
 .quote-totals > div { display: flex; justify-content: space-between; gap: 20px; padding: 8px 0; border-bottom: 1px solid var(--color-divider); }
 .quote-totals dd { font-weight: 650; font-variant-numeric: tabular-nums; margin: 0; white-space: nowrap; }
