@@ -774,7 +774,7 @@ export default function QuoteEditor({
                     <QuoteMaterialLabel material={materials.find(material => material.id === m.sku)} sku={m.sku} nombre={m.nombre} />
                     <div className="quote-form-grid">
                       <NumberField
-                        label="CANTIDAD"
+                        label="CANTIDAD A COTIZAR"
                         min={0.000001}
                         value={m.cantidad}
                         onChange={(v) =>
@@ -787,7 +787,7 @@ export default function QuoteEditor({
                           )
                         }
                       />
-                      <Field label="Unidad cotizada">
+                      <Field label="Presentación cotizada">
                         <ExpandingTextField
                           className="input-field"
                           required
@@ -806,7 +806,7 @@ export default function QuoteEditor({
                         />
                       </Field>
                       <NumberField
-                        label={`Unidades ${m.unidadCatalogo} por unidad cotizada`}
+                        label={`Equivalencia: ${m.unidadCatalogo} por presentación`}
                         min={0.000001}
                         value={m.factorStock}
                         onChange={(v) =>
@@ -833,6 +833,9 @@ export default function QuoteEditor({
                         }
                       />
                     </div>
+                    <p className="quote-muted">
+                      Indica cuántas presentaciones cotizas y cómo se convierten a la unidad del catálogo. Por ejemplo: 1 caja con 12 unidades = cantidad 1, presentación “caja” y equivalencia 12.
+                    </p>
                     <div className="quote-toolbar quote-material-actions">
                       <span>
                         Stock a solicitar: {m.cantidad * m.factorStock}{" "}
