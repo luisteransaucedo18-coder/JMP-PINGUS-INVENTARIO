@@ -21,6 +21,7 @@
     "format": "oxfmt"
   },
   "dependencies": {
+    "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "^2.117.1",
     "leaflet": "^1.9.4",
     "pdf-lib": "^1.17.1",
