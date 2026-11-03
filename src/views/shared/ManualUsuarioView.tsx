@@ -343,7 +343,7 @@ export default function ManualUsuarioView({ role, onNav, onStartTour }: Props) {
               borderTop: `4px solid ${manual.accent}`,
             }}
           >
-            <div style={{ padding: '18px 18px 14px', borderBottom: '1px solid #F4F4F5' }}>
+            <div style={{ padding: '18px 18px 14px', borderBottom: '1px solid var(--color-divider)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
                 <span
                   style={{

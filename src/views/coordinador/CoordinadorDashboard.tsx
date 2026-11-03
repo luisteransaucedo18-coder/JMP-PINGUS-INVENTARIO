@@ -57,7 +57,7 @@ export default function CoordinadorDashboard({ onNav }: Props) {
               <div style={{ fontSize: 13, color: '#71717A' }}>Sin solicitudes pendientes de confirmación</div>
             </div>
           ) : pendientes.map(r => (
-            <div key={r.id} style={{ padding: '14px 16px', borderBottom: '1px solid #F4F4F5', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+            <div key={r.id} style={{ padding: '14px 16px', borderBottom: '1px solid var(--color-divider)', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
               <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#D97706', flexShrink: 0, marginTop: 6 }} />
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
@@ -125,7 +125,7 @@ export default function CoordinadorDashboard({ onNav }: Props) {
                 <div className="coordinator-alert-empty">Sin alertas activas</div>
               )}
             </div>
-            <div style={{ padding: '12px 16px', borderTop: '1px solid #E4E4E7' }}>
+            <div style={{ padding: '12px 16px', borderTop: '1px solid var(--color-divider)' }}>
               <button className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center', fontSize: 12 }} onClick={() => onNav('inventario')}>
                 Ver inventario completo →
               </button>
