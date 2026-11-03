@@ -40,7 +40,11 @@ export default function QuoteCostCatalog({
   )
 
   const catalog = EXCEL_PARTIDAS.filter((p) =>
-    p.modalidades.includes(budget.modalidad),
+    p.modalidades.includes(budget.modalidad) &&
+    // Los gastos variables se registran por partida en el detalle de abajo.
+    // Mantener el importe global aquí permitía sumar ambos conceptos.
+    (!["variables", "variablesCobre"].includes(p.key) ||
+      budget.gastos.some((g) => g.variableExcel === p.key)),
   )
 
   const words = normalizeMaterialSearch(query).split(/\s+/).filter(Boolean)

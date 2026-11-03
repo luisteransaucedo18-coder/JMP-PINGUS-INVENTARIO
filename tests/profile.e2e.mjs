@@ -1,9 +1,10 @@
 import { createRequire } from 'node:module';
 import assert from 'node:assert/strict';
+import { launchBrowser } from './e2e-support.mjs';
 import { mkdir } from 'node:fs/promises';
 const require = createRequire(process.env.PLAYWRIGHT_PACKAGE_JSON || `${process.cwd()}/package.json`);
 const { chromium } = require('playwright');
-const browser = await chromium.launch({channel:'msedge',headless:true});
+const browser = await launchBrowser(chromium);
 const output = process.env.QA_SCREENSHOT_DIR;
 if (output) await mkdir(output,{recursive:true});
 try {
@@ -65,11 +66,11 @@ for (const role of (process.env.QA_ROLE ? [process.env.QA_ROLE] : ['gerente','an
     return route.fulfill({body:png,contentType:'image/png'});
   });
   const login=async()=>{
-    await page.getByPlaceholder('correo@jip.pe').fill(user.email);
+    await page.getByRole('textbox', { name: 'Correo electrónico', exact: true }).fill(user.email);
     await page.locator('input[autocomplete="current-password"]').fill('test-password');
     await page.getByRole('button',{name:'Ingresar al sistema'}).click();await page.locator('.app-header').waitFor();
   };
-  const openProfile=async()=>{await page.locator('.app-header').getByRole('button',{name:'Mi perfil',exact:true}).click();await page.getByRole('button',{name:'⚙ Configuración'}).waitFor();};
+  const openProfile=async()=>{await openNav();await sidebar.getByRole('button',{name:'Mi perfil',exact:true}).click();if(mobile)await page.locator('#mobile-navigation').waitFor({state:'hidden'});await page.locator('[data-tour-view="perfil"]').waitFor();await page.getByRole('button',{name:'⚙ Configuración'}).waitFor();};
   const select=async(file)=>{await page.locator('input[type=file]').setInputFiles(file);};
   const waitPreview=async()=>{await page.getByRole('dialog',{name:'Ajustar foto de perfil'}).waitFor();await page.getByRole('button',{name:'Guardar foto',exact:true}).waitFor();await page.waitForFunction(()=>!document.querySelector('.profile-photo-dialog button.btn-primary')?.disabled);};
   const screenshot=async(name)=>{if(output){await page.locator('.profile-avatar').scrollIntoViewIfNeeded();await page.screenshot({path:`${output}/profile-${role}-${width}-${name}.png`});}};
@@ -84,7 +85,7 @@ for (const role of (process.env.QA_ROLE ? [process.env.QA_ROLE] : ['gerente','an
     await sidebar.getByRole('button',{name:label,exact:true}).click();
     await openProfile();await openNav();
     await sidebar.getByRole('button',{name:'Mi perfil',exact:true}).click();
-    if(mobile)assert.equal(await page.getByRole('dialog').isVisible(),false);
+    if(mobile)assert.equal(await page.locator('#mobile-navigation').isVisible(),false);
     await openNav();
   }
   if(mobile)await page.getByRole('button',{name:'Cerrar menú'}).click();else{await page.locator('.app-header h1').hover();await page.waitForFunction(()=>document.querySelector('.desktop-sidebar').getBoundingClientRect().width<65);}
@@ -106,7 +107,7 @@ for (const role of (process.env.QA_ROLE ? [process.env.QA_ROLE] : ['gerente','an
   }
   await select({name:'foto.png',mimeType:'image/png',buffer:png});await waitPreview();
   await page.getByLabel('Acercar').fill('1.5');await page.getByLabel('Posición horizontal').fill('70');
-  await page.getByRole('button',{name:'Guardar foto',exact:true}).click();await page.getByRole('dialog').waitFor({state:'hidden'});
+  await page.getByRole('button',{name:'Guardar foto',exact:true}).click();await page.locator('.profile-photo-dialog').waitFor({state:'hidden'});
   assert.equal(uploads,1);assert.equal(saves,1);
   await page.getByRole('button',{name:'⚙ Configuración'}).click();
   await page.getByLabel('Nombre completo',{exact:true}).fill(`Nuevo ${role}`);

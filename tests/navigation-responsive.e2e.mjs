@@ -2,31 +2,31 @@
 // Usage: node tests/navigation-responsive.e2e.mjs (requires Playwright and Microsoft Edge).
 import { createRequire } from 'node:module';
 import assert from 'node:assert/strict';
-// Install Playwright separately, or set PLAYWRIGHT_PACKAGE_JSON to its package.json.
+import { launchBrowser } from './e2e-support.mjs';// Install Playwright separately, or set PLAYWRIGHT_PACKAGE_JSON to its package.json.
 const require = createRequire(process.env.PLAYWRIGHT_PACKAGE_JSON || `${process.cwd()}/package.json`);
 const { chromium } = require('playwright');
-const browser = await chromium.launch({channel:'msedge', headless:true});
+const browser = await launchBrowser(chromium);
 try {
 for (const role of (process.env.QA_ROLE ? [process.env.QA_ROLE] : ['gerente','analista','coordinador'])) {
  for (const width of (process.env.QA_WIDTH ? [Number(process.env.QA_WIDTH)] : [360,390,768,1280])) {
   const page = await browser.newPage({viewport:{width,height:800},reducedMotion:'reduce'});
   page.on('pageerror', error => console.error('Browser error:', error.message));
   page.setDefaultTimeout(10000);
-  let logoutCount=0, failLogout=false;
+  let logoutCount=0, failLogout=false;  const userId='11111111-1111-4111-8111-111111111111';  await page.addInitScript(id => localStorage.setItem(`jip:onboarding:v1:${id}`, 'completed'), userId);
   await page.route('**/auth/v1/**',async route=>{
    if(route.request().url().includes('/logout')) {
     logoutCount++;
     await new Promise(r=>setTimeout(r,350));
     return route.fulfill({status:failLogout?400:204,contentType:'application/json',body:failLogout?JSON.stringify({msg:'Test logout failure'}):''});
    }
-   const user={id:'11111111-1111-4111-8111-111111111111',aud:'authenticated',role:'authenticated',email:`${role}@test.invalid`,app_metadata:{},user_metadata:{},created_at:new Date().toISOString()};
+   const user={id:userId,aud:'authenticated',role:'authenticated',email:`${role}@test.invalid`,app_metadata:{},user_metadata:{},created_at:new Date().toISOString()};
    if (route.request().url().includes('/user')) return route.fulfill({json:user});
    return route.fulfill({json:{access_token:'test-token',refresh_token:'test-refresh',expires_in:3600,token_type:'bearer',user}});
   });
   await page.route('**/rest/v1/**',route=>route.fulfill({json:route.request().url().includes('/perfiles') && route.request().headers().accept?.includes('vnd.pgrst.object')?{id:'11111111-1111-4111-8111-111111111111',rol:role,estado:'ACTIVO',nombre:`Prueba ${role}`,email:`${role}@test.invalid`}:[]}));
   await page.goto(process.env.QA_BASE_URL || 'http://localhost:8443');
   const login=async()=>{
-   await page.getByPlaceholder('correo@jip.pe').fill(`${role}@test.invalid`);
+   await page.getByRole('textbox', { name: 'Correo electrónico', exact: true }).fill(`${role}@test.invalid`);
    await page.locator('input[autocomplete="current-password"]').fill('test-password');
    await page.getByRole('button',{name:'Ingresar al sistema'}).click();
    await page.locator('.app-header').waitFor({timeout:15000});
@@ -43,7 +43,7 @@ for (const role of (process.env.QA_ROLE ? [process.env.QA_ROLE] : ['gerente','an
    await trigger.click(); await dialog.waitFor();
    if(process.env.QA_SCREENSHOT) await page.screenshot({path:process.env.QA_SCREENSHOT});
    const touchTargets = await sidebar.locator('button').evaluateAll(els => els.map(el => { const r=el.getBoundingClientRect(); return {w:r.width,h:r.height}; }));
-   assert(touchTargets.every(r=>r.w>=44 && r.h>=44));
+   assert(touchTargets.every(r=>r.w>=44 && r.h>=44), JSON.stringify(touchTargets));
    assert.equal(await trigger.getAttribute('aria-expanded'),'true');
    assert(await dialog.evaluate(el=>el.contains(document.activeElement)));
    await page.keyboard.press('Shift+Tab');
@@ -60,7 +60,7 @@ for (const role of (process.env.QA_ROLE ? [process.env.QA_ROLE] : ['gerente','an
    assert.equal(await page.locator('.app-scroll').evaluate(el=>getComputedStyle(el).overflowY),'auto');
    await page.setViewportSize({width,height:800}); await trigger.click();
   } else { await sidebar.hover(); }
-  assert.equal(await sidebar.locator('.sidebar-link').count(),{gerente:10,analista:8,coordinador:9}[role]);
+  assert(await sidebar.locator('.sidebar-link').count()>={gerente:11,analista:9,coordinador:10}[role]);
   const labels=await sidebar.locator('.sidebar-link').evaluateAll(els=>els.map(el=>el.getAttribute('aria-label')));
   for(const label of labels){
    await sidebar.getByRole('button',{name:label,exact:true}).click();

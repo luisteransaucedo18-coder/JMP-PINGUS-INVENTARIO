@@ -8,6 +8,7 @@ import { FieldValidationContext as ValidationContext } from '../../components/Fi
 import { SEDES, type Material, type Proyecto } from "../../domain/types"
 
 import ExpandingTextField from "../../components/ExpandingTextField"
+import SystemAlert from "../../components/SystemAlert"
 
 import ProjectAddressField from "../../components/ProjectAddressField"
 
@@ -384,7 +385,15 @@ export default function QuoteEditor({
   }
 
   const nextStep = () => {
-    if (validateFields(step).length) { setErrors([]); return }
+    if (step === 2 && !templateMode && !budget.materiales.length) {
+      setErrors(["Agrega al menos un material del catálogo antes de continuar."])
+      return
+    }
+    const issues = validateFields(step)
+    if (issues.length) {
+      setErrors(issues.map((issue) => `${issue.label}: ${issue.message}`))
+      return
+    }
     const messages: string[] = []
 
     if (step === 0) {
@@ -392,11 +401,6 @@ export default function QuoteEditor({
         messages.push("Selecciona departamento, provincia y distrito de sus listados.")
 
     }
-
-    if (step === 2 && !budget.materiales.length && !budget.gastos.length)
-      messages.push(
-        "Agrega al menos un material o costo para cotizar.",
-      )
 
     if (step === 3) messages.push(...quoteValidation(budget))
 
@@ -426,7 +430,11 @@ export default function QuoteEditor({
         }
 
         const validation = quoteValidation(budget)
-        if (validateFields().length) { setErrors([]); return }
+        const issues = validateFields()
+        if (issues.length) {
+          setErrors(issues.map((issue) => `${issue.label}: ${issue.message}`))
+          return
+        }
 
         if (!validPeruLocation(budget.excel.departamento, budget.excel.provincia ?? "", budget.excel.distrito ?? ""))
           validation.unshift("Selecciona departamento, provincia y distrito válidos.")
@@ -520,9 +528,6 @@ export default function QuoteEditor({
           }
         </p>
       </div>
-      {errors.length > 0 && <div role="alert" className="quote-error">
-        {[...new Set(errors)].map(error => <p key={error}>{error}</p>)}
-      </div>}
       <fieldset disabled={saving}>
         <div hidden={step !== 0} data-form-step="0">
           <section className="panel quote-section">
@@ -769,7 +774,7 @@ export default function QuoteEditor({
                     <QuoteMaterialLabel material={materials.find(material => material.id === m.sku)} sku={m.sku} nombre={m.nombre} />
                     <div className="quote-form-grid">
                       <NumberField
-                        label="CANTIDAD"
+                        label="CANTIDAD A COTIZAR"
                         min={0.000001}
                         value={m.cantidad}
                         onChange={(v) =>
@@ -782,10 +787,9 @@ export default function QuoteEditor({
                           )
                         }
                       />
-                      <Field label="Unidad cotizada">
+                      <Field label="Presentación cotizada">
                         <ExpandingTextField
                           className="input-field"
-                          required
                           value={m.unidadCotizada}
                           onChange={(e) =>
                             set(
@@ -801,7 +805,7 @@ export default function QuoteEditor({
                         />
                       </Field>
                       <NumberField
-                        label={`Unidades ${m.unidadCatalogo} por unidad cotizada`}
+                        label={`Equivalencia: ${m.unidadCatalogo} por presentación`}
                         min={0.000001}
                         value={m.factorStock}
                         onChange={(v) =>
@@ -828,6 +832,9 @@ export default function QuoteEditor({
                         }
                       />
                     </div>
+                    <p className="quote-muted">
+                      Indica cuántas presentaciones cotizas y cómo se convierten a la unidad del catálogo. Por ejemplo: 1 caja con 12 unidades = cantidad 1, presentación “caja” y equivalencia 12.
+                    </p>
                     <div className="quote-toolbar quote-material-actions">
                       <span>
                         Stock a solicitar: {m.cantidad * m.factorStock}{" "}
@@ -899,25 +906,33 @@ export default function QuoteEditor({
             </div>
             <QuoteCostCatalog budget={budget} onChange={expenses => set("gastos", expenses)} />
             <details className="quote-line">
-              <summary>PROPUETA PROVEEDOR · Programación del trabajo</summary>
+              <summary>Propuesta del proveedor · Programación del trabajo</summary>
+              <p className="quote-muted">
+                Indica cuánto durará el trabajo, qué días se realizará, en qué horario y cuánto tiempo tomará cada intervención. Ejemplo: “5 días hábiles”, “lunes a viernes”, “8:00 a. m. a 5:00 p. m.” y “2 horas por punto”. Completa los cuatro campos.
+              </p>
               <div className="quote-form-grid">
                 {(["plazo", "dia", "horario", "tiempo"] as const).map((key) => (
                   <Field
                     key={key}
                     label={
                       {
-                        plazo: "PLAZO",
-
-                        dia: "Dia",
-
-                        horario: "Horario",
-
-                        tiempo: "Tiempo",
+                        plazo: "Plazo de ejecución",
+                        dia: "Días de trabajo",
+                        horario: "Horario de trabajo",
+                        tiempo: "Tiempo por intervención",
                       }[key]
                     }
                   >
                     <ExpandingTextField
                       className="input-field"
+                      required
+                      maxLength={120}
+                      placeholder={{
+                        plazo: "Ej. 5 días hábiles",
+                        dia: "Ej. lunes a viernes",
+                        horario: "Ej. 8:00 a. m. a 5:00 p. m.",
+                        tiempo: "Ej. 2 horas por punto",
+                      }[key]}
                       value={budget.excel[key]}
                       onChange={(e) =>
                         set("excel", { ...budget.excel, [key]: e.target.value })
@@ -1389,6 +1404,18 @@ export default function QuoteEditor({
         </div>
         </div>
       </fieldset>
+      {errors.length > 0 && (
+        <SystemAlert
+          title={errors.some((error) => error.toLocaleLowerCase("es").includes("material")) ? "Faltan materiales" : "Revisa la información"}
+          tone="warning"
+          confirmLabel="Entendido"
+          onClose={() => setErrors([])}
+        >
+          <ul className="system-alert-list">
+            {[...new Set(errors)].map((error) => <li key={error}>{error}</li>)}
+          </ul>
+        </SystemAlert>
+      )}
     </form></ValidationContext.Provider>
   )
 }

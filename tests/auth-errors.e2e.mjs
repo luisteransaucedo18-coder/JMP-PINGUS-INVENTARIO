@@ -1,10 +1,11 @@
 // Use the existing server. Supabase is mocked; no accounts or data are changed.
 import { createRequire } from 'node:module';
 import assert from 'node:assert/strict';
+import { launchBrowser } from './e2e-support.mjs';
 
 const require = createRequire(process.env.PLAYWRIGHT_PACKAGE_JSON || `${process.cwd()}/package.json`);
 const { chromium } = require('playwright');
-const browser = await chromium.launch({ channel: 'msedge', headless: true });
+const browser = await launchBrowser(chromium);
 try {
   for (const role of ['gerente', 'analista', 'coordinador']) {
     const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
@@ -37,7 +38,7 @@ try {
       return route.fulfill({ json: url.pathname.endsWith('/perfiles') ? (route.request().headers().accept?.includes('vnd.pgrst.object') ? profile : [profile]) : [] });
     });
     await page.goto(process.env.QA_BASE_URL || 'http://127.0.0.1:8443');
-    await page.getByPlaceholder('correo@jip.pe').fill(user.email);
+    await page.getByRole('textbox', { name: 'Correo electrónico', exact: true }).fill(user.email);
     await page.locator('input[autocomplete="current-password"]').fill('test-password');
     await page.locator('.auth-form').evaluate(form => { form.requestSubmit(); form.requestSubmit(); });
     await page.getByRole('alert').filter({ hasText: 'Correo o contraseña incorrectos.' }).waitFor();
