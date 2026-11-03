@@ -12,6 +12,8 @@
     "test:transporte": "node --test tests/transporte.test.mjs",
     "test:requerimientos": "node --test tests/requerimiento-stock.test.mjs",
     "test:materiales": "node --test tests/material-atomic.test.mjs",
+    "test:sistemas": "node --test tests/sistemas.test.mjs tests/sistemas-documentos.test.mjs tests/onboarding.test.mjs",
+    "test:sistemas:e2e": "node tests/sistemas.e2e.mjs",
     "dev": "vite",
     "build": "tsc --noEmit --noUnusedLocals --noUnusedParameters && vite build",
     "typecheck": "tsc --noEmit --noUnusedLocals --noUnusedParameters",
@@ -35,6 +37,7 @@
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^6.0.0",
     "oxfmt": "^0.2.0",
+    "playwright": "1.62.1",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.0",
     "vite": "^8.0.5"
