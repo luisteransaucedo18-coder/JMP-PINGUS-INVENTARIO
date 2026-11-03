@@ -57,6 +57,10 @@ for (const role of ['gerente','analista','coordinador'] as const) NAVIGATION_BY_
   subtitle: role==='analista' ? 'Checklist, evidencias y valorizaciones por instalación' : role==='gerente' ? 'Revisión y autorización de pagos' : 'Consulta de trabajos y valorizaciones',
 });
 
+for (const role of Object.keys(NAVIGATION_BY_ROLE) as Role[]) NAVIGATION_BY_ROLE[role].push({
+  id: 'sistemas', label: 'Sistemas', icon: 'clipboard', title: 'Sistemas', subtitle: 'Organización y seguimiento de tareas del equipo',
+});
+
 const SHARED_VIEWS: Record<string, ViewMeta> = {
   perfil: { title: 'Mi Perfil', subtitle: 'Información personal, seguridad y actividad reciente' },
   manual: { title: 'Manual de Usuario' },

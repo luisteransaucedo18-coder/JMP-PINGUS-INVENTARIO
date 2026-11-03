@@ -29,12 +29,13 @@ export default function Sidebar({ role, activeView, onNav, onLogout, userName, u
 
   const groups = (role === 'tesoreria' ? [
     { label: 'Tesorería', ids: ['dashboard', 'valorizaciones'] },
+    { label: 'Sistemas', ids: ['sistemas'] },
   ] : [
     { label: 'Resumen', ids: ['dashboard', 'reportes'] },
     { label: 'Materiales y movimientos', ids: ['inventario', 'entregas', 'devoluciones', 'transporte'] },
     { label: 'Solicitudes y compras', ids: ['nueva-solicitud', 'mis-solicitudes', 'requerimientos', 'mis-compras', 'compras'] },
     { label: 'Proyectos y presupuestos', ids: ['proyectos', 'cotizaciones', 'valorizaciones'] },
-    { label: 'Administración', ids: ['usuarios'] },
+    { label: 'Administración', ids: ['usuarios', 'sistemas'] },
   ]).map(group => ({ ...group, items: group.ids.flatMap(id => NAVIGATION_BY_ROLE[role].filter(item => item.id === id)) })).filter(group => group.items.length);
   const nav = groups.flatMap(group => group.items);
   const badge = roleBadgeColors[role];
