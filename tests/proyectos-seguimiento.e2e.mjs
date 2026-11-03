@@ -3,17 +3,18 @@ import { createRequire } from 'node:module';
 import { mkdirSync, readFileSync } from 'node:fs';
 import ts from 'typescript';
 import assert from 'node:assert/strict';
+import { launchBrowser } from './e2e-support.mjs';
 const require = createRequire(process.env.PLAYWRIGHT_PACKAGE_JSON || `${process.cwd()}/package.json`);
 const { chromium } = require('playwright');
 const { hoyPeru } = await import(`data:text/javascript;base64,${Buffer.from(ts.transpileModule(readFileSync('src/features/proyectos/seguimiento.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.ESNext } }).outputText).toString('base64')}`);
 const id = n => `70000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j9i8AAAAASUVORK5CYII=', 'base64');
 mkdirSync('test-results/proyectos', { recursive: true });
-const browser = await chromium.launch({ channel: 'msedge', headless: true });
+const browser = await launchBrowser(chromium);
 try {
   for (const role of ['coordinador', 'analista', 'gerente']) for (const width of [1440, 390]) {
     const page = await browser.newPage({ viewport: { width, height: 1000 }, reducedMotion: 'reduce' });
-    await page.routeWebSocket('**', socket => socket.close());
+    await page.routeWebSocket('**/realtime/v1/**', () => {});
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     const user = { id: id(1), aud: 'authenticated', role: 'authenticated', email: 'qa@test.invalid', app_metadata: {}, user_metadata: {}, created_at: new Date().toISOString() };
@@ -53,7 +54,7 @@ try {
       return route.fulfill({ json: { Key: 'proyectos-evidencias/qa', Id: id(99) } });
     });
     await page.goto(process.env.QA_BASE_URL || 'http://127.0.0.1:8443');
-    await page.getByPlaceholder('correo@jmppingus.pe').fill(user.email);
+    await page.getByRole('textbox', { name: 'Correo electrónico', exact: true }).fill(user.email);
     await page.locator('input[autocomplete="current-password"]').fill('test-password');
     await page.getByRole('button', { name: 'Ingresar al sistema', exact: true }).click();
     await page.locator('.app-header').waitFor({ timeout: 15000 });

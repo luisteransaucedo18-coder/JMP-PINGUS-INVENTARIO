@@ -22,12 +22,16 @@ const material = {
   stockSedes: { Chiclayo: 0, Chimbote: 5, Trujillo: 100 },
 };
 const source = readFileSync(new URL('../src/features/inventario/pages/InventarioView.tsx', import.meta.url), 'utf8');
-function render(sede, filtro = '', materials = [material]) {
+function render(sede, filtro = '', materials = [material], page = 1) {
   const states = [materials, false, false, '', '', filtro, sede, null, false, false, null];
   let index = 0;
   const { default: Inventory } = load(source, name => {
-    if (name === 'react') return { ...React, useEffect: () => {}, useState: initial => [index < states.length ? states[index++] : initial, () => {}], useRef: value => ({ current: value }) };
+    if (name === 'react') return { ...React, useEffect: () => {}, useState: initial => [initial && typeof initial === 'object' && initial.page === 1 && initial.key === '' ? { page, key: JSON.stringify(['', '', filtro, sede]) } : index < states.length ? states[index++] : initial, () => {}], useRef: value => ({ current: value }) };
     if (name === 'react/jsx-runtime') return jsxRuntime;
+    if (name.endsWith('/inventoryPagination')) return { resetInventoryPageScroll: () => {} };
+    if (name.endsWith('/inventoryPreferences')) return load(readFileSync(new URL('../src/utils/inventoryPreferences.ts', import.meta.url), 'utf8'), () => ({ SEDES: ['Chiclayo', 'Chimbote', 'Trujillo'] }));
+    if (name.endsWith('/materialSearch')) return load(readFileSync(new URL('../src/utils/materialSearch.ts', import.meta.url), 'utf8'), () => {});
+    if (name.endsWith('/DiscardChangesDialog')) return { default: () => null };
     if (name.endsWith('/inventoryStatus')) return status;
     if (name.endsWith('/stockQuantity')) return quantities;
     if (name.endsWith('/rollStock')) return rollStock;
@@ -84,6 +88,7 @@ test('compras muestra agotados con mínimo cero y bajos de la sede, aunque el ca
       if (name.endsWith('/domain/types')) return { SEDES: ['Chiclayo', 'Chimbote', 'Trujillo'] };
       if (name.endsWith('/MaterialPreviewModal')) return { default: () => null, PreviewBtn: () => null };
       if (name.endsWith('/FieldError')) return { default: () => null };
+      if (name.endsWith('/MaterialAutocomplete')) return { default: () => null };
       if (name.endsWith('/materialSearch')) return { searchMaterials: () => [] };
       if (name.endsWith('/compraService')) return {};
       throw new Error(`Unexpected import ${name}`);
@@ -133,10 +138,13 @@ test('todas las sedes abre el detalle sin apilar estados en la tabla', () => {
   assert.doesNotMatch(html, /Chimbote: CRÍTICO/);
 });
 
-test('todas las sedes usa una sola clasificación por material, igual en tabla y filtro', () => {
+test('todas las sedes filtra por cualquier sede y muestra el estado seleccionado', () => {
   assert.match(render('todas','AGOTADO'), /SKU-001/);
-  assert.doesNotMatch(render('todas','OK'), /SKU-001/);
-  assert.doesNotMatch(render('todas','CRÍTICO'), /SKU-001/);
+  assert.match(render('todas','OK'), /SKU-001/);
+  assert.match(render('todas','OK'), /badge-green">OK/);
+  assert.match(render('todas','OK'), /inventory-alert-context">Trujillo/);
+  assert.match(render('todas','CRÍTICO'), /SKU-001/);
+  assert.match(render('todas','CRÍTICO'), /inventory-alert-context">Chimbote/);
   assert.match(render('todas','AGOTADO'), /badge-red">AGOTADO/);
 });
 
@@ -144,7 +152,7 @@ test('contadores y stock corresponden a la sede seleccionada', () => {
   const html = render('Chiclayo');
   assert.match(html, /Stock en Chiclayo/);
   assert.match(html, /AGOTADO \(Chiclayo\)<\/div><div[^>]*>1<\/div>/);
-  assert.match(render('todas'), /AGOTADO \(todas las sedes\)<\/div><div[^>]*>1<\/div>/);
+  assert.match(render('todas'), /AGOTADO \(en alguna sede\)<\/div><div[^>]*>1<\/div>/);
 });
 
 test('inventario separa los totales por unidad y conserva rollos parciales', () => {
@@ -211,4 +219,53 @@ test('el panel separa las sedes y explica el rango de referencia 30', () => {
     if (originalDocument === undefined) delete globalThis.document;
     else globalThis.document = originalDocument;
   }
+});
+
+test('pagina el catálogo en 25 materiales sin alterar los resultados totales', () => {
+  const rows = Array.from({length: 40}, (_, index) => ({ ...material, id: `PAGE-${String(index + 1).padStart(2, '0')}` }));
+  const html = render('todas', '', rows);
+  assert.match(html, /PAGE-25/);
+  assert.doesNotMatch(html, /PAGE-26/);
+  assert.match(html, /1–25 de 40 materiales/);
+  assert.match(html, /Página 1 de 2/);
+});
+test('explica las sedes afectadas por la alerta general y marca la sede activa', () => {
+  const html = render('todas');
+  assert.match(html, /inventory-alert-context">Chiclayo<\/small>/);
+  assert.match(html, /aria-pressed="true"[^>]*class="btn btn-ghost"/);
+  assert.match(html, /al menos una sede/);
+});
+
+test('cambiar de página conserva columnas y muestra el rango correcto', () => {
+  const rows = Array.from({length: 40}, (_, index) => ({ ...material, id: `PAGE-${String(index + 1).padStart(2, '0')}`, nombre: index < 25 ? 'Cable' : 'Material con nombre mucho más largo para comprobar las columnas' }));
+  const first = render('todas', '', rows, 1);
+  const second = render('todas', '', rows, 2);
+  assert.match(second, /PAGE-26/);
+  assert.doesNotMatch(second, /PAGE-25/);
+  assert.match(second, /26–40 de 40 materiales/);
+  assert.match(second, /Página 2 de 2/);
+  assert.equal(first.match(/<colgroup>.*?<\/colgroup>/s)[0], second.match(/<colgroup>.*?<\/colgroup>/s)[0]);
+  assert.match(second, /table-layout:fixed/);
+});
+
+test('Todos + OK incluye todos los OK de Trujillo y de otras sedes, también en páginas posteriores', () => {
+  const rows = Array.from({length: 60}, (_, index) => ({ ...material, id: `OK-${String(index + 1).padStart(2, '0')}`, stockSedes: index < 40 ? {Chiclayo:0, Chimbote:0, Trujillo:100} : {Chiclayo:100, Chimbote:0, Trujillo:0} }));
+  const trujillo = rows.filter(row => status.matchesInventoryState(row, 'Trujillo', 'OK'));
+  const all = rows.filter(row => status.matchesInventoryState(row, 'todas', 'OK'));
+  assert.equal(trujillo.length, 40);
+  assert.equal(all.length, 60);
+  assert.ok(trujillo.every(row => all.includes(row)));
+  assert.equal(new Set(all.map(row => row.id)).size, 60);
+  assert.match(render('todas', 'OK', rows, 2), /26–50 de 60 materiales/);
+  assert.match(render('todas', 'OK', rows, 3), /OK-60/);
+  assert.match(render('Trujillo', 'OK', rows, 2), /26–40 de 40 materiales/);
+});
+test('cada estado de una sede también coincide en Todas sin cambiar la alerta general', () => {
+  for (const sede of ['Chiclayo', 'Chimbote', 'Trujillo']) {
+    const state = status.estadoPorSede(material, sede);
+    assert.equal(status.matchesInventoryState(material, 'todas', state), true);
+  }
+  assert.equal(status.estadoGeneral(material), 'AGOTADO');
+  assert.equal(status.matchesInventoryState(material, 'todas', 'BAJO'), false);
+  assert.equal(status.matchesInventoryState(material, 'todas', ''), true);
 });

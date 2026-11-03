@@ -7,6 +7,7 @@
   "scripts": {
     "check": "npm run audit:consistencia && npm test && npm run build",
     "test": "node --test --test-concurrency=1 tests/*.test.mjs",
+    "test:e2e": "node scripts/run-e2e.mjs",
     "audit:consistencia": "node scripts/auditar-consistencia.mjs",
     "test:cotizaciones": "node --test tests/cotizaciones.test.mjs",
     "test:transporte": "node --test tests/transporte.test.mjs",
@@ -21,6 +22,7 @@
     "format": "oxfmt"
   },
   "dependencies": {
+    "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "^2.117.1",
     "leaflet": "^1.9.4",
     "pdf-lib": "^1.17.1",

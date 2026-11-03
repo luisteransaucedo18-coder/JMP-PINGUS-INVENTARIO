@@ -378,7 +378,7 @@ export default function UsuariosView({ onToast }: Props) {
         <div
           style={{
             padding: '14px 16px',
-            borderBottom: '1px solid #E4E4E7',
+            borderBottom: '1px solid var(--color-divider)',
             display: 'flex',
             gap: 10,
             alignItems: 'center',
@@ -834,7 +834,7 @@ export default function UsuariosView({ onToast }: Props) {
             <div
               style={{
                 padding: '14px 22px',
-                borderTop: '1px solid #E4E4E7',
+                borderTop: '1px solid var(--color-divider)',
                 display: 'flex',
                 gap: 10,
                 justifyContent: 'flex-end',

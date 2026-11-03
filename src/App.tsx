@@ -17,20 +17,6 @@ import { readTourStatus } from './app/onboarding';
 import { authErrorMessage } from './utils/authErrors';
 import { recordSessionActivity, sessionIsIdle, readSessionActivity, SESSION_IDLE_MS } from './utils/sessionActivity';
 
-/* ─── Toast ─── */
-function Toast({ msg, onDismiss }: { msg: string; onDismiss: () => void }) {
-  useEffect(() => { const t = setTimeout(onDismiss, 3000); return () => clearTimeout(t); }, [msg]);
-  return (
-    <div className="toast">
-      <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#CCFBF1', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        <svg width="10" height="10" viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="#059669" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
-      </div>
-      <span style={{ color: '#18181B' }}>{msg}</span>
-      <button onClick={onDismiss} style={{ background: 'none', border: 'none', color: '#A1A1AA', cursor: 'pointer', marginLeft: 8, padding: 0, display: 'flex', alignItems: 'center' }}><svg width="11" height="11" viewBox="0 0 15 15" fill="none"><path d="M2.5 2.5l10 10M12.5 2.5l-10 10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg></button>
-    </div>
-  );
-}
-
 /* ─── Login Screen ─── */
 function LoginScreen({ onLogin }: { onLogin: (profile: Perfil) => void }) {
   const [email, setEmail] = useState('');
@@ -202,7 +188,14 @@ function AppShell({ onLogout, loggingOut, logoutError }: { loggingOut: boolean; 
   const sidebarProps = { role: session.role, activeView: view, onNav: navigate, onLogout,
     userName: session.name, userEmail: session.email, avatarUrl, loggingOut, logoutError };
 
-  const [toast, setToast] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<{ id: number; message: string } | null>(null);
+  const toastSequence = useRef(0);
+  const setToast = (message: string) => setToastMessage({ id: ++toastSequence.current, message });
+  useEffect(() => {
+    if (!toastMessage) return;
+    const timeout = window.setTimeout(() => setToastMessage(null), 4000);
+    return () => window.clearTimeout(timeout);
+  }, [toastMessage]);
   const [notifOpen, setNotifOpen] = useState(false);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const notifications = useNotifications(session.role, session.name);
@@ -247,12 +240,15 @@ function AppShell({ onLogout, loggingOut, logoutError }: { loggingOut: boolean; 
             <button type="button" className="btn btn-ghost" onClick={() => void refreshRemoteData()}>Reintentar actualización</button>
           </div>}
           <div className="app-view-content" data-tour-view={view}>
-            <ViewRouter role={session.role} view={view} onToast={msg => setToast(msg)} onNav={setView} userName={session.name} userEmail={session.email}
+            <ViewRouter userId={profile.id} role={session.role} view={view} onToast={msg => setToast(msg)} onNav={setView} userName={session.name} userEmail={session.email}
               onStartTour={() => { setMenuOpen(false); setNotifOpen(false); setTourOpen(true); }} />
           </div>
         </div>
       </div>
-      {toast && <Toast msg={toast} onDismiss={() => setToast(null)} />}
+      {toastMessage && <div className="toast" role="status" aria-live="polite" key={toastMessage.id}>
+        <span>{toastMessage.message}</span>
+        <button type="button" className="btn btn-ghost" onClick={() => setToastMessage(null)} aria-label="Cerrar aviso" style={{ minHeight: 32, padding: '4px 8px' }}>Cerrar</button>
+      </div>}
       {tourOpen && <OnboardingTour key={`${profile.id}:${session.role}`} role={session.role} userId={profile.id} navigate={setView}
         onClose={() => setTourOpen(false)} onStorageError={() => setToast('Tu navegador no permitió guardar el tutorial. Podría aparecer nuevamente al ingresar.')} />}
     </div>

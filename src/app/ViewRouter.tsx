@@ -1,34 +1,38 @@
+import { lazy, Suspense, useEffect, useState } from 'react';
+import type { RequestIntent } from '../views/analista/dashboardModel';
 import type { Role } from '../domain/types';
 import SistemasView from '../features/sistemas/SistemasView';
 import { canAccessView } from './navigation';
-import ProfileView from '../views/shared/ProfileView';
-import ManualUsuarioView from '../views/shared/ManualUsuarioView';
-import InventarioView from '../features/inventario/pages/InventarioView';
-import ProyectosView from '../features/proyectos/pages/ProyectosView';
-import EntregasView from '../features/entregas/pages/EntregasView';
-import DevolucionesView from '../features/devoluciones/pages/DevolucionesView';
-import GerenteDashboard from '../views/gerente/GerenteDashboard';
-import ReportesView from '../features/reportes/pages/ReportesView';
-import ConsultaGerenteView, { type ConsultaGerente } from '../features/consultas/pages/ConsultaGerenteView';
-import AnalistaDashboard from '../views/analista/AnalistaDashboard';
-import NuevaSolicitudView from '../features/requerimientos/pages/NuevaSolicitudView';
-import MisSolicitudesView from '../features/requerimientos/pages/MisSolicitudesView';
-import NuevaCompraView from '../features/compras/pages/NuevaCompraView';
-import MisComprasView from '../features/compras/pages/MisComprasView';
-import CoordinadorDashboard from '../views/coordinador/CoordinadorDashboard';
-import TransporteInternoView from '../features/transporte/pages/TransporteInternoView';
-import RequerimientosView from '../features/requerimientos/pages/RequerimientosView';
-import ComprasView from '../features/compras/pages/ComprasView';
-import UsuariosView from '../features/usuarios/pages/UsuariosView';
-import CotizacionesView from '../features/cotizaciones/CotizacionesView';
-import ValorizacionesView from '../features/valorizaciones/ValorizacionesView';
-import TesoreriaDashboard from '../views/tesoreria/TesoreriaDashboard';
+import type { ConsultaGerente } from '../features/consultas/pages/ConsultaGerenteView';
+const ProfileView = lazy(() => import('../views/shared/ProfileView'));
+const ManualUsuarioView = lazy(() => import('../views/shared/ManualUsuarioView'));
+const InventarioView = lazy(() => import('../features/inventario/pages/InventarioView'));
+const ProyectosView = lazy(() => import('../features/proyectos/pages/ProyectosView'));
+const EntregasView = lazy(() => import('../features/entregas/pages/EntregasView'));
+const DevolucionesView = lazy(() => import('../features/devoluciones/pages/DevolucionesView'));
+const GerenteDashboard = lazy(() => import('../views/gerente/GerenteDashboard'));
+const ReportesView = lazy(() => import('../features/reportes/pages/ReportesView'));
+const ConsultaGerenteView = lazy(() => import('../features/consultas/pages/ConsultaGerenteView'));
+const AnalistaDashboard = lazy(() => import('../views/analista/AnalistaDashboard'));
+const NuevaSolicitudView = lazy(() => import('../features/requerimientos/pages/NuevaSolicitudView'));
+const MisSolicitudesView = lazy(() => import('../features/requerimientos/pages/MisSolicitudesView'));
+const NuevaCompraView = lazy(() => import('../features/compras/pages/NuevaCompraView'));
+const MisComprasView = lazy(() => import('../features/compras/pages/MisComprasView'));
+const CoordinadorDashboard = lazy(() => import('../views/coordinador/CoordinadorDashboard'));
+const TransporteInternoView = lazy(() => import('../features/transporte/pages/TransporteInternoView'));
+const RequerimientosView = lazy(() => import('../features/requerimientos/pages/RequerimientosView'));
+const ComprasView = lazy(() => import('../features/compras/pages/ComprasView'));
+const UsuariosView = lazy(() => import('../features/usuarios/pages/UsuariosView'));
+const CotizacionesView = lazy(() => import('../features/cotizaciones/CotizacionesView'));
+const ValorizacionesView = lazy(() => import('../features/valorizaciones/ValorizacionesView'));
+const TesoreriaDashboard = lazy(() => import('../views/tesoreria/TesoreriaDashboard'));
 
 type Props = {
   role: Role;
   view: string;
   onToast: (message: string) => void;
   onNav: (view: string) => void;
+  userId?: string;
   userName: string;
   userEmail: string;
   onStartTour: () => void;
@@ -38,7 +42,16 @@ const MANAGER_DATA_VIEWS: ConsultaGerente[] = [
   'requerimientos', 'compras', 'entregas', 'devoluciones', 'transporte', 'usuarios',
 ];
 
-export default function ViewRouter({ role, view, onToast, onNav, userName, userEmail, onStartTour }: Props) {
+export default function ViewRouter(props: Props) {
+  return <Suspense fallback={<div className="view-loading" role="status" aria-live="polite">Cargando sección…</div>}>
+    <ResolvedView {...props} />
+  </Suspense>;
+}
+
+function ResolvedView({ role, view, onToast, onNav, userId, userName, userEmail, onStartTour }: Props) {
+  const [requestIntent, setRequestIntent] = useState<RequestIntent>();
+  useEffect(() => { if (view !== 'mis-solicitudes') setRequestIntent(undefined); }, [view]);
+  const openRequests = (intent: RequestIntent) => { setRequestIntent(intent); onNav('mis-solicitudes'); };
   if (!canAccessView(role, view)) return <ViewMessage message="No tienes acceso a esta vista." />;
   if (view === 'sistemas') return <SistemasView />;
   if (role === 'tesoreria' && view === 'dashboard') return <TesoreriaDashboard onNav={onNav} />;
@@ -50,20 +63,20 @@ export default function ViewRouter({ role, view, onToast, onNav, userName, userE
 
   if (role === 'gerente') {
     if (view === 'dashboard') return <GerenteDashboard onNav={onNav} />;
-    if (view === 'inventario') return <InventarioView role={role} onToast={onToast} />;
+    if (view === 'inventario') return <InventarioView role={role} onToast={onToast} preferenceKey={userId} />;
     if (view === 'reportes') return <ReportesView />;
     if (view === 'proyectos') return <ProyectosView role={role} onToast={onToast} onNav={onNav} />;
     if (MANAGER_DATA_VIEWS.includes(view as ConsultaGerente)) return <ConsultaGerenteView type={view as ConsultaGerente} />;
   }
 
   if (role === 'analista') {
-    if (view === 'dashboard') return <AnalistaDashboard usuario={userName} onNav={onNav} />;
+    if (view === 'dashboard') return <AnalistaDashboard usuario={userName} onNav={onNav} onOpenRequests={openRequests} />;
     if (view === 'nueva-solicitud') return <NuevaSolicitudView onToast={onToast} onNav={onNav} />;
-    if (view === 'mis-solicitudes') return <MisSolicitudesView usuario={userName} onToast={onToast} onNav={onNav} />;
+    if (view === 'mis-solicitudes') return <MisSolicitudesView usuario={userName} onToast={onToast} onNav={onNav} initialFilter={requestIntent?.filter} initialSelectedId={requestIntent?.id} />;
     if (view === 'proyectos') return <ProyectosView role={role} onToast={onToast} onNav={onNav} />;
     if (view === 'entregas') return <EntregasView onToast={onToast} usuario={userName} />;
     if (view === 'devoluciones') return <DevolucionesView onToast={onToast} />;
-    if (view === 'inventario') return <InventarioView role={role} onToast={onToast} />;
+    if (view === 'inventario') return <InventarioView role={role} onToast={onToast} preferenceKey={userId} />;
     if (view === 'nueva-compra') return <NuevaCompraView onToast={onToast} onNav={onNav} />;
     if (view === 'mis-compras') return <MisComprasView usuario={userName} onNav={onNav} onToast={onToast} />;
   }
@@ -75,7 +88,7 @@ export default function ViewRouter({ role, view, onToast, onNav, userName, userE
     if (view === 'proyectos') return <ProyectosView role={role} onToast={onToast} onNav={onNav} />;
     if (view === 'entregas') return <EntregasView onToast={onToast} usuario={userName} />;
     if (view === 'devoluciones') return <DevolucionesView onToast={onToast} />;
-    if (view === 'inventario') return <InventarioView role={role} onToast={onToast} />;
+    if (view === 'inventario') return <InventarioView role={role} onToast={onToast} preferenceKey={userId} />;
     if (view === 'usuarios') return <UsuariosView onToast={onToast} />;
     if (view === 'compras') return <ComprasView onToast={onToast} />;
   }

@@ -53,7 +53,7 @@ function ProjectDetail({ proyecto, onBack, role, onToast, onNav, managerSurface 
             <div style={{ fontSize: 13, color: '#71717A', marginBottom: 4 }}><svg width="11" height="11" viewBox="0 0 15 15" fill="none" style={{display:'inline',marginRight:3,verticalAlign:'middle'}}><circle cx="7.5" cy="6" r="2.5" stroke="currentColor" strokeWidth="1.3"/><path d="M7.5 1C5 1 3 3 3 6c0 3.5 4.5 8 4.5 8S12 9.5 12 6c0-3-2-5-4.5-5z" stroke="currentColor" strokeWidth="1.3"/></svg>{proyecto.ubicacion}</div>
             <div style={{ fontSize: 12.5, color: '#52525B' }}>Cliente: <strong>{proyecto.cliente}</strong></div>
             {proyecto.observaciones && (
-              <div style={{ marginTop: 10, fontSize: 12, color: '#71717A', background: '#F9FAFB', borderRadius: 6, padding: '8px 12px', borderLeft: '3px solid #E4E4E7' }}>
+              <div style={{ marginTop: 10, fontSize: 12, color: '#71717A', background: '#F9FAFB', borderRadius: 6, padding: '8px 12px', borderLeft: '3px solid var(--color-divider)' }}>
                 {proyecto.observaciones}
               </div>
             )}
@@ -79,7 +79,7 @@ function ProjectDetail({ proyecto, onBack, role, onToast, onNav, managerSurface 
       <button className="btn btn-primary" style={{ marginBottom: 18 }} onClick={() => setShowQuotes(true)}>Cotizaciones, presupuesto y costos de este proyecto →</button>
       <button className="btn btn-ghost" style={{ marginBottom: 18 }} onClick={() => setShowValuations(true)}>Trabajos y valorizaciones de este proyecto →</button>
       <div className="panel">
-        <div style={{ padding: '14px 16px', borderBottom: '1px solid #E4E4E7', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--color-divider)', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
           <input className="input-field" style={{ maxWidth: 260 }}
             placeholder="Buscar por ID, técnico o material…"
             value={search} onChange={e => setSearch(e.target.value)} />
@@ -183,7 +183,7 @@ function ProjectDetail({ proyecto, onBack, role, onToast, onNav, managerSurface 
               </div>
             )}
 
-            <div style={{ padding: '14px 22px', borderTop: '1px solid #E4E4E7', display: 'flex', justifyContent: 'flex-end' }}>
+            <div style={{ padding: '14px 22px', borderTop: '1px solid var(--color-divider)', display: 'flex', justifyContent: 'flex-end' }}>
               <button className="btn btn-ghost" onClick={() => setSelectedRequirement(null)}>Cerrar</button>
             </div>
           </div>
@@ -310,7 +310,7 @@ export default function ProyectosView({ role, onToast, onNav }: Props) {
                     </div>
                   )}
                 </div>
-                <div style={{ padding: '10px 18px 14px', borderTop: '1px solid #F4F4F5' }}>
+                <div style={{ padding: '10px 18px 14px', borderTop: '1px solid var(--color-divider)' }}>
                   <button className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center', fontSize: 12.5, fontWeight: 600 }} onClick={() => setSelected(p)}>
                     Ver proyecto →
                   </button>

@@ -2,10 +2,11 @@
 // Run with PLAYWRIGHT_PACKAGE_JSON pointing to the bundled Playwright package.json.
 import { createRequire } from 'node:module';
 import assert from 'node:assert/strict';
+import { launchBrowser } from './e2e-support.mjs';
 import { mkdir } from 'node:fs/promises';
 const require = createRequire(process.env.PLAYWRIGHT_PACKAGE_JSON || `${process.cwd()}/package.json`);
 const { chromium } = require('playwright');
-const browser = await chromium.launch({ channel: 'msedge', headless: true });
+const browser = await launchBrowser(chromium);
 const screenshots = process.env.QA_SCREENSHOT_DIR;
 if (screenshots) await mkdir(screenshots, { recursive: true });
 const sedes = ['Chiclayo', 'Chimbote', 'Trujillo'];
@@ -72,7 +73,8 @@ try {
       for (const label of labels) {
         await sidebar.getByRole('button', { name: label, exact: true }).click();
         assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${role}/${label}: no page overflow`);
-        assert(await page.locator('.app-scroll .panel, .app-scroll .kpi-card').evaluateAll(els => els.every(el => getComputedStyle(el).borderRadius === '12px')), `${role}/${label}: shared surface radius`);
+        const expectedRadius = width <= 480 ? '20px' : '24px';
+        assert(await page.locator('.app-scroll .panel, .app-scroll .kpi-card').evaluateAll((els, radius) => els.every(el => getComputedStyle(el).borderRadius === radius), expectedRadius), `${role}/${label}: shared surface radius`);
         if (label === 'Dashboard' && role === 'gerente') {
           const stockChart = page.getByRole('img', { name: 'Distribución de stock por sede' });
           await stockChart.scrollIntoViewIfNeeded();

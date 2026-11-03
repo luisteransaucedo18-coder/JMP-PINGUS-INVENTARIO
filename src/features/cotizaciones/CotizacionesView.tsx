@@ -1,3 +1,4 @@
+import { AlertIcon } from '../../components/SystemAlert';
 import { limaDate } from '../../utils/limaDate';
 import QuoteMaterialLabel from './QuoteMaterialLabel'
 import ValidatedForm from "../../components/ValidatedForm";
@@ -97,7 +98,8 @@ function Dialog({
         onClose()
       }}
     >
-      <h2 id="quote-dialog-title">{title}</h2>
+      <AlertIcon tone={destructive ? "danger" : "warning"} />
+      <h2 id="quote-dialog-title" className="system-alert-title">{title}</h2>
       {children}
     </dialog>
   )

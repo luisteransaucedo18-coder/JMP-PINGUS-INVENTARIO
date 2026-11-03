@@ -2,9 +2,10 @@
 import { createRequire } from 'node:module';
 import { mkdirSync } from 'node:fs';
 import assert from 'node:assert/strict';
+import { launchBrowser } from './e2e-support.mjs';
 const require = createRequire(process.env.PLAYWRIGHT_PACKAGE_JSON || `${process.cwd()}/package.json`);
 const { chromium } = require('playwright');
-const browser = await chromium.launch({ channel: 'msedge', headless: true });
+const browser = await launchBrowser(chromium);
 mkdirSync('test-results/gerente', { recursive: true });
 try {
   for (const width of [1440, 1024, 390]) {
@@ -25,7 +26,7 @@ try {
       return route.fulfill({ json: data });
     });
     await page.goto(process.env.QA_BASE_URL || 'http://127.0.0.1:8443');
-    await page.getByPlaceholder('correo@jip.pe').fill(user.email);
+    await page.getByRole('textbox', { name: 'Correo electrónico', exact: true }).fill(user.email);
     await page.locator('input[autocomplete="current-password"]').fill('qa-password');
     await page.getByRole('button', { name: 'Ingresar al sistema' }).click();
     await page.locator('.app-header').waitFor();
@@ -38,7 +39,7 @@ try {
     assert.match(await page.getByRole('tooltip').innerText(), /momento actual|actual/);
     await page.keyboard.press('Escape');
     if (width > 768) {
-      const search = await page.getByRole('textbox', { name: 'Buscar en el sistema', exact: true }).boundingBox();
+      const search = await page.getByRole('textbox', { name: 'Buscar una sección', exact: true }).boundingBox();
       assert(search.width > (width === 1440 ? 500 : 250), 'Search uses the available desktop space');
     }
     if (width <= 768) await page.getByRole('button', { name: 'Abrir menú' }).click();
