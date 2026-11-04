@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import type { RequestIntent } from '../views/analista/dashboardModel';
 import type { Role } from '../domain/types';
+import SistemasView from '../features/sistemas/SistemasView';
 import { canAccessView } from './navigation';
 import type { ConsultaGerente } from '../features/consultas/pages/ConsultaGerenteView';
 const ProfileView = lazy(() => import('../views/shared/ProfileView'));
@@ -52,6 +53,7 @@ function ResolvedView({ role, view, onToast, onNav, userId, userName, userEmail,
   useEffect(() => { if (view !== 'mis-solicitudes') setRequestIntent(undefined); }, [view]);
   const openRequests = (intent: RequestIntent) => { setRequestIntent(intent); onNav('mis-solicitudes'); };
   if (!canAccessView(role, view)) return <ViewMessage message="No tienes acceso a esta vista." />;
+  if (view === 'sistemas') return <SistemasView />;
   if (role === 'tesoreria' && view === 'dashboard') return <TesoreriaDashboard onNav={onNav} />;
   if (view === 'valorizaciones') return <ValorizacionesView role={role} onToast={onToast} />;
   if (view === 'cotizaciones') return <CotizacionesView role={role} onToast={onToast} onNav={onNav} />;

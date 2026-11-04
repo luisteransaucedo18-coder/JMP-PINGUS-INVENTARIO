@@ -61,7 +61,7 @@ test('porcentajes predeterminados del Excel y relación departamento/ciudad', as
 const budget = {
   ...newBudget(),
   ciudad: "Chiclayo",
-  excel: {...newBudget().excel,departamento:"Lambayeque",provincia:"Chiclayo",distrito:"Chiclayo"},
+  excel: {...newBudget().excel,departamento:"Lambayeque",provincia:"Chiclayo",distrito:"Chiclayo",plazo:"2 días",dia:"Lunes a viernes",horario:"08:00 a 17:00",tiempo:"2 horas"},
   tecnico: "Técnico",
   alcance: "Instalación de prueba",
   vigencia: "2099-12-31",
@@ -104,8 +104,11 @@ test('variables del Excel: partidas específicas, FISE y rechazo de costos dupli
   for(const label of ['HOSPEDAJE','ALIMENTACIÓN','PASAJES - FLETES','COMBUSTIBLE','PEAJES','Firme IG3','ESTRUCTURA METÁLICA DE ANCLAJE']) assert.ok(EXCEL_PARTIDAS.some(p=>p.label===label));
   assert.equal(EXCEL_PARTIDAS.filter(p=>p.key.startsWith('cobre')).length,6);
   assert.deepEqual(quoteValidation(budget),[]);
+  for (const key of ['plazo','dia','horario','tiempo']) {
+    assert.ok(quoteValidation({...budget,excel:{...budget.excel,[key]:''}}).some(error=>error.includes('completa este campo')));
+  }
   const grouped={...budget,gastos:[...budget.gastos,{id:id(40),rubro:'VARIABLES',descripcion:'Global',cantidad:1,costoUnitario:20},{id:id(41),rubro:'FLETE',descripcion:'Detalle',cantidad:1,costoUnitario:20}]};
-  assert.ok(quoteValidation(grouped).some(e=>e.includes('no sumes ambos')));
+  assert.ok(quoteValidation(grouped).some(e=>e.includes('El gasto variable global ya no se combina con su detalle')));
   const incompleteFise={...budget,modalidad:'FISE'}; assert.ok(quoteValidation(incompleteFise).some(e=>e.includes('Configuración interna')));
   const credited=executionSummary({id:id(1),estado:'ACEPTADA',presupuesto:budget,totales:calculateQuote(budget)},[{id:id(1)}],[{cotizacion_id:id(1),estado:'REGISTRADO',naturaleza:'COSTO',monto:100},{cotizacion_id:id(1),estado:'REGISTRADO',naturaleza:'ABONO',monto:20}]);
   assert.equal(credited.actual,80);

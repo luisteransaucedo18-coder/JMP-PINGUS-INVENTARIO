@@ -88,7 +88,8 @@ const handleSubmit = async (e: React.FormEvent) => {
     if (
       perfil.rol !== 'gerente' &&
       perfil.rol !== 'analista' &&
-      perfil.rol !== 'coordinador'
+      perfil.rol !== 'coordinador' &&
+      perfil.rol !== 'tesoreria'
     ) {
       setError('El usuario tiene un rol no válido.');
       setLoading(false);
