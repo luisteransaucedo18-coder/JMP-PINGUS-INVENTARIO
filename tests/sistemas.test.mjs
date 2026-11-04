@@ -45,7 +45,7 @@ before(async () => {
       "utf8",
     ),
   )
-  for (const file of ['20261103171045_sistemas_eliminar_tarea.sql', '20261103171113_sistemas_documentos.sql', '20261103172241_sistemas_adjuntos_comentarios.sql']) {
+  for (const file of ['20261103171045_sistemas_eliminar_tarea.sql', '20261103171113_sistemas_documentos.sql', '20261103172241_sistemas_adjuntos_comentarios.sql', '20261104131940_sistemas_subtareas_listas.sql', '20261104134034_sistemas_subtareas_propiedades.sql', '20261104134417_sistemas_asignados_multiples.sql', '20261104135431_sistemas_fechas_prioridad.sql']) {
     if (file.includes('adjuntos_comentarios')) {
       await db.query("insert into sistemas_tareas(id,titulo,creado_por) values('50000000-0000-0000-0000-000000000001','Archivo anterior',$1)",[ids[0]]);
       await db.query("insert into sistemas_documentos(tarea_id,nombre,ruta,tamano,autor) values('50000000-0000-0000-0000-000000000001','anterior.pdf',$1,100,$2)",[`50000000-0000-0000-0000-000000000001/${ids[0]}/anterior.pdf`,ids[0]]);
@@ -164,11 +164,64 @@ test('Publica comentarios con archivos de forma atómica y sin duplicados al rei
     await assert.rejects(as(i, "select * from publicar_comentario_sistemas(gen_random_uuid(),$1,'','{}')",[t.id]),/Escribe un comentario/);
   }
 });
+test('Subtareas y listas: cuatro roles, validación de tarea, revisión y borrado en cascada', async () => {
+  for (let i=0;i<roles.length;i++) {
+    const {rows:[task]} = await as(i,"insert into sistemas_tareas(titulo) values('Seguimiento') returning *");
+    const {rows:[other]} = await as(i,"insert into sistemas_tareas(titulo) values('Otra tarea') returning *");
+    const {rows:[list]} = await as(i,"insert into sistemas_listas(tarea_id,titulo) values($1,'Control final') returning *",[task.id]);
+    const {rows:[step]} = await as(i,"insert into sistemas_pasos(tarea_id,tipo,titulo) values($1,'SUBTAREA','Preparación') returning *",[task.id]);
+    await as(i,"insert into sistemas_pasos(tarea_id,lista_id,tipo,titulo) values($1,$2,'CONTROL','Verificación')",[task.id,list.id]);
+    await assert.rejects(as(i,"insert into sistemas_pasos(tarea_id,lista_id,tipo,titulo) values($1,$2,'CONTROL','Ajeno')",[other.id,list.id]),/foreign key/);
+    await assert.rejects(as(i,"insert into sistemas_pasos(tarea_id,tipo,titulo) values($1,'CONTROL','Sin lista')",[task.id]),/check constraint/);
+    await assert.rejects(as(i,"insert into sistemas_listas(tarea_id,titulo) values($1,'   ')",[task.id]),/check constraint/);
+    const updated = await as((i+1)%4,'update sistemas_pasos set completado=true,revision=revision+1 where id=$1 and revision=0 returning id',[step.id]);
+    assert.equal(updated.rows.length,1);
+    assert.equal((await as(i,'update sistemas_pasos set completado=false where id=$1 and revision=0 returning id',[step.id])).rows.length,0);
+    await assert.rejects(as(i,'update sistemas_pasos set tarea_id=$1 where id=$2',[other.id,step.id]),/permission denied/);
+    await as(i,'delete from sistemas_listas where id=$1',[list.id]);
+    assert.equal((await db.query('select * from sistemas_pasos where lista_id=$1',[list.id])).rows.length,0);
+    await as(i,'delete from sistemas_tareas where id=$1',[task.id]);
+    assert.equal((await db.query('select * from sistemas_pasos where tarea_id=$1',[task.id])).rows.length,0);
+  }
+});
+test('Asignados múltiples: guarda, elimina y valida personas sin perder compatibilidad con el responsable anterior', async () => {
+  for (let i=0;i<roles.length;i++) {
+    const next=(i+1)%roles.length;
+    const {rows:[task]}=await as(i,'insert into sistemas_tareas(titulo,responsable) values($1,$2) returning *',['Asignaciones',ids[i]]);
+    assert.deepEqual(task.asignados,[ids[i]]);
+    const {rows:[updated]}=await as(i,'update sistemas_tareas set asignados=$1 where id=$2 returning *',[[ids[i],ids[next]],task.id]);
+    assert.deepEqual(updated.asignados,[ids[i],ids[next]]);
+    assert.equal(updated.responsable,ids[i]);
+    await assert.rejects(as(i,'update sistemas_tareas set asignados=$1 where id=$2',[[ids[i],ids[i]],task.id]),/no es válida/);
+    await assert.rejects(as(i,"update sistemas_tareas set asignados=array['99999999-9999-4999-8999-999999999999']::uuid[] where id=$1",[task.id]),/usuarios activos/);
+    assert.equal((await as(i,'update sistemas_tareas set asignados=$1 where id=$2 returning responsable',[[ids[next]],task.id])).rows[0].responsable,ids[next]);
+    assert.equal((await as(i,"update sistemas_tareas set asignados='{}' where id=$1 returning responsable",[task.id])).rows[0].responsable,null);
+    assert.equal((await as(i,'select id from sistemas_tareas where id=$1',[task.id])).rows.length,1);
+  }
+});
+test('Las subtareas conservan responsable, fecha y prioridad y rechazan prioridades inválidas', async () => {
+  const {rows:[task]}=await as(0,"insert into sistemas_tareas(titulo) values('Subtarea con propiedades') returning *");
+  const {rows:[step]}=await as(0,"insert into sistemas_pasos(tarea_id,tipo,titulo,responsable,fecha_objetivo,prioridad) values($1,'SUBTAREA','Preparar',$2,'2026-11-10','Alta') returning *",[task.id,ids[1]]);
+  assert.equal(step.prioridad,'Alta'); assert.equal(step.responsable,ids[1]);
+  assert.equal((await as(1,'update sistemas_pasos set prioridad=$1 where id=$2 returning prioridad',['Urgente',step.id])).rows[0].prioridad,'Urgente');
+  await assert.rejects(as(0,"update sistemas_pasos set prioridad='Inválida' where id=$1",[step.id]),/check constraint/);
+});
+test('Las tareas guardan inicio y vencimiento, permiten quitar la prioridad y rechazan rangos invertidos', async () => {
+  const {rows:[task]}=await as(0,"insert into sistemas_tareas(titulo,fecha_inicio,fecha_objetivo,prioridad) values('Calendario','2026-11-10','2026-11-12',null) returning *");
+  assert.equal(task.prioridad,null);
+  assert.ok(task.fecha_inicio);
+  await assert.rejects(as(0,"update sistemas_tareas set fecha_inicio='2026-11-15' where id=$1",[task.id]),/sistemas_tareas_rango_fechas/);
+  assert.equal((await as(1,'update sistemas_tareas set fecha_inicio=null,fecha_objetivo=null,prioridad=$1 where id=$2 returning prioridad',['Alta',task.id])).rows[0].prioridad,'Alta');
+});
 test("Un usuario inactivo no puede consultar ni crear tareas", async () => {
   await db.query("update perfiles set estado='INACTIVO' where id=$1", [ids[3]])
   assert.equal((await as(3, "select * from sistemas_tareas")).rows.length, 0)
   assert.equal((await as(3, 'delete from sistemas_tareas returning id')).rows.length, 0);
   assert.equal((await as(3, 'select * from sistemas_documentos')).rows.length, 0);
+  assert.equal((await as(3, 'select * from sistemas_pasos')).rows.length, 0);
+  await assert.rejects(as(0,'update sistemas_tareas set asignados=$1 where id=$2',[[ids[3]],'50000000-0000-0000-0000-000000000001']),/usuarios activos/);
+  assert.equal((await as(3, 'delete from sistemas_listas returning id')).rows.length, 0);
+  await assert.rejects(as(3,"insert into sistemas_listas(tarea_id,titulo) values('50000000-0000-0000-0000-000000000001','Sin permiso')"),/row-level security/);
   await assert.rejects(as(3, "insert into storage.objects(bucket_id,name) values('sistemas-documentos','invalido')"), /row-level security/);
   await assert.rejects(
     as(3, "insert into sistemas_tareas(titulo) values('Intento inactivo')"),

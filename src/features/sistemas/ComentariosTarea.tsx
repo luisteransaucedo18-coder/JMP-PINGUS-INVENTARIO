@@ -3,6 +3,7 @@ import { useUserProfile } from '../../store/UserProfileContext';
 import { cargarComentarios, comentar, type Comentario, type Persona } from '../../services/sistemasService';
 import { DOCUMENTOS_ACCEPT, listarDocumentos, subirDocumento, validarDocumento, descargarDocumento, eliminarDocumento, type DocumentoTarea } from '../../services/sistemasDocumentosService';
 import { useSistemasLive } from './useSistemasLive';
+import DetailIcon from './DetailIcon';
 
 function mensaje(e: unknown) { return e && typeof e === 'object' && 'message' in e ? String(e.message) : 'No se pudo completar la operación.'; }
 export default function ComentariosTarea({ tareaId, personas, busy, setBusy }: { tareaId: string; personas: Persona[]; busy: boolean; setBusy: (value: boolean) => void }) {
@@ -42,7 +43,7 @@ export default function ComentariosTarea({ tareaId, personas, busy, setBusy }: {
       {confirmar === doc.id && <div className="sys-file-confirm"><p>¿Eliminar este archivo?</p><button type="button" disabled={busy} onClick={() => setConfirmar(undefined)}>Conservar archivo</button><button type="button" disabled={busy} onClick={() => void operar(async () => { await eliminarDocumento(doc); setDocuments(items => items.filter(d => d.id !== doc.id)); setConfirmar(undefined); })}>Confirmar eliminación de archivo</button></div>}
     </li>;
   }
-  return <section className="sys-comments" aria-labelledby="sys-comments-title"><h3 id="sys-comments-title">Comentarios</h3>
+  return <section className="sys-comments" aria-labelledby="sys-comments-title"><h3 id="sys-comments-title"><DetailIcon name="comment" />Comentarios</h3>
     {loading && <p role="status">Cargando comentarios…</p>}
     {comments.map(c => <article key={c.id} className="sys-comment"><span className="sys-comment-avatar" aria-hidden="true">{(personas.find(p => p.id === c.autor)?.nombre ?? 'U').slice(0,1)}</span><div className="sys-comment-body"><strong>{personas.find(p => p.id === c.autor)?.nombre ?? 'Usuario'}</strong><small>{new Date(c.created_at).toLocaleString('es-PE')}</small>{c.contenido && <p>{c.contenido}</p>}<ul className="sys-comment-files">{documents.filter(d => d.comentario_id === c.id).map(d => archivo(d))}</ul></div></article>)}
     <form className="sys-comment-compose" onSubmit={e => { e.preventDefault(); if (!texto.trim() && !pending.length) return; void operar(async () => {
