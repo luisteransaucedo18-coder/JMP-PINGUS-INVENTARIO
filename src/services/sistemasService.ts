@@ -17,9 +17,11 @@ export type Tarea = {
   rol: string
   estado: typeof ESTADOS[number]
 
-  prioridad: typeof PRIORIDADES[number]
+  prioridad: typeof PRIORIDADES[number] | null
   responsable: string | null
+  asignados?: string[]
   fecha_objetivo: string | null
+  fecha_inicio?: string | null
 
   notas: string
   revision: number
@@ -28,6 +30,8 @@ export type Tarea = {
 export type Persona = {
   id: string
   nombre: string
+  email?: string
+  foto_url?: string | null
 }
 
 export type Comentario = {
@@ -44,13 +48,19 @@ export async function cargarSistemas() {
       .select("*")
       .order("created_at", { ascending: false }),
 
-    supabase.from("perfiles").select("id,nombre").order("nombre"),
+    supabase.from("perfiles").select("id,nombre,email,foto_url").eq('estado', 'ACTIVO').order("nombre"),
   ])
 
   if (tasks.error || people.error) throw tasks.error ?? people.error
 
   return { tareas: tasks.data as Tarea[], personas: people.data as Persona[] }
 }
+
+export function personasAsignadas(tarea: Pick<Tarea, 'asignados' | 'responsable'>) {
+  return tarea.asignados ?? (tarea.responsable ? [tarea.responsable] : []);
+}
+
+export function indicePrioridad(value: Tarea['prioridad']) { return value === null ? -1 : PRIORIDADES.indexOf(value); }
 
 export async function guardarTarea(tarea: Tarea, nueva: boolean) {
   const { id, revision, ...fields } = tarea
