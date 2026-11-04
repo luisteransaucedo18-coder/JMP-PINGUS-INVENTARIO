@@ -4,6 +4,8 @@ import { useUserProfile } from "../../store/UserProfileContext"
 
 import {
   cargarSistemas,
+  personasAsignadas,
+  indicePrioridad,
   guardarTarea,
   eliminarTarea,
   ESTADOS,
@@ -15,6 +17,13 @@ import {
 import "./sistemas.css"
 import ComentariosTarea from './ComentariosTarea'
 import MenuTarea from './MenuTarea'
+import DetailIcon from './DetailIcon'
+import SelectorPropiedad, { type OpcionPropiedad } from './SelectorPropiedad'
+import FechasTarea, { rangoFechasInvalido } from './FechasTarea'
+import AsignadosTarea, { AvataresAsignados } from './AsignadosTarea'
+import AutoSizeTextarea from './AutoSizeTextarea'
+import ContextoTarea from './ContextoTarea'
+import SeguimientoTarea from './SeguimientoTarea'
 import { useSistemasLive } from './useSistemasLive'
 
 function mensaje(error: unknown) {
@@ -31,7 +40,9 @@ const vacia = (estado: Tarea["estado"] = "Pendiente"): Tarea => ({
   estado,
   prioridad: "Media",
   responsable: null,
+  asignados: [],
   fecha_objetivo: null,
+  fecha_inicio: null,
   notas: "",
   revision: 0,
 })
@@ -102,7 +113,7 @@ export default function SistemasView() {
           .includes(busqueda.toLocaleLowerCase())) &&
       (!estado || t.estado === estado) &&
       (!prioridad || t.prioridad === prioridad) &&
-      (!responsable || t.responsable === responsable),
+      (!responsable || personasAsignadas(t).includes(responsable)),
   )
 
   if (orden === "fecha")
@@ -113,7 +124,7 @@ export default function SistemasView() {
   if (orden === "prioridad")
     visibles.sort(
       (a, b) =>
-        PRIORIDADES.indexOf(b.prioridad) - PRIORIDADES.indexOf(a.prioridad),
+        indicePrioridad(b.prioridad) - indicePrioridad(a.prioridad),
     )
 
   async function mover(id: string, destino: Tarea["estado"]) {
@@ -136,7 +147,7 @@ export default function SistemasView() {
   }
 
   return (
-    <section className="sistemas">
+    <section className="analyst-workspace sistemas">
       <nav className="sistemas-menu" aria-label="Menú de Sistemas">
         <button aria-pressed={!responsable} onClick={() => setResponsable('')}>Tareas del equipo</button>
         <button
@@ -148,23 +159,20 @@ export default function SistemasView() {
           Mis tareas
         </button>
       </nav>
-      <header className="sistemas-heading">
+      <header className="analyst-workspace-heading sistemas-heading">
         <div>
-          <p className="sys-breadcrumb">Sistemas <span aria-hidden="true">/</span> Gestión del equipo</p>
           <h2>Tareas del equipo</h2>
-          <span>
-            Todo el trabajo del equipo, de pendiente a completado.
-          </span>
+          <p>Organiza las tareas del equipo y da seguimiento a su avance.</p>
         </div>
         <button
-          className="sys-primary"
+          className="btn btn-primary sys-primary"
           disabled={cargando || !!error}
           onClick={() => setSeleccion({ tarea: vacia(), nueva: true })}
         >
           + Nueva tarea
         </button>
       </header>
-      <div className="sistemas-tools">
+      <div className="panel sistemas-tools">
         <div className="sys-views" aria-label="Vista de tareas">
           {["Tabla", "Tablero"].map((v) => (
             <button
@@ -247,7 +255,7 @@ export default function SistemasView() {
         <>
           <div className="sys-board-summary"><p className="sys-count" role="status">{visibles.length} {visibles.length === 1 ? 'tarea' : 'tareas'}{moviendo ? ' · Guardando estado…' : ''}</p><div className="sys-completion"><span>{tareas.filter(t => t.estado === 'Completado').length} de {tareas.length} completadas</span><progress aria-label="Avance del equipo" max={tareas.length || 1} value={tareas.filter(t => t.estado === 'Completado').length} /></div></div>
           {vista === "Tablero" ? (
-            <div className="sys-board">
+            <div className="panel sys-board">
               {ESTADOS.map((s, i) => (
                 <section
                   key={s}
@@ -294,7 +302,7 @@ export default function SistemasView() {
                         {t.notas && <p className="sys-card-description">{t.notas}</p>}
                         {(t.capa || t.rol) && <div className="sys-tags">{t.capa && <span>{t.capa}</span>}{t.rol && <span>{t.rol}</span>}</div>}
                         <div className="sys-card-bottom">
-                        <div className="sys-card-meta"><span className="sys-assignee" title={nombre(t.responsable)} aria-label={`Responsable: ${nombre(t.responsable)}`}>{t.responsable ? nombre(t.responsable).split(' ').map(part => part[0]).slice(0,2).join('') : '—'}</span><span className="sys-card-date" title="Fecha objetivo">{t.fecha_objetivo ? t.fecha_objetivo.split('-').reverse().join('/') : 'Sin fecha'}</span><span className={`sys-priority sys-priority-${PRIORIDADES.indexOf(t.prioridad)}`}><span aria-hidden="true">⚑</span> {t.prioridad}</span></div>
+                        <div className="sys-card-meta"><AvataresAsignados ids={personasAsignadas(t)} personas={personas} /><span className="sys-card-date" title="Fecha objetivo">{t.fecha_objetivo ? t.fecha_objetivo.split('-').reverse().join('/') : 'Sin fecha'}</span><span className={`sys-priority sys-priority-${indicePrioridad(t.prioridad)}`}><DetailIcon name="flag" size={12}/> {t.prioridad ?? 'Sin prioridad'}</span></div>
                         <label className="sys-move">
                           Estado
                           <select
@@ -329,7 +337,7 @@ export default function SistemasView() {
               ))}
             </div>
           ) : (
-            <div className="sys-table-wrap">
+            <div className="panel sys-table-wrap">
               <table>
                 <thead>
                   <tr>
@@ -340,7 +348,7 @@ export default function SistemasView() {
                       "Estado",
                       "Notas",
                       "Prioridad",
-                      "Responsable",
+                      "Asignados",
                       "Rol",
                     ].map((h) => (
                       <th key={h} scope="col">
@@ -363,9 +371,9 @@ export default function SistemasView() {
                           {t.titulo}
                         </button>
                       </td>
-                      <td>{t.capa || "—"}</td>
-                      <td>{t.fecha_objetivo || "—"}</td>
-                      <td>
+                      <td data-label="Capa">{t.capa || "—"}</td>
+                      <td data-label="Fecha objetivo">{t.fecha_objetivo || "—"}</td>
+                      <td data-label="Estado">
                         <select
                           aria-label={`Estado de ${t.titulo}`}
                           value={t.estado}
@@ -379,10 +387,10 @@ export default function SistemasView() {
                           ))}
                         </select>
                       </td>
-                      <td className="sys-notes">{t.notas || "—"}</td>
-                      <td>{t.prioridad}</td>
-                      <td>{nombre(t.responsable)}</td>
-                      <td>{t.rol || "—"}</td>
+                      <td className="sys-notes" data-label="Notas">{t.notas || "—"}</td>
+                      <td data-label="Prioridad"><span className={`sys-priority sys-priority-${indicePrioridad(t.prioridad)}`}><DetailIcon name="flag" size={14}/>{t.prioridad ?? "Sin prioridad"}</span></td>
+                      <td data-label="Asignados"><AvataresAsignados ids={personasAsignadas(t)} personas={personas} /><span className="sys-assigned-names">{personasAsignadas(t).map(id => nombre(id)).join(", ") || "Sin asignar"}</span></td>
+                      <td data-label="Rol">{t.rol || "—"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -432,6 +440,15 @@ export default function SistemasView() {
   )
 }
 
+const OPCIONES_ESTADO: OpcionPropiedad<Tarea['estado']>[] = [
+  {value:'Pendiente',label:'Pendiente',group:'Sin iniciar',tone:'pending',icon:'status'},
+  {value:'En curso',label:'En curso',group:'Activa',tone:'active',icon:'status'},
+  {value:'En revisión',label:'En revisión',group:'Activa',tone:'review',icon:'status'},
+  {value:'Completado',label:'Completado',group:'Terminada',tone:'complete',icon:'status'},
+  {value:'Cancelado',label:'Cancelado',group:'Cerrada',tone:'cancelled',icon:'status'},
+];
+const OPCIONES_PRIORIDAD: OpcionPropiedad<NonNullable<Tarea['prioridad']>>[] = [...PRIORIDADES].reverse().map((value,index)=>({value,label:value,group:'Prioridad',icon:'flag',shortcut:`Ctrl ${index+1}`,tone:value==='Urgente'?'urgent':value==='Alta'?'high':value==='Media'?'normal':'low'}));
+
 function Detalle({
   tarea,
   nueva,
@@ -452,6 +469,7 @@ function Detalle({
   eliminar?: boolean
 }) {
   const [draft, setDraft] = useState(tarea)
+  const rangoInvalido = rangoFechasInvalido(draft.fecha_inicio,draft.fecha_objetivo)
 
 
 
@@ -466,7 +484,7 @@ function Detalle({
     const d = dialog.current!
     const trigger = document.activeElement as HTMLElement
     const desktop = window.matchMedia('(min-width: 1100px)')
-    const open = () => { d.close(); if (desktop.matches) d.show(); else d.showModal(); }
+    const open = () => { d.close(); if (desktop.matches && !nueva) d.show(); else d.showModal(); }
     open()
     desktop.addEventListener('change', open)
     return () => {
@@ -474,7 +492,7 @@ function Detalle({
       d.close()
       trigger?.focus()
     }
-  }, [])
+  }, [nueva])
 
   const campo = <K extends keyof Tarea>(key: K, value: Tarea[K]) =>
     setDraft((t) => ({ ...t, [key]: value }))
@@ -482,7 +500,7 @@ function Detalle({
   return (
     <dialog
       ref={dialog}
-      className="sys-detail"
+      className={`panel sys-detail${nueva ? " sys-create" : ""}`}
       aria-labelledby="sys-detail-title"
       onKeyDown={e => {
         if (e.key === 'Escape' && !busy && !dialog.current?.querySelector(':popover-open')) { e.preventDefault(); onClose(); }
@@ -493,7 +511,7 @@ function Detalle({
       }}
     >
       <header>
-        <span className="sys-detail-type"><span aria-hidden="true">☑</span> {nueva ? 'Nueva tarea' : 'Tarea'}</span>
+        <span className="sys-detail-type"><DetailIcon name="status" /> {nueva ? 'Crear nueva tarea' : 'Tarea'}</span>
         {!nueva && <MenuTarea titulo={tarea.titulo} disabled={busy} onDelete={() => setConfirmarEliminar(true)} />}
         <button onClick={onClose} disabled={busy} aria-label="Cerrar detalle">
           ×
@@ -504,6 +522,7 @@ function Detalle({
         onSubmit={async (e) => {
           e.preventDefault()
           if (busy) return
+          if (rangoInvalido) { setError('La fecha de inicio no puede ser posterior al vencimiento.'); return; }
           setBusy(true)
           setError("")
           try {
@@ -523,8 +542,7 @@ function Detalle({
         <fieldset disabled={busy}>
           <label className="sys-detail-task-title">
             <span id="sys-detail-title">{nueva ? 'Nueva tarea' : 'Detalle de tarea'}</span>
-            <textarea
-              rows={2}
+            <AutoSizeTextarea
               aria-label="Tarea"
               placeholder="Escribe el nombre de la tarea"
               autoFocus
@@ -534,56 +552,16 @@ function Detalle({
               onChange={(e) => campo("titulo", e.target.value)}
             />
           </label>
+          {nueva && <label className="sys-create-description"><span className="sys-property-name"><DetailIcon name="context" />Descripción</span><AutoSizeTextarea aria-label="Descripción" placeholder="Añade una descripción de la tarea…" maxLength={10000} value={draft.notas} onChange={e=>campo('notas',e.target.value)} /></label>}
+          <div className="sys-create-properties">
+          <div className="sys-detail-property"><span className="sys-property-name"><DetailIcon name="status" />Estado</span><SelectorPropiedad label="Estado" completeValue="Completado" value={draft.estado} options={OPCIONES_ESTADO} disabled={busy} onChange={value=>{if(value) campo('estado',value);}} /></div>
+          <div className="sys-detail-assignees"><span className="sys-property-name"><DetailIcon name="user" />Asignados</span><AsignadosTarea ids={personasAsignadas(draft)} personas={personas} disabled={busy} onChange={ids => setDraft(value => ({ ...value, asignados: ids, responsable: ids[0] ?? null }))} /></div>
+          <div className="sys-detail-property"><span className="sys-property-name"><DetailIcon name="calendar" />Fechas</span><FechasTarea inicio={draft.fecha_inicio ?? null} fin={draft.fecha_objetivo} closed={draft.estado === 'Completado' || draft.estado === 'Cancelado'} disabled={busy} onChange={(inicio,fin)=>setDraft(value=>({...value,fecha_inicio:inicio,fecha_objetivo:fin}))} /></div>
+          <div className="sys-detail-property"><span className="sys-property-name"><DetailIcon name="flag" />Prioridad</span><SelectorPropiedad label="Prioridad" value={draft.prioridad} options={OPCIONES_PRIORIDAD} disabled={busy} clearable onChange={value=>campo('prioridad',value)} /></div>
+          </div>
+          <details className="sys-create-fields" open={!nueva}><summary><DetailIcon name="fields" />Campos adicionales</summary>
           <label>
-            Estado
-            <select
-              value={draft.estado}
-              onChange={(e) =>
-                campo("estado", e.target.value as Tarea["estado"])
-              }
-            >
-              {ESTADOS.map((s) => (
-                <option key={s}>{s}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Responsable
-            <select
-              value={draft.responsable ?? ""}
-              onChange={(e) => campo("responsable", e.target.value || null)}
-            >
-              <option value="">Sin asignar</option>
-              {personas.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nombre}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Fecha objetivo
-            <input
-              type="date"
-              value={draft.fecha_objetivo ?? ""}
-              onChange={(e) => campo("fecha_objetivo", e.target.value || null)}
-            />
-          </label>
-          <label>
-            Prioridad
-            <select
-              value={draft.prioridad}
-              onChange={(e) =>
-                campo("prioridad", e.target.value as Tarea["prioridad"])
-              }
-            >
-              {PRIORIDADES.map((s) => (
-                <option key={s}>{s}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Capa
+            <span className="sys-property-name"><DetailIcon name="layers" />Capa</span>
             <input
               maxLength={100}
               value={draft.capa}
@@ -591,34 +569,25 @@ function Detalle({
             />
           </label>
           <label>
-            Rol
+            <span className="sys-property-name"><DetailIcon name="tag" />Rol</span>
             <input
               maxLength={100}
               value={draft.rol}
               onChange={(e) => campo("rol", e.target.value)}
             />
           </label>
-          <label className="sys-detail-context">
-            <span>Contexto</span>
-            <textarea
-              aria-label="Notas"
-              placeholder="Describe el objetivo, los acuerdos o los pasos necesarios…"
-              rows={4}
-              maxLength={10000}
-              value={draft.notas}
-              onChange={(e) => campo("notas", e.target.value)}
-            />
-          </label>
+          </details>
+          {!nueva && <ContextoTarea value={draft.notas} onChange={value => campo('notas', value)} disabled={busy} />}
         </fieldset>
-        {error && (
-          <p role="alert" className="sys-error">
-            {error}
-          </p>
-        )}
-        <button className="sys-primary" disabled={busy || !draft.titulo.trim()}>
-          {busy ? "Guardando…" : "Guardar tarea"}
+        {(error || rangoInvalido) && <p role="alert" className="sys-error">{rangoInvalido ? 'La fecha de inicio no puede ser posterior al vencimiento.' : error}</p>}
+        <footer className="sys-task-form-footer">
+        {nueva && <button type="button" disabled={busy} onClick={onClose}>Cancelar</button>}
+        <button className="btn btn-primary sys-primary" disabled={busy || !draft.titulo.trim() || rangoInvalido}>
+          {busy ? "Guardando…" : nueva ? "Crear tarea" : "Guardar tarea"}
         </button>
+        </footer>
       </form>
+      {!nueva && <SeguimientoTarea tareaId={tarea.id} contexto={draft.notas} personas={personas} busy={busy} setBusy={setBusy} />}
       {!nueva && confirmarEliminar && <section className="sys-delete" aria-label="Eliminar tarea">
           <p>¿Eliminar «{tarea.titulo}» y todos sus comentarios? Esta acción no se puede deshacer. Primero elimina los archivos de sus comentarios.</p>
           <button type="button" disabled={busy} onClick={() => setConfirmarEliminar(false)}>Conservar tarea</button>
@@ -630,7 +599,7 @@ function Detalle({
             finally { setBusy(false) }
           }}>{busy ? 'Eliminando…' : 'Confirmar eliminación'}</button>
       </section>}
-      {nueva ? <p>Guarda la tarea para agregar comentarios y archivos.</p> : <ComentariosTarea tareaId={tarea.id} personas={personas} busy={busy} setBusy={setBusy} />}
+      {!nueva && <ComentariosTarea tareaId={tarea.id} personas={personas} busy={busy} setBusy={setBusy} />}
     </dialog>
   )
 }
