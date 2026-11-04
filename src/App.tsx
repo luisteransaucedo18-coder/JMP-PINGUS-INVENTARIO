@@ -15,6 +15,7 @@ import ViewRouter from './app/ViewRouter';
 import OnboardingTour from './components/OnboardingTour';
 import { readTourStatus } from './app/onboarding';
 import { authErrorMessage } from './utils/authErrors';
+import { trackPage } from './services/analytics';
 import { recordSessionActivity, sessionIsIdle, readSessionActivity, SESSION_IDLE_MS } from './utils/sessionActivity';
 
 /* ─── Login Screen ─── */
@@ -175,6 +176,10 @@ function AppShell({ onLogout, loggingOut, logoutError }: { loggingOut: boolean; 
   const { syncErrors, refreshRemoteData } = useAppStore();
   const session = { role: profile.rol, name: profile.nombre, email: profile.email };
   const [view, setView] = useState('dashboard');
+  useEffect(() => {
+    const meta = getViewMeta(profile.rol, view);
+    if (meta) trackPage(view, meta.title);
+  }, [view, profile.rol]);
   const [tourOpen, setTourOpen] = useState(() => readTourStatus(profile.id) === null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuTrigger = useRef<HTMLButtonElement>(null);
@@ -276,6 +281,9 @@ export default function App() {
   const [loggingOut, setLoggingOut] = useState(false);
   const logoutPending = useRef(false);
   const [restoring, setRestoring] = useState(true);
+  useEffect(() => {
+    if (!restoring && !session && !supabaseConfigError) trackPage('login', 'Iniciar sesión');
+  }, [restoring, session]);
 
   useEffect(() => {
     if (supabaseConfigError) return;
