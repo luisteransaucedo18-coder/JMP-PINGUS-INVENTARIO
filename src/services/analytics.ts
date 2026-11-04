@@ -7,6 +7,9 @@ type AnalyticsWindow = Window & {
 };
 let initialized = false;
 let previousPage = '';
+let currentContext: Record<string, string> | undefined;
+const ROLES = new Set(['gerente', 'analista', 'coordinador', 'tesoreria']);
+const INTERACTIONS = new Set(['button_click', 'link_click', 'field_change', 'form_submit']);
 
 export function analyticsEnabled(production: boolean, hostname: string) {
   return production && PRODUCTION_HOSTS.has(hostname.toLowerCase());
@@ -36,16 +39,34 @@ export function initializeAnalytics() {
 }
 
 // Only call with static section identifiers and titles, never user-entered data.
-export function trackPage(view: string, title: string) {
+export function trackPage(view: string, title: string, role?: string) {
   if (!initialized || !/^[a-z-]+$/.test(view)) return;
   const target = window as AnalyticsWindow;
   const page = `${window.location.origin}/app/${view}`;
-  if (page === previousPage) return; // Includes React StrictMode effect replay.
-  target.gtag?.('event', 'page_view', {
-    send_to: GA_MEASUREMENT_ID,
+  const context = {
     page_location: page,
     page_title: `${title} | JMP Pingus`,
     page_referrer: previousPage,
+    module_id: view,
+    user_role: role && ROLES.has(role) ? role : 'visitante',
+  };
+  if (page === previousPage && currentContext?.user_role === context.user_role) return;
+  // Also attribute Google's automatic engagement events to the current SPA section.
+  target.gtag?.('set', context);
+  currentContext = context;
+  target.gtag?.('event', 'page_view', {
+    send_to: GA_MEASUREMENT_ID,
+    ...context,
   });
   previousPage = page;
+}
+
+export type ModuleInteraction = 'button_click' | 'link_click' | 'field_change' | 'form_submit';
+export function trackModuleInteraction(kind: ModuleInteraction) {
+  if (!initialized || !currentContext || currentContext.module_id === 'login' || !INTERACTIONS.has(kind)) return;
+  (window as AnalyticsWindow).gtag?.('event', 'module_interaction', {
+    send_to: GA_MEASUREMENT_ID,
+    ...currentContext,
+    interaction_type: kind,
+  });
 }

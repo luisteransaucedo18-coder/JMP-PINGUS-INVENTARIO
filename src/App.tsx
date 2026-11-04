@@ -15,7 +15,7 @@ import ViewRouter from './app/ViewRouter';
 import OnboardingTour from './components/OnboardingTour';
 import { readTourStatus } from './app/onboarding';
 import { authErrorMessage } from './utils/authErrors';
-import { trackPage } from './services/analytics';
+import { trackPage, trackModuleInteraction } from './services/analytics';
 import { recordSessionActivity, sessionIsIdle, readSessionActivity, SESSION_IDLE_MS } from './utils/sessionActivity';
 
 /* ─── Login Screen ─── */
@@ -178,7 +178,7 @@ function AppShell({ onLogout, loggingOut, logoutError }: { loggingOut: boolean; 
   const [view, setView] = useState('dashboard');
   useEffect(() => {
     const meta = getViewMeta(profile.rol, view);
-    if (meta) trackPage(view, meta.title);
+    if (meta) trackPage(view, meta.title, profile.rol);
   }, [view, profile.rol]);
   const [tourOpen, setTourOpen] = useState(() => readTourStatus(profile.id) === null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -244,7 +244,18 @@ function AppShell({ onLogout, loggingOut, logoutError }: { loggingOut: boolean; 
             No se pudieron actualizar: {syncErrors.join(', ')}. Los datos mostrados pueden estar desactualizados.
             <button type="button" className="btn btn-ghost" onClick={() => void refreshRemoteData()}>Reintentar actualización</button>
           </div>}
-          <div className="app-view-content" data-tour-view={view}>
+          <div className="app-view-content" data-tour-view={view}
+            onClickCapture={event => {
+              if (!(event.target instanceof Element)) return;
+              const control = event.target.closest('button, a, [role="button"]');
+              if (!control || control.matches(':disabled, [aria-disabled="true"]')) return;
+              trackModuleInteraction(control.tagName === 'A' ? 'link_click' : 'button_click');
+            }}
+            onChangeCapture={event => {
+              const control = event.target;
+              if (control instanceof HTMLSelectElement || (control instanceof HTMLInputElement && ['checkbox', 'radio', 'file', 'date'].includes(control.type))) trackModuleInteraction('field_change');
+            }}
+            onSubmitCapture={() => trackModuleInteraction('form_submit')}>
             <ViewRouter userId={profile.id} role={session.role} view={view} onToast={msg => setToast(msg)} onNav={setView} userName={session.name} userEmail={session.email}
               onStartTour={() => { setMenuOpen(false); setNotifOpen(false); setTourOpen(true); }} />
           </div>
